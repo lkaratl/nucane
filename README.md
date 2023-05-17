@@ -1,0 +1,2 @@
+# nucane
+Trading bot platform
