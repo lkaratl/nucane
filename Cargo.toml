@@ -1,0 +1,31 @@
+[workspace]
+members = [
+    "eac",
+    "interactor",
+    "storage",
+    "storage/migration",
+    "domain-model",
+    "strategy-engine",
+    "synapse",
+    "integration-tests",
+    "localdev",
+    "clients/interactor-client",
+    "clients/storage-client",
+    "clients/strategy-engine-client",
+    "clients/simulator-client",
+    "indicators-calculation",
+    "indicators-api",
+    "simulator",
+    "strategy-api",
+    "default-strategies/test",
+    "default-strategies/simulation-e2e",
+    "registry/app",
+    "registry/core",
+    "registry/rest-api",
+    "registry/rest-client",
+    "plugin-loader"
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"

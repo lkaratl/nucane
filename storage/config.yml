@@ -1,0 +1,8 @@
+logging:
+  level: INFO
+  crates:
+    storage: DEBUG
+application:
+  name: storage
+  port: 8082
+database.url: mysql://root:root@localhost:3306/nucane_storage
