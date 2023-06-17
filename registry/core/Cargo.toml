@@ -1,13 +1,13 @@
 [package]
 name = "registry-core"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-strategy-api = { path = "../../libs/strategy-api" }
-plugin-loader = { path = "../../libs/plugin-loader" }
-domain-model = { path = "../../libs/domain-model" }
-synapse = { path = "../../libs/synapse" }
+strategy-api = { workspace = true }
+plugin-loader = { workspace = true }
+domain-model = { workspace = true }
+synapse = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 once_cell = { workspace = true }

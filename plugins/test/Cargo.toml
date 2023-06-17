@@ -1,14 +1,14 @@
 [package]
 name = "test-strategy"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-strategy-api = { path = "../../libs/strategy-api" }
-domain-model = { path = "../../libs/domain-model" }
+strategy-api = { workspace = true }
+domain-model = { workspace = true }
 async-trait = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }

@@ -1,11 +1,11 @@
 [package]
 name = "registry-rest-client"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-registry-rest-api = { path = "../rest-api" }
-domain-model = { path = "../../libs/domain-model" }
+registry-rest-api = { workspace = true }
+domain-model = { workspace = true }
 reqwest = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }

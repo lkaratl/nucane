@@ -16,7 +16,7 @@ pub fn run() {
     thread::spawn(|| { run_interactor() });
 }
 
-// todo throw error if run failed
+// todo throw error if run failed // use tempdir
 fn run_database() {
     fs::write("./docker-compose.yml", include_str!("../mysql/docker-compose.yml"))
         .expect("Error during docker compose file creation");
@@ -49,20 +49,20 @@ async fn run_registry() {
 
 #[tokio::main]
 async fn run_engine() {
-    engine::run().await;
+    engine_app::run().await;
 }
 
 #[tokio::main]
 async fn run_storage() {
-    storage::run().await;
+    storage_app::run().await;
 }
 
 #[tokio::main]
 async fn run_simulator() {
-    simulator::run().await;
+    simulator_app::run().await;
 }
 
 #[tokio::main]
 async fn run_interactor() {
-    interactor::run().await;
+    interactor_app::run().await;
 }

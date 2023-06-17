@@ -1,12 +1,9 @@
-use std::fmt::Debug;
 use std::io;
 
 use tracing::{Level, subscriber};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{EnvFilter, fmt, FmtSubscriber, Layer, Registry, prelude::*};
-use tracing_subscriber::fmt::{Formatter, Subscriber, SubscriberBuilder};
 use tracing_subscriber::layer::SubscriberExt;
-use tracing_appender::non_blocking::WorkerGuard;
 
 use crate::config::CONFIG;
 

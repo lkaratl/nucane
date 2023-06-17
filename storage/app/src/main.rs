@@ -5,7 +5,7 @@ use crate::config::CONFIG;
 #[tokio::main]
 async fn main() {
     init_logger();
-    storage::run().await;
+    storage_app::run().await;
 }
 
 fn init_logger() {

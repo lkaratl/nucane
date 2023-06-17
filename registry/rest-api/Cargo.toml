@@ -1,9 +1,9 @@
 [package]
 name = "registry-rest-api"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-registry-core = { path = "../core" }
+registry-core = { workspace = true }
 uuid = { workspace = true }
 serde = { workspace = true }

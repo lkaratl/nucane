@@ -1,13 +1,13 @@
 [package]
 name = "registry-app"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-registry-core = { path = "../core" }
-registry-rest-api = { path = "../rest-api" }
-tokio = { version = "1.28.0", features = ["full"] }
-tracing = "0.1.37"
+registry-core = { workspace = true }
+registry-rest-api = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 axum = { workspace = true }
 hyper = { workspace = true }

@@ -1,0 +1,11 @@
+[package]
+name = "domain-model"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+synapse = { workspace = true }
+serde = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+anyhow = { workspace = true }

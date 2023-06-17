@@ -1,0 +1,10 @@
+[package]
+name = "indicators-api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+indicators-calculation = { workspace = true }
+domain-model = { workspace = true }
+storage-rest-client = { workspace = true }
+tokio = { workspace = true }

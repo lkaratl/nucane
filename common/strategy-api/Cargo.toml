@@ -1,0 +1,11 @@
+[package]
+name = "strategy-api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+domain-model = { workspace = true }
+indicators-api = { workspace = true }
+storage-rest-client = { workspace = true }
+async-trait = { workspace = true }
+nanoid = { workspace = true }

@@ -1,0 +1,10 @@
+[package]
+name = "engine-rest-api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+engine-core = { workspace = true }
+domain-model = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }

@@ -1,7 +1,7 @@
 [package]
 name = "storage-migration"
-version = "1.0.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 publish = false
 
 [lib]
@@ -9,9 +9,5 @@ name = "storage_migration"
 path = "src/lib.rs"
 
 [dependencies]
-async-std = { version = "1", features = ["attributes", "tokio1"] }
-
-[dependencies.sea-orm-migration]
-version = "0.11.0"
-features = ["sqlx-mysql", "runtime-async-std-native-tls"]
-
+async-std = { workspace = true }
+sea-orm-migration = { workspace = true }
