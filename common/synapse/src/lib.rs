@@ -9,7 +9,7 @@ use rdkafka::consumer::{CommitMode, Consumer, StreamConsumer};
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use tracing::{debug, error, trace, warn};
+use tracing::{error, trace, warn};
 use uuid::Uuid;
 
 // todo extensible on client side
@@ -145,23 +145,4 @@ impl<T: Synapse> SynapseSend<T> for Writer {
 
 pub fn writer() -> Writer {
     Writer::new()
-}
-
-// todo for now its useless
-pub struct RW {
-    reader: Reader,
-    writer: Writer,
-}
-
-impl RW {
-    fn new(group_id: &str) -> Self {
-        Self {
-            reader: Reader::new(group_id),
-            writer: Writer::new(),
-        }
-    }
-}
-
-pub fn rw(group_id: &str) -> RW {
-    RW::new(group_id)
 }

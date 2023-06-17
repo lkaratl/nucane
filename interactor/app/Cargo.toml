@@ -10,7 +10,6 @@ interactor-rest-api = { workspace = true }
 domain-model = { workspace = true }
 eac = { workspace = true }
 synapse = { workspace = true }
-rdkafka = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
 uuid = { workspace = true }
@@ -21,8 +20,4 @@ serde-inline-default = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 once_cell = { workspace = true }
-crossbeam-channel = { workspace = true }
-config = { workspace = true }
 axum = { workspace = true }
-hyper = { workspace = true }
-async-trait = { workspace = true }

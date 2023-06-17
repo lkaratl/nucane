@@ -1,4 +1,3 @@
-use std::fmt::format;
 use std::ops::Deref;
 use std::str::FromStr;
 use std::sync::Arc;

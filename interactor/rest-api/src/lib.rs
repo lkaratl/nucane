@@ -9,7 +9,7 @@ pub mod path_query {
 
     #[serde_inline_default]
     #[derive(Debug, Deserialize, Serialize)]
-    #[allow(dead_code)]
+    #[allow(unused)]
     pub struct CandlesHistoryQuery {
         pub exchange: Exchange,
         pub market_type: MarketType,

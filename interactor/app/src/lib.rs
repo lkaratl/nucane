@@ -1,26 +1,19 @@
 use std::net::{IpAddr, SocketAddr};
-use std::str::FromStr;
 use std::sync::Arc;
-use std::thread;
 
 use axum::{Json, Router};
-use axum::extract::{Path, Query, State};
+use axum::extract::{Query, State};
 use axum::routing::get;
-use chrono::{DateTime, TimeZone, Utc};
-use futures::executor::block_on;
-use serde::{de, Deserialize, Deserializer};
-use serde_inline_default::serde_inline_default;
-use serde_json::{json, Value};
-use tracing::{debug, info, Level, trace, warn};
-use tracing_subscriber::FmtSubscriber;
+use chrono::{TimeZone, Utc};
+use tracing::{debug, info, trace, warn};
 
-use domain_model::{Action, Candle, Currency, CurrencyPair, Deployment, DeploymentEvent, Exchange, InstrumentId, MarketType, OrderAction, OrderActionType, Timeframe};
+use domain_model::{Action, Candle, CurrencyPair, Deployment, DeploymentEvent, InstrumentId, OrderAction, OrderActionType};
 use interactor_config::CONFIG;
 use interactor_core::service::ServiceFacade;
 use interactor_core::subscription_manager::SubscriptionManager;
 use interactor_rest_api::endpoints::GET_CANDLES_HISTORY;
 use interactor_rest_api::path_query::CandlesHistoryQuery;
-use synapse::{SynapseListen, SynapseSend, Topic};
+use synapse::{SynapseListen, Topic};
 
 pub async fn run() {
     if CONFIG.eac.demo {

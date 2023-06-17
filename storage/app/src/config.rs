@@ -29,7 +29,7 @@ pub struct Logging {
 
 impl Logging {
     pub fn levels(&self) -> String {
-        let mut crate_levels = self.crates.iter().map(|(lib, loglevel)| format!("{lib}={loglevel}"))
+        let crate_levels = self.crates.iter().map(|(lib, loglevel)| format!("{lib}={loglevel}"))
             .collect::<Vec<_>>()
             .join(",");
         format!("{},{crate_levels}", self.level)

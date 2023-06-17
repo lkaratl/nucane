@@ -2,6 +2,7 @@ use crate::okx::parser::ts_milliseconds;
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 
+#[allow(unused)]
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PriceLimit {

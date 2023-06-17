@@ -1,6 +1,7 @@
+mod config;
+
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::SubscriberBuilder;
-
 use crate::config::CONFIG;
 
 #[tokio::main]

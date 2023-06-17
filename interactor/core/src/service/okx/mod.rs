@@ -3,12 +3,11 @@ use std::str::FromStr;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use crossbeam_channel::{Sender};
 use serde_json::from_value;
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error, trace};
 use uuid::Uuid;
 
-use domain_model::{Candle, CandleStatus, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderAction, OrderMarketType, OrderStatus, OrderType, Position, Side, Tick, Timeframe};
+use domain_model::{Candle, CandleStatus, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Tick, Timeframe};
 use eac::enums;
 use eac::enums::{InstType, OrdState, OrdType, TdMode};
 use eac::rest::{Account, CandleResponse, CandlesHistoryRequest, MarkPriceResponse, OkExRest, OrderDetailsResponse, PlaceOrderRequest};

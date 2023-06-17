@@ -1,4 +1,5 @@
 use domain_model::{InstrumentId, Timeframe};
+use indicators_calculation::moving_average;
 use storage_rest_client::StorageClient;
 
 pub struct Indicators {
@@ -23,7 +24,7 @@ impl Indicators {
         let values: Vec<_> = candles.into_iter()
             .map(|candle| candle.close_price)
             .collect();
-        *indicators_calculation::moving_average(&values, length)
+        *moving_average(&values, length)
             .unwrap()
             .first()
             .unwrap()

@@ -1,8 +1,6 @@
 use std::io;
 
-use tracing::{Level, subscriber};
-use tracing_appender::rolling::{RollingFileAppender, Rotation};
-use tracing_subscriber::{EnvFilter, fmt, FmtSubscriber, Layer, Registry, prelude::*};
+use tracing_subscriber::{EnvFilter, fmt, Layer};
 use tracing_subscriber::layer::SubscriberExt;
 
 use crate::config::CONFIG;

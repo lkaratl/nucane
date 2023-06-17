@@ -2,10 +2,8 @@ use std::net::TcpStream;
 use std::sync::{Arc, mpsc, Mutex};
 use std::sync::mpsc::SyncSender;
 use std::{mem, thread};
-use std::ops::{Deref, DerefMut};
 use std::time::Duration;
 
-use anyhow::Error;
 use fehler::{throw, throws};
 use serde_json::{from_str, to_string};
 pub use serde_json::Value;
@@ -190,7 +188,7 @@ fn open_connection(url: Url) -> WebSocket<MaybeTlsStream<TcpStream>> {
 
 fn reconnect(socket: &mut WebSocket<MaybeTlsStream<TcpStream>>, url: Url, private: bool, cred: Option<Credential>, sent_commands: &Vec<Command>) {
     info!("Reconnect OKX websocket");
-    mem::replace(socket, open_connection(url.clone()).unwrap());
+    let _ = mem::replace(socket, open_connection(url).unwrap());
     if private {
         login_command(socket, cred.unwrap()).unwrap();
     }

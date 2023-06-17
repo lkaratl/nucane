@@ -1,7 +1,6 @@
 use anyhow::Error;
 use chrono::{DateTime, Utc};
 use reqwest::{Client, Url};
-use serde::Serialize;
 use serde_urlencoded::to_string;
 use tracing::{debug, trace};
 

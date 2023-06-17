@@ -1,10 +1,7 @@
-use std::slice::Iter;
 use std::sync::Arc;
-use std::vec::IntoIter;
-use chrono::{DateTime, Duration, Utc};
+use chrono::{Duration, Utc};
 use sea_orm::DatabaseConnection;
 use tracing::{debug, info, trace, warn};
-use tracing::field::debug;
 
 use domain_model::{Candle, CandleStatus, InstrumentId, Timeframe};
 use interactor_rest_client::InteractorClient;

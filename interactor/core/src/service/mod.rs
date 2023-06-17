@@ -1,10 +1,9 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use tracing::debug;
-use tracing::field::debug;
-use tracing::log::trace;
+use tracing::trace;
 
-use domain_model::{Action, Candle, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderAction, Position, Tick, Timeframe};
+use domain_model::{Candle, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarketType, Order, Position, Tick, Timeframe};
 use synapse::SynapseSend;
 
 use crate::service::okx::OKXService;

@@ -1,4 +1,5 @@
-use base64::encode;
+use base64::Engine;
+use base64::engine::general_purpose;
 use http::Method;
 use ring::hmac;
 use url::Url;
@@ -44,7 +45,7 @@ impl Credential {
             None => format!("{}{}{}{}", timestamp, method.as_str(), url.path(), body),
         };
 
-        let signature = encode(hmac::sign(&signed_key, sign_message.as_bytes()).as_ref());
+        let signature = general_purpose::STANDARD.encode(hmac::sign(&signed_key, sign_message.as_bytes()).as_ref());
         (self.key.as_str(), signature)
     }
 }

@@ -1,18 +1,16 @@
 mod config;
 
-use std::collections::HashMap;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 
 use axum::{Json, Router};
 use axum::extract::State;
 use axum::routing::post;
-use chrono::{DateTime, TimeZone, Utc};
-use serde::{Deserialize, Serialize};
+use chrono::{TimeZone, Utc};
 use tracing::info;
 use uuid::Uuid;
 
-use domain_model::{Currency, Exchange, Position, Side, Simulation, SimulationPosition};
+use domain_model::Simulation;
 use engine_rest_client::EngineClient;
 use storage_rest_client::StorageClient;
 

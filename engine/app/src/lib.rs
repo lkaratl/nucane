@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -6,16 +5,13 @@ use std::sync::Arc;
 use axum::{Json, Router};
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use axum::middleware::{self, Next};
 use axum::routing::{get, post, put};
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
 use tracing::{debug, error, info};
 use tracing::log::trace;
 use uuid::Uuid;
 
 use anyhow::Result;
-use domain_model::{Action, DeploymentEvent, InstrumentId, PluginEvent, Tick};
+use domain_model::{Action, DeploymentEvent, Tick};
 use engine_core::executor::Executor;
 use engine_core::registry;
 use engine_core::registry::Deployment;

@@ -8,7 +8,6 @@ pub mod endpoints {
 
 pub mod path_query {
     use serde::{Deserialize, Serialize};
-    use uuid::Uuid;
     use domain_model::{Currency, Exchange, MarketType, OrderStatus, OrderType, Side, Timeframe};
 
     #[derive(Debug, Deserialize, Serialize)]

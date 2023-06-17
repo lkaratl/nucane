@@ -114,6 +114,7 @@ impl OkExRest {
     }
 }
 
+#[allow(unused)]
 #[derive(Clone, Debug, Deserialize)]
 pub struct OkExResponseEnvolope<T> {
     code: String,

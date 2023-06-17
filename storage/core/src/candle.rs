@@ -6,7 +6,6 @@ use chrono::{DateTime, Utc};
 use futures::executor::block_on;
 use sea_orm::{ActiveValue, ColumnTrait, Condition, ConnectionTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, QuerySelect, QueryTrait, sea_query};
 use serde_json::json;
-use tracing::log::debug;
 
 use domain_model::{CandleStatus, CurrencyPair, Exchange, InstrumentId, MarketType, Timeframe};
 

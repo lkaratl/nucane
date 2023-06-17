@@ -30,5 +30,6 @@ pub fn load(binary: &[u8]) -> Result<Plugin> {
 pub struct Plugin {
     // don't change order, strategy should drop before library
     pub strategy: Box<dyn Strategy + Send>,
+    #[allow(unused)]
     library: Library,
 }

@@ -1,13 +1,10 @@
 use std::collections::HashMap;
 use anyhow::Error;
-use chrono::{DateTime, Utc};
 use reqwest::{Client, Url};
-use serde::{Deserialize, Serialize};
-use serde_urlencoded::to_string;
-use tracing::{debug, trace};
+use tracing::{trace};
 use uuid::Uuid;
 
-use domain_model::{Action, AuditEvent, Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position, Side, Tick, Timeframe};
+use domain_model::{Action, Tick};
 use engine_rest_api::dto::{CreateDeployment, DeploymentInfo};
 use engine_rest_api::endpoints::{GET_POST_DEPLOYMENTS, POST_CREATE_ACTIONS, PUT_DELETE_DEPLOYMENTS_BY_ID};
 

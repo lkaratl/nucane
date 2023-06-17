@@ -1,11 +1,10 @@
 use anyhow::Error;
 use chrono::{DateTime, Utc};
 use reqwest::{Client, Url};
-use serde::Serialize;
 use serde_urlencoded::to_string;
 use tracing::trace;
 
-use domain_model::{Candle, Currency, Exchange, InstrumentId, MarketType, Timeframe};
+use domain_model::{Candle, InstrumentId, Timeframe};
 use interactor_rest_api::endpoints::GET_CANDLES_HISTORY;
 use interactor_rest_api::path_query::CandlesHistoryQuery;
 

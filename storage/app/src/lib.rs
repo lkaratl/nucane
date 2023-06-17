@@ -10,9 +10,9 @@ use axum::routing::{get, post};
 use chrono::{Duration, TimeZone, Utc};
 use futures::executor::block_on;
 use sea_orm::{Database, DatabaseConnection};
-use tracing::{debug, info};
+use tracing::{info};
 
-use domain_model::{AuditEvent, Candle, Currency, CurrencyPair, Deployment, DeploymentEvent, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position, Side, Simulation, Timeframe};
+use domain_model::{AuditEvent, Candle, CurrencyPair, Deployment, DeploymentEvent, InstrumentId, Order, Position, Simulation};
 use interactor_rest_client::InteractorClient;
 use storage_core::audit::AuditService;
 use storage_core::candle::CandleService;
@@ -85,11 +85,11 @@ fn listen_entity_events(order_service: Arc<OrderService<DatabaseConnection>>,
     });
 }
 
-fn listen_deployment_events(candle_sync_service: Arc<CandleSyncService>, audit_service: Arc<AuditService<DatabaseConnection>>) {
+fn listen_deployment_events(_: Arc<CandleSyncService>, audit_service: Arc<AuditService<DatabaseConnection>>) {
     synapse::reader(&CONFIG.application.name).on(Topic::Deployment, move |deployment: Deployment| {
         match deployment.event {
             DeploymentEvent::Created => {
-                for instrument_id in &deployment.subscriptions {
+                for _ in &deployment.subscriptions {
                     // todo uncomment after sync process refactoring
                     // candle_sync_service.sync(instrument_id);
                 }
