@@ -1,0 +1,14 @@
+[package]
+name = "domain-model"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+synapse = { path = "../synapse", optional = true }
+serde = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+anyhow = { workspace = true }
+
+[features]
+synapse = ["dep:synapse"]

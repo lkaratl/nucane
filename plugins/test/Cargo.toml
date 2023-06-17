@@ -1,15 +1,17 @@
 [package]
-name = "interactor-client"
+name = "test-strategy"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
+strategy-api = { path = "../../libs/strategy-api" }
 domain-model = { path = "../../libs/domain-model" }
-reqwest = { workspace = true }
-tokio = { workspace = true }
-anyhow = { workspace = true }
+async-trait = { workspace = true }
+uuid = { workspace = true }
 chrono = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-serde_urlencoded = { workspace = true }
 tracing = { workspace = true }

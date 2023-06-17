@@ -1,0 +1,10 @@
+[package]
+name = "indicators-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+indicators-calculation = { path = "../indicators-calculation" }
+domain-model = { path = "../domain-model", features = ["synapse"] }
+storage-client = { path = "../../clients/storage-client" }
+tokio = { workspace = true }

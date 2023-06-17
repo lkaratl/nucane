@@ -1,12 +1,16 @@
 [package]
-name = "interactor"
+name = "engine"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-domain-model = { path = "../libs/domain-model", features = ["synapse"] }
-eac = { path = "../libs/eac" }
 synapse = { path = "../libs/synapse" }
+domain-model = { path = "../libs/domain-model", features = ["synapse"] }
+storage-client = { path = "../clients/storage-client" }
+indicators-api = { path = "../libs/indicators-api" }
+strategy-api = { path = "../libs/strategy-api" }
+registry-rest-client = { path = "../registry/rest-client" }
+plugin-loader = { path = "../libs/plugin-loader" }
 rdkafka = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
@@ -14,12 +18,13 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-serde-inline-default = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+sea-orm = { workspace = true }
 once_cell = { workspace = true }
-crossbeam-channel = { workspace = true }
-config = { workspace = true }
 axum = { workspace = true }
 hyper = { workspace = true }
+config = { workspace = true }
+nanoid = { workspace = true }
+anyhow = { workspace = true }
 async-trait = { workspace = true }
