@@ -1,0 +1,18 @@
+logging:
+  level: INFO
+  crates:
+    interactor: DEBUG
+application:
+  name: interactor
+  port: 8083
+
+eac:
+  demo: true
+  exchanges:
+    okx:
+      http-url: https://www.okx.com
+      ws-url: wss://ws.okx.com:8443
+      auth:
+        api-key: # put value according to eac.demo value
+        api-secret: # put value according to eac.demo value
+        api-passphrase: # put value according to eac.demo value
