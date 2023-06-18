@@ -1,7 +1,0 @@
-logging:
-  level: INFO
-  crates:
-    strategy_engine: DEBUG
-application:
-  name: strategy-engine
-  port: 8081

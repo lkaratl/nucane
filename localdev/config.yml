@@ -1,8 +1,0 @@
-logging:
-  level: INFO
-  crates:
-    strategy_engine: DEBUG
-    storage: DEBUG
-    interactor: DEBUG
-    simulator: DEBUG
-
