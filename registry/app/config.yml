@@ -1,0 +1,7 @@
+logging:
+  level: INFO
+  crates:
+    registry: DEBUG
+application:
+  name: registry
+  port: 8085

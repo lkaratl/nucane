@@ -1,0 +1,11 @@
+[package]
+name = "strategy-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+domain-model = { path = "../domain-model" }
+indicators-api = { path = "../indicators-api" }
+storage-client = { path = "../clients/storage-client" }
+async-trait = "0.1.68"
+nanoid = "0.4.0"

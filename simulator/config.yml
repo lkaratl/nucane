@@ -1,0 +1,7 @@
+logging:
+  level: INFO
+  crates:
+    simulator: DEBUG
+application:
+  name: simulator
+  port: 8084
