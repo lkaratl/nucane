@@ -1,12 +1,11 @@
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::SubscriberBuilder;
 use engine_app::config::CONFIG;
-use strategy_engine::config::CONFIG;
 
 #[tokio::main]
 async fn main() {
     init_logger();
-    strategy_engine::run().await;
+    engine_app::run().await;
 }
 
 fn init_logger() {

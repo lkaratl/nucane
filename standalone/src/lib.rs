@@ -16,7 +16,6 @@ pub fn run() {
     thread::spawn(|| { run_interactor() });
 }
 
-// todo throw error if run failed // use tempdir
 fn run_database() {
     fs::write("./docker-compose.yml", include_str!("../mysql/docker-compose.yml"))
         .expect("Error during docker compose file creation");
@@ -29,7 +28,6 @@ fn run_database() {
     info!("+ database running...");
 }
 
-// todo throw error if run failed
 fn run_massage_broker() {
     fs::write("./docker-compose.yml", include_str!("../redpanda/docker-compose.yml"))
         .expect("Error during docker compose file creation");

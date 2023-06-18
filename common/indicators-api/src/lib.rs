@@ -1,6 +1,8 @@
+mod calculation;
+
 use domain_model::{InstrumentId, Timeframe};
-use indicators_calculation::moving_average;
 use storage_rest_client::StorageClient;
+use crate::calculation::moving_average;
 
 pub struct Indicators {
     storage_client: StorageClient,

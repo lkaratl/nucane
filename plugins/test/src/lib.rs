@@ -3,8 +3,7 @@ use uuid::Uuid;
 use async_trait::async_trait;
 use tracing::info;
 
-use domain_model::{Action, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderAction, OrderActionType, OrderMarketType, Side, OrderStatus, OrderType, Tick, Timeframe};
-use domain_model::MarginMode::{Cross, Isolated};
+use domain_model::{Action, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction, OrderActionType, OrderMarketType, Side, OrderStatus, OrderType, Tick};
 use strategy_api::{Strategy, StrategyApi, utils};
 
 #[no_mangle]

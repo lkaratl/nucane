@@ -1,8 +1,6 @@
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::SubscriberBuilder;
-use interactor::config::CONFIG;
 use interactor_config::CONFIG;
-use crate::config::CONFIG;
 
 #[tokio::main]
 async fn main() {

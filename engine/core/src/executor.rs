@@ -20,12 +20,11 @@ impl Executor {
         let mut result = Vec::new();
         for deployment in registry::get_deployments()
             .await
-            .lock()
-            .await
-            .iter_mut()
-            .filter(|deployment| deployment.simulation_id == tick.simulation_id) {
+            .iter_mut() {
+            let mut deployment = deployment.lock().await;
+            let is_simulation = deployment.simulation_id == tick.simulation_id;
             let strategy = &mut deployment.plugin.strategy;
-            if is_subscribed(strategy, tick) {
+            if is_subscribed(strategy, tick) && is_simulation {
                 let mut actions = strategy.execute(tick, &self.api).await;
                 actions.iter_mut().for_each(|action| match action {
                     Action::OrderAction(order_action) => order_action.simulation_id = deployment.simulation_id

@@ -2,15 +2,11 @@ use std::collections::HashMap;
 use std::sync::Once;
 
 use chrono::{TimeZone, Utc};
-use once_cell::unsync::Lazy;
-use reqwest::header::CONTENT_TYPE;
-use reqwest::StatusCode;
-use tracing::{info, Level};
-use tracing_subscriber::{EnvFilter, FmtSubscriber};
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::SubscriberBuilder;
 
 use domain_model::{Currency, Exchange, Side};
-use simulator_client::{CreatePositionDto, SimulatorClient};
+use simulator_rest_client::SimulatorClient;
 
 static mut INITED: bool = false;
 static INIT: Once = Once::new();
@@ -21,7 +17,7 @@ async fn init() {
     unsafe {
         if !INITED {
             init_logger();
-            localdev::run();
+            standalone::run();
         }
         INIT.call_once(|| INITED = true);
     }
@@ -29,8 +25,8 @@ async fn init() {
 
 fn init_logger() {
     let subscriber = SubscriberBuilder::default()
-        // todo move to config or init on localdev side
-        .with_env_filter(EnvFilter::new("INFO,strategy_engine=DEBUG,storage=DEBUG,simulator=DEBUG,interactor=DEBUG"))
+        // todo move to config or init on standalone side
+        .with_env_filter(EnvFilter::new("INFO,engine=DEBUG,storage=DEBUG,simulator=DEBUG,interactor=DEBUG"))
         .with_file(true)
         .with_line_number(true)
         .finish();

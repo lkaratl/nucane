@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use domain_model::{Action, Tick};
 use engine_rest_api::dto::{CreateDeployment, DeploymentInfo};
-use engine_rest_api::endpoints::{GET_POST_DEPLOYMENTS, POST_CREATE_ACTIONS, PUT_DELETE_DEPLOYMENTS_BY_ID};
+use engine_rest_api::endpoints::{GET_POST_DEPLOYMENTS, POST_CREATE_ACTIONS, DELETE_DEPLOYMENTS_BY_ID};
 
 pub struct EngineClient {
     url: String,
@@ -47,7 +47,7 @@ impl EngineClient {
 
     pub async fn remove_deployment(&self,
                                    id: Uuid) -> Result<(), Error> {
-        let endpoint = format!("{}{}/{id}", self.url, PUT_DELETE_DEPLOYMENTS_BY_ID);
+        let endpoint = format!("{}{}/{id}", self.url, DELETE_DEPLOYMENTS_BY_ID);
         let url = Url::parse(&endpoint)?;
         trace!("Request url: {url:?}");
         self.client.delete(url)

@@ -1,12 +1,11 @@
 [workspace]
 members = [
     "common/eac",
-    "common/strategy-api",
-    "common/domain-model",
     "common/synapse",
-    "common/indicators-calculation",
-    "common/indicators-api",
+    "common/domain-model",
+    "common/strategy-api",
     "common/plugin-loader",
+    "common/indicators-api",
     "standalone",
     "interactor/app",
     "interactor/core",
@@ -42,7 +41,6 @@ edition = "2021"
 domain-model = { path = "common/domain-model" }
 eac = { path = "common/eac" }
 indicators-api = { path = "common/indicators-api" }
-indicators-calculation = { path = "common/indicators-calculation" }
 plugin-loader = { path = "common/plugin-loader" }
 strategy-api = { path = "common/strategy-api" }
 synapse = { path = "common/synapse" }

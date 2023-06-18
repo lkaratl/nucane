@@ -279,7 +279,7 @@ impl Synapse for PluginEvent {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Eq, PartialEq, Debug, Deserialize, Serialize, Clone)]
 pub enum PluginEventType {
     Updated
 }

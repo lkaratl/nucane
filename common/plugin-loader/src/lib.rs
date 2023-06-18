@@ -1,3 +1,5 @@
+use std::fmt;
+use std::fmt::Formatter;
 use std::fs::File;
 use std::io::Write;
 
@@ -26,10 +28,15 @@ pub fn load(binary: &[u8]) -> Result<Plugin> {
     };
     Ok(plugin)
 }
-
 pub struct Plugin {
     // don't change order, strategy should drop before library
     pub strategy: Box<dyn Strategy + Send>,
     #[allow(unused)]
     library: Library,
+}
+
+impl fmt::Debug for Plugin {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "Strategy plugin, name: '{}', version: '{}'", self.strategy.name(), self.strategy.version())
+    }
 }
