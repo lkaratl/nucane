@@ -1,9 +1,9 @@
 use anyhow::Result;
 use reqwest::{Client, Url};
-use tracing::{debug, trace};
+use tracing::{trace};
 use uuid::Uuid;
 use registry_rest_api::dto::{PluginBinary, PluginInfo};
-use registry_rest_api::endpoints::{DELETE_PLUGINS_INFO_BY_ID_OR_NAME_OR_VERSION, GET_BINARY_BY_ID_OR_NAME_OR_VERSION, GET_PLUGINS_INFO_BY_ID_OR_NAME_OR_VERSION, POST_PLUGINS};
+use registry_rest_api::endpoints::{DELETE_PLUGINS_INFO_BY_ID_OR_NAME_OR_VERSION, GET_BINARY_BY_ID_OR_NAME_OR_VERSION, GET_PLUGINS_INFO_BY_ID_OR_NAME_OR_VERSION};
 use registry_rest_api::path_query::PluginQuery;
 
 

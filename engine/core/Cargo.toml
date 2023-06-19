@@ -1,0 +1,24 @@
+[package]
+name = "engine-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+synapse = { workspace = true }
+domain-model = { workspace = true }
+storage-rest-client = { workspace = true }
+indicators-api = { workspace = true }
+strategy-api = { workspace = true }
+registry-rest-client = { workspace = true }
+plugin-loader = { workspace = true }
+tokio = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+once_cell = { workspace = true }
+axum = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }

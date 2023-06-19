@@ -1,0 +1,18 @@
+[package]
+name = "storage-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+interactor-rest-client = { workspace = true }
+domain-model = { workspace = true }
+synapse = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+sea-orm = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

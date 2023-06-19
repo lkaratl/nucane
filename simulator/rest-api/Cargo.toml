@@ -1,0 +1,9 @@
+[package]
+name = "simulator-rest-api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+domain-model = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }

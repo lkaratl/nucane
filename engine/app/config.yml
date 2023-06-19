@@ -1,0 +1,7 @@
+logging:
+  level: INFO
+  crates:
+    engine: DEBUG
+application:
+  name: engine
+  port: 8081

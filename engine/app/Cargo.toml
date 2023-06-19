@@ -1,0 +1,27 @@
+[package]
+name = "engine-app"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+engine-core = { workspace = true }
+engine-rest-api = { workspace = true }
+synapse = { workspace = true }
+domain-model = { workspace = true }
+storage-rest-client = { workspace = true }
+indicators-api = { workspace = true }
+strategy-api = { workspace = true }
+registry-rest-client = { workspace = true }
+plugin-loader = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+axum = { workspace = true }
+config = { workspace = true }
+anyhow = { workspace = true }
+once_cell = { workspace = true }

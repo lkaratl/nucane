@@ -1,15 +1,15 @@
 [package]
 name = "registry-core"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-strategy-api = { path = "../../strategy-api" }
-plugin-loader = { path = "../../plugin-loader" }
-domain-model = { path = "../../domain-model" }
-synapse = { path = "../../synapse" }
-tokio = { version = "1.28.0", features = ["full"] }
-tracing = "0.1.37"
-once_cell = "1.17.1"
-uuid = { version = "1.3.2", features = ["v4"] }
-anyhow = "1.0.71"
+strategy-api = { workspace = true }
+plugin-loader = { workspace = true }
+domain-model = { workspace = true }
+synapse = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+once_cell = { workspace = true }
+uuid = { workspace = true }
+anyhow = { workspace = true }
