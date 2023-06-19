@@ -6,6 +6,7 @@ use tracing_subscriber::fmt::SubscriberBuilder;
 use tracing_subscriber::EnvFilter;
 
 use domain_model::{Currency, Exchange, Side};
+use simulator_rest_api::dto::CreatePositionDto;
 use simulator_rest_client::SimulatorClient;
 
 static mut INITED: bool = false;

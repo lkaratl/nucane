@@ -42,11 +42,12 @@ impl PlaceOrderRequest {
     }
 
     pub fn limit(inst_id: &str, td_mode: TdMode, side: Side, price: f64, qty: f64) -> Self {
+        let tgt_ccy = if side == Side::Buy { Some("quote_ccy".to_string()) } else { Some("base_ccy".to_string()) };
         Self {
             inst_id: inst_id.into(),
             td_mode,
             ccy: None,
-            tgt_ccy: Some("quote_ccy".to_string()),
+            tgt_ccy,
             tag: None,
             side,
             pos_side: None,

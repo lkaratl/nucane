@@ -24,6 +24,7 @@ mod channel;
 mod command;
 mod message;
 pub mod models;
+pub mod async_client;
 
 pub struct OkExWebsocket {
     url: Url,

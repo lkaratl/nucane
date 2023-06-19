@@ -9,35 +9,66 @@ pub mod websocket;
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc};
-    use std::thread;
+    use std::{env, thread};
     use std::time::Duration;
 
-    use tracing::{debug, Level};
-    use tracing_subscriber::FmtSubscriber;
-    use uuid::Uuid;
-    use fehler::{throw, throws};
+    use tracing::{debug, error};
+    use fehler::throws;
     use anyhow::Error;
     use serde_json::from_value;
-    use futures::{SinkExt, StreamExt};
-    use futures::executor::block_on;
-    use tokio::sync::Mutex;
-    use tracing::field::debug;
+    use tracing_subscriber::EnvFilter;
+    use tracing_subscriber::fmt::SubscriberBuilder;
+    use crate::enums::{InstType, Side, TdMode};
 
-    use crate::okx::ws::model::{MarkPriceSub, Response};
-    use crate::rest::MarkPriceResponse;
+    use crate::rest::{MarkPriceResponse, OkExRest, OrderDetailsResponse, PlaceOrderRequest};
     use crate::websocket::{Channel, Command, Message, OkExWebsocket};
     use crate::websocket::models::Ticker;
 
-    use super::*;
-
     fn init_logger() {
-        let subscriber = FmtSubscriber::builder() // todo log only current app not libraries like hyper ...
-            .with_max_level(Level::DEBUG)
+        let subscriber = SubscriberBuilder::default()
+            .with_env_filter(EnvFilter::new("INFO,eac=DEBUG"))
+            .with_file(true)
+            .with_line_number(true)
             .finish();
 
         tracing::subscriber::set_global_default(subscriber)
             .expect("Setting default subscriber failed");
+    }
+
+    fn build_rest_client() -> OkExRest {
+        OkExRest::with_credential("https://www.okx.com", true,
+                                  &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-KEY").unwrap(),
+                                  &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-SECRET").unwrap(),
+                                  &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-PASSPHRASE").unwrap())
+    }
+
+    fn build_private_ws_client() -> OkExWebsocket {
+        OkExWebsocket::private(true, "wss://ws.okx.com:8443",
+                               &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-KEY").unwrap(),
+                               &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-SECRET").unwrap(),
+                               &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-PASSPHRASE").unwrap()).unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_place_spot_market_buy_order() {
+        let rest_client = build_rest_client();
+        let request = PlaceOrderRequest::market("BTC-USDT", TdMode::Cash, Side::Buy, 100.0);
+        let [response] = rest_client.request(request).await.unwrap();
+        if response.s_code != 0 {
+            dbg!(response);
+            panic!("Error during order creation");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_place_spot_limit_buy_order() {
+        let rest_client = build_rest_client();
+        let request = PlaceOrderRequest::limit("BTC-USDT", TdMode::Cash, Side::Buy, 26000.0, 100.0);
+        let [response] = rest_client.request(request).await.unwrap();
+        if response.s_code != 0 {
+            dbg!(response);
+            panic!("Error during order creation");
+        }
     }
 
     #[throws(Error)]
@@ -66,6 +97,31 @@ mod tests {
         thread::sleep(Duration::from_secs(5));
     }
 
+
+    #[tokio::test]
+    async fn test_handle_orders() {
+        init_logger();
+        let mut client = build_private_ws_client();
+        client.send(Command::subscribe(vec![Channel::Orders {
+            inst_type: InstType::Any,
+            inst_id: None,
+            uly: None,
+        }])).unwrap();
+
+        client.handle_message(|message| {
+            match message.unwrap() {
+                Message::Data { arg, mut data, .. } => {
+                    assert!(matches!(arg, Channel::Orders { .. }));
+                    let data = data.pop().unwrap();
+                    let order: OrderDetailsResponse = from_value(data).unwrap();
+                    println!("{:?}", order);
+                }
+                message => println!("Unexpected message: '{message:?}'"),
+            }
+        });
+        thread::sleep(Duration::from_secs(90));
+    }
+
     #[throws(Error)]
     #[tokio::test]
     async fn test_handle_mark_price() {
@@ -80,10 +136,10 @@ mod tests {
                     assert!(matches!(arg, Channel::MarkPrice { .. }));
                     let data = data.pop().unwrap();
                     let x: MarkPriceResponse = from_value(data).unwrap();
-                    println!("{:?}", x);
+                    debug!("{:?}", x);
                 }
                 Message::Error { code, msg, .. } => {
-                    println!("Error {}: {}", code, msg);
+                    error!("Error {}: {}", code, msg);
                 }
                 Message::Event { .. } => {}
                 _ => unreachable!(),

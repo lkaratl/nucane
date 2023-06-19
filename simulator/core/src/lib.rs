@@ -18,19 +18,19 @@ pub struct SimulationService {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SimulationReport {
-    simulation_id: Uuid,
-    start: DateTime<Utc>,
-    end: DateTime<Utc>,
-    strategy_id: String,
-    strategy_version: String,
-    strategy_params: HashMap<String, String>,
-    ticks: usize,
-    actions: u16,
-    profit: f64,
-    profit_clear: f64,
-    fees: f64,
-    assets: Vec<SimulationPosition>,
-    active_orders: Vec<Order>,
+    pub simulation_id: Uuid,
+    pub start: DateTime<Utc>,
+    pub end: DateTime<Utc>,
+    pub strategy_id: String,
+    pub strategy_version: String,
+    pub strategy_params: HashMap<String, String>,
+    pub ticks: usize,
+    pub actions: u16,
+    pub profit: f64,
+    pub profit_clear: f64,
+    pub fees: f64,
+    pub assets: Vec<SimulationPosition>,
+    pub active_orders: Vec<Order>,
 }
 
 impl SimulationService {
