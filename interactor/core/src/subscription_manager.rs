@@ -1,3 +1,4 @@
+use std::time::Duration;
 use tracing::debug;
 use uuid::Uuid;
 
@@ -17,7 +18,7 @@ impl SubscriptionManager {
         }
     }
 
-    pub fn subscribe(&mut self, new_subscription: Subscription) {
+    pub async fn subscribe(&mut self, new_subscription: Subscription) {
         debug!("Subscribe: {}", new_subscription.deployment_id);
         for new_instrument in new_subscription.instruments {
             let subscription = self.subscriptions.iter_mut()
@@ -25,10 +26,10 @@ impl SubscriptionManager {
             if let Some(subscription) = subscription {
                 subscription.deployment_ids.push(new_subscription.deployment_id);
             } else {
-                self.service_facade.listen_account(new_instrument.exchange);
-                self.service_facade.listen_orders(new_instrument.exchange);
-                self.service_facade.subscribe_candles(&new_instrument);
-                self.service_facade.subscribe_ticks(&new_instrument);
+                self.service_facade.listen_position(new_instrument.exchange).await;
+                self.service_facade.listen_orders(new_instrument.exchange).await;
+                self.service_facade.subscribe_candles(&new_instrument).await;
+                self.service_facade.subscribe_ticks(&new_instrument).await;
 
                 self.subscriptions.push(Subscriptions {
                     instrument_id: new_instrument,

@@ -29,7 +29,7 @@ pub async fn run() {
     let executor = Arc::new(Executor::default());
     let registry_client = Arc::new(RegistryClient::new("http://localhost:8085"));
     let engine_service = Arc::new(EngineService::new(Arc::clone(&registry_client)));
-    listen_ticks(Arc::clone(&executor));
+    listen_ticks(Arc::clone(&executor)).await;
     // listen_plugins(Arc::clone(&engine_service)); // todo problem with tokio async runtime
 
     let router = Router::new()
@@ -47,23 +47,32 @@ pub async fn run() {
         .unwrap();
 }
 
-fn listen_ticks(executor: Arc<Executor>) {
+async fn listen_ticks(executor: Arc<Executor>) {
     synapse::reader(&CONFIG.application.name)
-        .on(Topic::Tick, move |tick: Tick| executor.handle(&tick));
+        .on(Topic::Tick, move |tick: Tick| {
+            let executor = Arc::clone(&executor);
+            async move {
+                executor.handle(&tick).await;
+            }
+        }).await;
 }
 
-fn listen_plugins(engine_service: Arc<EngineService>) {
+#[tokio::main]
+async fn listen_plugins(engine_service: Arc<EngineService>) {
     synapse::reader(&CONFIG.application.name)
         .on(Topic::Plugin, move |plugin_event: PluginEvent| {
-            if plugin_event.event == PluginEventType::Updated {
-                let name = &plugin_event.strategy_name;
-                let version = &plugin_event.strategy_version;
-                debug!("Received update event for plugin with name: '{}', version: '{}'", name, version);
-                if let Some(err) = engine_service.update_plugin(name, version).err() {
-                    error!("Error during update deployment with name: '{}', version: '{}'. Error: '{}'", name, version, err);
-                } else { info!("Deployments for plugin with name: '{}', version: '{}' successfully updated", name, version); }
+            let engine_service = Arc::clone(&engine_service);
+            async move {
+                if plugin_event.event == PluginEventType::Updated {
+                    let name = &plugin_event.strategy_name;
+                    let version = &plugin_event.strategy_version;
+                    debug!("Received update event for plugin with name: '{}', version: '{}'", name, version);
+                    if let Some(err) = engine_service.update_plugin(name, version).err() {
+                        error!("Error during update deployment with name: '{}', version: '{}'. Error: '{}'", name, version, err);
+                    } else { info!("Deployments for plugin with name: '{}', version: '{}' successfully updated", name, version); }
+                }
             }
-        });
+        }).await;
 }
 
 async fn get_deployments(State(engine_service): State<Arc<EngineService>>) -> Json<Vec<DeploymentInfo>> {

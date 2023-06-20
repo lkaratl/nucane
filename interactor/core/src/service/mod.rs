@@ -12,12 +12,12 @@ mod okx;
 
 #[async_trait]
 pub trait Service {
-    fn subscribe_ticks<T: Fn(Tick) + Send + 'static>(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T);
+    async fn subscribe_ticks<T: Fn(Tick) + Send + 'static>(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T);
     fn unsubscribe_ticks(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType);
-    fn subscribe_candles<T: Fn(Candle) + Send + 'static>(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T);
+    async fn subscribe_candles<T: Fn(Candle) + Send + 'static>(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T);
     fn unsubscribe_candles(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType);
-    fn listen_orders<T: Fn(Order) + Send + 'static>(&mut self, callback: T);
-    fn listen_account<T: Fn(Position) + Send + 'static>(&mut self, callback: T);
+    async fn listen_orders<T: Fn(Order) + Send + 'static>(&mut self, callback: T);
+    async fn listen_positions<T: Fn(Position) + Send + 'static>(&mut self, callback: T);
     async fn place_order(&self, create_order: &CreateOrder) -> Order;
     async fn candles_history(&self, currency_pair: &CurrencyPair, market_type: &MarketType, timeframe: Timeframe, before: Option<DateTime<Utc>>, after: Option<DateTime<Utc>>, limit: Option<u8>) -> Vec<Candle>;
 }
@@ -33,7 +33,7 @@ impl ServiceFacade {
         }
     }
 
-    pub fn subscribe_ticks(&mut self, instrument_id: &InstrumentId) {
+    pub async fn subscribe_ticks(&mut self, instrument_id: &InstrumentId) {
         debug!("Subscribe ticks for instrument: '{}-{}-{}', exchange: '{}'",
             instrument_id.pair.target, instrument_id.pair.source, instrument_id.market_type, instrument_id.exchange);
         let service = match instrument_id.exchange {
@@ -47,7 +47,7 @@ impl ServiceFacade {
                 tick.instrument_id.pair.source,
                 tick.price);
             synapse::writer().send(&tick);
-        });
+        }).await;
     }
 
     pub fn unsubscribe_ticks(&mut self, instrument_id: &InstrumentId) {
@@ -60,7 +60,7 @@ impl ServiceFacade {
     }
 
 
-    pub fn subscribe_candles(&mut self, instrument_id: &InstrumentId) {
+    pub async fn subscribe_candles(&mut self, instrument_id: &InstrumentId) {
         debug!("Subscribe candles for instrument: '{}-{}-{}', exchange: '{}'",
             instrument_id.pair.target, instrument_id.pair.source, instrument_id.market_type, instrument_id.exchange);
         let service = match instrument_id.exchange {
@@ -69,7 +69,7 @@ impl ServiceFacade {
         service.subscribe_candles(&instrument_id.pair, &instrument_id.market_type, |candle| {
             trace!("Send candle to synapse: {candle:?}");
             synapse::writer().send(&candle);
-        });
+        }).await;
     }
 
     pub fn unsubscribe_candles(&mut self, instrument_id: &InstrumentId) {
@@ -81,7 +81,7 @@ impl ServiceFacade {
         service.unsubscribe_candles(&instrument_id.pair, &instrument_id.market_type);
     }
 
-    pub fn listen_orders(&mut self, exchange: Exchange) {
+    pub async fn listen_orders(&mut self, exchange: Exchange) {
         debug!("Start listening order events for exchange: '{exchange}'");
         let service = match exchange {
             Exchange::OKX => &mut self.okx_service,
@@ -91,23 +91,22 @@ impl ServiceFacade {
             order.exchange, order.market_type, order.pair.target, order.pair.source, order.order_type);
             trace!("Send order to synapse: {order:?}");
             synapse::writer().send(&order);
-        });
+        }).await;
     }
 
-    pub fn listen_account(&mut self, exchange: Exchange) {
+    pub async fn listen_position(&mut self, exchange: Exchange) {
         debug!("Start listening account events for exchange: '{exchange}'");
         let service = match exchange {
             Exchange::OKX => &mut self.okx_service,
         };
-        service.listen_account(|position| {
+        service.listen_positions(|position| {
             debug!("Retrieved account position update from exchange: '{}', currency: '{}', size: '{}'",
                   position.exchange, position.currency, position.size);
             trace!("Send position to synapse: {position:?}");
             synapse::writer().send(&position);
-        });
+        }).await;
     }
 
-    #[tokio::main] // todo solve it in other way, maybe in synapse
     pub async fn place_order(&self, exchange: Exchange, create_order: CreateOrder) {
         debug!("Placing new order for exchange: '{exchange}', market type: '{:?}', pair: '{}-{}', order type: '{:?}'",
         create_order.market_type, create_order.pair.target, create_order.pair.source, create_order.order_type);

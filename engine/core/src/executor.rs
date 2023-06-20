@@ -9,7 +9,6 @@ pub struct Executor {
 }
 
 impl Executor {
-    #[tokio::main]
     pub async fn handle(&self, tick: &Tick) {
         self.get_actions(tick).await
             .into_iter()

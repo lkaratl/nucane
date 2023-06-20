@@ -5,6 +5,7 @@ use axum::{Json, Router};
 use axum::extract::{Query, State};
 use axum::routing::get;
 use chrono::{TimeZone, Utc};
+use tokio::sync::Mutex;
 use tracing::{debug, info, trace, warn};
 
 use domain_model::{Action, Candle, CurrencyPair, Deployment, DeploymentEvent, InstrumentId, OrderAction, OrderActionType};
@@ -21,8 +22,8 @@ pub async fn run() {
     } else {
         info!("+ interactor running in LIVE mode...");
     }
-    listen_deployment_events();
-    listen_actions();
+    listen_deployment_events().await;
+    listen_actions().await;
 
     let service_facade = ServiceFacade::new(); // todo use only one instance of service facade
     let router = Router::new()
@@ -36,42 +37,54 @@ pub async fn run() {
         .unwrap();
 }
 
-fn listen_deployment_events() {
+async fn listen_deployment_events() {
     let service_facade = ServiceFacade::new();
-    let mut subscription_manager = SubscriptionManager::new(service_facade);
+    let subscription_manager = Arc::new(Mutex::new(SubscriptionManager::new(service_facade)));
     synapse::reader(&CONFIG.application.name).on(Topic::Deployment, move |deployment: Deployment| {
-        if deployment.simulation_id.is_none() {
-            match deployment.event {
-                DeploymentEvent::Created => {
-                    debug!("Create deployment event with id: '{}', for strategy with id: '{}' and version: '{}'", 
+        let subscription_manager = Arc::clone(&subscription_manager);
+        async move {
+            if deployment.simulation_id.is_none() {
+                match deployment.event {
+                    DeploymentEvent::Created => {
+                        debug!("Create deployment event with id: '{}', for strategy with id: '{}' and version: '{}'",
                         deployment.id, deployment.strategy_name, deployment.strategy_version);
-                    subscription_manager.subscribe(deployment.into())
-                }
+                        subscription_manager.lock()
+                            .await
+                            .subscribe(deployment.into())
+                            .await;
+                    }
 
-                DeploymentEvent::Deleted => {
-                    debug!("Delete deployment event event with id: '{}', for strategy with id: '{}' and version: '{}'",
+                    DeploymentEvent::Deleted => {
+                        debug!("Delete deployment event event with id: '{}', for strategy with id: '{}' and version: '{}'",
                         deployment.id, deployment.strategy_name, deployment.strategy_version);
-                    subscription_manager.unsubscribe(deployment.id)
+                        subscription_manager.lock()
+                            .await
+                            .unsubscribe(deployment.id);
+                    }
                 }
             }
         }
-    });
+    }).await;
 }
 
-fn listen_actions() {
-    let service_facade = ServiceFacade::new();
-    synapse::reader(&CONFIG.application.name).on(Topic::Action, move |action: Action| {
-        let simulation_id = match &action { Action::OrderAction(order_action) => order_action.simulation_id };
-        if simulation_id.is_none() {
-            debug!("Retrieved new action event");
-            trace!("Action event: {action:?}");
-            match action {
-                Action::OrderAction(OrderAction { order: OrderActionType::CreateOrder(create_order), exchange, .. }) =>
-                    service_facade.place_order(exchange, create_order),
-                action => warn!("Temporary unsupported action: {action:?}")
-            }
-        }
-    });
+async fn listen_actions() {
+    let service_facade = Arc::new(ServiceFacade::new());
+    synapse::reader(&CONFIG.application.name).on(Topic::Action,
+                                                 move |action: Action| {
+                                                     let service_facade = Arc::clone(&service_facade);
+                                                     async move {
+                                                         let simulation_id = match &action { Action::OrderAction(order_action) => order_action.simulation_id };
+                                                         if simulation_id.is_none() {
+                                                             debug!("Retrieved new action event");
+                                                             trace!("Action event: {action:?}");
+                                                             match action {
+                                                                 Action::OrderAction(OrderAction { order: OrderActionType::CreateOrder(create_order), exchange, .. }) =>
+                                                                     service_facade.place_order(exchange, create_order).await,
+                                                                 action => warn!("Temporary unsupported action: {action:?}")
+                                                             }
+                                                         }
+                                                     }
+                                                 }).await;
 }
 
 async fn get_candles_history(Query(query_params): Query<CandlesHistoryQuery>,

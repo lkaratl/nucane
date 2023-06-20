@@ -1,6 +1,9 @@
 use std::fmt::Debug;
+use std::future::Future;
+use std::process::Output;
 use std::thread;
 use std::time::Duration;
+use async_trait::async_trait;
 
 use futures::executor::block_on;
 use rdkafka::{ClientConfig, Message};
@@ -9,6 +12,7 @@ use rdkafka::consumer::{CommitMode, Consumer, StreamConsumer};
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use tokio::task;
 use tracing::{error, trace, warn};
 use uuid::Uuid;
 
@@ -21,7 +25,7 @@ pub enum Topic {
     Position,
     Candle,
     Simulation,
-    Plugin
+    Plugin,
 }
 
 impl Topic {
@@ -63,8 +67,9 @@ pub trait Synapse: Serialize + DeserializeOwned + Debug {
     fn topic(&self) -> Topic;
 }
 
+#[async_trait]
 pub trait SynapseListen<T: Synapse> {
-    fn on(self, topic: Topic, callback: impl FnMut(T) + Send + 'static);
+    async fn on<F: Future<Output=()> + Send + 'static, C: FnMut(T) -> F + Send + 'static>(self, topic: Topic, callback: C);
 }
 
 pub struct Reader {
@@ -87,16 +92,17 @@ impl Reader {
     }
 }
 
-impl<T: Synapse> SynapseListen<T> for Reader {
-    fn on(self, topic: Topic, mut callback: impl FnMut(T) + Send + 'static) {
+#[async_trait]
+impl<T: Synapse + Send> SynapseListen<T> for Reader {
+    async fn on<F: Future<Output=()> + Send + 'static, C: FnMut(T) -> F + Send + 'static>(self, topic: Topic, mut callback: C) {
         let consumer = self.consumer;
-        thread::spawn(move || {
-            let topic = &topic.get_topic();
-            consumer
-                .subscribe(&[topic])
-                .unwrap_or_else(|_| panic!("Can't subscribe to topic: {topic}"));
+        let topic = topic.get_topic();
+        consumer
+            .subscribe(&[&topic])
+            .unwrap_or_else(|_| panic!("Can't subscribe to topic: {topic}"));
 
-            while let Ok(message) = block_on(consumer.recv()) {
+        task::spawn(async move {
+            while let Ok(message) = consumer.recv().await {
                 match message.topic() {
                     message_topic if topic.eq(message_topic) => {
                         if let Some(payload) = message.payload_view::<str>() {
@@ -104,13 +110,13 @@ impl<T: Synapse> SynapseListen<T> for Reader {
                                 Ok(payload) => {
                                     let payload: T = serde_json::from_str(payload).expect("Error while deserializing message payload");
                                     trace!("Send message to synapse with raw payload: {:?}", &payload);
-                                    callback(payload);
+                                    callback(payload).await;
                                 }
                                 Err(error) => { error!("Error while deserializing message from topic: {message_topic} payload: {message:?}, error: {error:?}"); }
                             }
                         }
                     }
-                    message_topic => warn!("Unsupported message from topic: {message_topic}")
+                    message_topic => { warn!("Unsupported message from topic: {message_topic}"); }
                 }
                 consumer.commit_message(&message, CommitMode::Async).unwrap();
             }
