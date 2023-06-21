@@ -9,3 +9,6 @@ indicators-api = { workspace = true }
 storage-rest-client = { workspace = true }
 async-trait = { workspace = true }
 nanoid = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
