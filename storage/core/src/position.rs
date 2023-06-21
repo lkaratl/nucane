@@ -2,7 +2,6 @@ use std::ops::Deref;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use futures::executor::block_on;
 use sea_orm::{ActiveValue, Condition, ConnectionTrait, DbErr, EntityTrait, sea_query, QueryFilter, ColumnTrait};
 use uuid::Uuid;
 use domain_model::{Currency, Exchange, Side};
@@ -18,16 +17,17 @@ impl<T: ConnectionTrait> PositionService<T> {
         PositionService { repository: PositionRepository { db } }
     }
 
-    pub fn save(&self, position: domain_model::Position) {
+    pub async fn save(&self, position: domain_model::Position) {
         self.repository.save(position)
+            .await
             .expect("Error during position saving");
     }
 
-    pub fn get(&self,
+    pub async fn get(&self,
                exchange: Option<Exchange>,
                currency: Option<Currency>,
                side: Option<Side>) -> Vec<domain_model::Position> {
-        self.repository.find_by(exchange, currency, side).unwrap()
+        self.repository.find_by(exchange, currency, side).await.unwrap()
     }
 }
 
@@ -36,7 +36,7 @@ struct PositionRepository<T: ConnectionTrait> {
 }
 
 impl<T: ConnectionTrait> PositionRepository<T> {
-    fn save(&self, position: domain_model::Position) -> Result<(), DbErr> {
+    async fn save(&self, position: domain_model::Position) -> Result<(), DbErr> {
         let exchange = position.exchange.to_string();
         let currency = position.currency.to_string();
         let id = {
@@ -54,7 +54,7 @@ impl<T: ConnectionTrait> PositionRepository<T> {
             side: ActiveValue::Set(position.side.to_string()),
             size: ActiveValue::Set(position.size),
         };
-        block_on(Position::insert(position)
+        Position::insert(position)
             .on_conflict(
                 sea_query::OnConflict::column(position::Column::Id)
                     .update_columns(vec![
@@ -62,11 +62,12 @@ impl<T: ConnectionTrait> PositionRepository<T> {
                         position::Column::Side,
                     ]).to_owned()
             )
-            .exec(self.db.deref()))?;
+            .exec(self.db.deref())
+            .await?;
         Ok(())
     }
 
-    fn find_by(&self,
+    async fn find_by(&self,
                exchange: Option<Exchange>,
                currency: Option<Currency>,
                side: Option<Side>) -> Result<Vec<domain_model::Position>, DbErr> {
@@ -80,9 +81,10 @@ impl<T: ConnectionTrait> PositionRepository<T> {
         if let Some(side) = side {
             condition = condition.add(position::Column::Side.eq(side.to_string()));
         }
-        let result = block_on(position::Entity::find()
+        let result = position::Entity::find()
             .filter(condition)
-            .all(self.db.deref()))?
+            .all(self.db.deref())
+            .await?
             .into_iter()
             .map(|model| {
                 domain_model::Position {

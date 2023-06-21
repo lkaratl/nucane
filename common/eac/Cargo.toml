@@ -27,3 +27,9 @@ ring = { workspace = true }
 fehler = { workspace = true }
 derive_builder = { workspace = true }
 hyper = { workspace = true }
+tokio-tungstenite = { workspace = true }
+tokio-native-tls = { workspace = true }
+async-broadcast = { workspace = true }
+
+[dev-dependencies]
+tracing-subscriber = { workspace = true }

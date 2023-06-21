@@ -528,6 +528,23 @@ pub struct CreateOrder {
     pub order_type: OrderType,
     pub side: Side,
     pub size: f64,
+    pub stop_lose: Option<Trigger>,
+    pub take_profit: Option<Trigger>
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Trigger {
+    pub trigger_px: f64,
+    pub order_px: f64,
+}
+
+impl Trigger {
+    pub fn new(trigger_px: f64, order_px: f64) -> Option<Self> {
+        Some(Self {
+            trigger_px,
+            order_px,
+        })
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Copy, Clone)]

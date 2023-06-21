@@ -3,7 +3,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
-use futures::executor::block_on;
 use sea_orm::{ActiveValue, ColumnTrait, Condition, ConnectionTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, QuerySelect, QueryTrait, sea_query};
 use serde_json::json;
 
@@ -20,17 +19,19 @@ impl<T: ConnectionTrait> CandleService<T> {
         CandleService { repository: CandleRepository { db } }
     }
 
-    pub fn save(&self, candle: domain_model::Candle) {
+    pub async fn save(&self, candle: domain_model::Candle) {
         self.repository.save(candle)
+            .await
             .expect("Error during order saving");
     }
 
-    pub fn save_many(&self, candles: Vec<domain_model::Candle>) {
+    pub async fn save_many(&self, candles: Vec<domain_model::Candle>) {
         self.repository.save_many(candles)
+            .await
             .expect("Error during order saving");
     }
 
-    pub fn get(&self,
+    pub async fn get(&self,
                instrument_id: &InstrumentId,
                timeframe: Option<Timeframe>,
                from_timestamp: Option<DateTime<Utc>>,
@@ -44,7 +45,7 @@ impl<T: ConnectionTrait> CandleService<T> {
             from_timestamp,
             to_timestamp,
             limit,
-        ).unwrap()
+        ).await.unwrap()
     }
 }
 
@@ -53,7 +54,7 @@ struct CandleRepository<T: ConnectionTrait> {
 }
 
 impl<T: ConnectionTrait> CandleRepository<T> {
-    fn save(&self, candle: domain_model::Candle) -> Result<(), DbErr> {
+    async fn save(&self, candle: domain_model::Candle) -> Result<(), DbErr> {
         let candle = candle::ActiveModel {
             id: ActiveValue::Set(candle.id),
             status: ActiveValue::Set(candle.status.to_string()),
@@ -69,7 +70,7 @@ impl<T: ConnectionTrait> CandleRepository<T> {
             target_volume: ActiveValue::Set(candle.target_volume),
             source_volume: ActiveValue::Set(candle.source_volume),
         };
-        block_on(Candle::insert(candle)
+        Candle::insert(candle)
             .on_conflict(
                 sea_query::OnConflict::column(candle::Column::Id)
                     .update_columns(vec![
@@ -81,11 +82,12 @@ impl<T: ConnectionTrait> CandleRepository<T> {
                         candle::Column::SourceVolume,
                     ]).to_owned()
             )
-            .exec(self.db.deref()))?;
+            .exec(self.db.deref())
+            .await?;
         Ok(())
     }
 
-    fn save_many(&self, candles: Vec<domain_model::Candle>) -> Result<(), DbErr> {
+    async fn save_many(&self, candles: Vec<domain_model::Candle>) -> Result<(), DbErr> {
         let candles: Vec<_> = candles.into_iter()
             .map(|candle| {
                 candle::ActiveModel {
@@ -104,7 +106,7 @@ impl<T: ConnectionTrait> CandleRepository<T> {
                     source_volume: ActiveValue::Set(candle.source_volume),
                 }
             }).collect();
-        block_on(Candle::insert_many(candles)
+        Candle::insert_many(candles)
             .on_conflict(
                 sea_query::OnConflict::column(candle::Column::Id)
                     .update_columns(vec![
@@ -116,11 +118,12 @@ impl<T: ConnectionTrait> CandleRepository<T> {
                         candle::Column::SourceVolume,
                     ]).to_owned()
             )
-            .exec(self.db.deref()))?;
+            .exec(self.db.deref())
+            .await?;
         Ok(())
     }
 
-    pub fn find_by(&self,
+    pub async fn find_by(&self,
                    exchange: Exchange,
                    market_type: MarketType,
                    pair: CurrencyPair,
@@ -143,11 +146,12 @@ impl<T: ConnectionTrait> CandleRepository<T> {
             condition = condition.add(candle::Column::Timestamp.lte(to_timestamp));
         }
 
-        let result = block_on(candle::Entity::find()
+        let result = candle::Entity::find()
             .filter(condition)
             .apply_if(limit, QuerySelect::limit)
             .order_by_desc(candle::Column::Timestamp)
-            .all(self.db.deref()))?
+            .all(self.db.deref())
+            .await?
             .into_iter()
             .map(|model| {
                 domain_model::Candle {

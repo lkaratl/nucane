@@ -2,7 +2,6 @@ use std::ops::Deref;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use futures::executor::block_on;
 use sea_orm::{ActiveValue, ColumnTrait, Condition, ConnectionTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, sea_query};
 use serde_json::json;
 use uuid::Uuid;
@@ -20,12 +19,13 @@ impl<T: ConnectionTrait> OrderService<T> {
         OrderService { repository: OrderRepository { db } }
     }
 
-    pub fn save(&self, order: domain_model::Order) {
+    pub async fn save(&self, order: domain_model::Order) {
         self.repository.save(order)
+            .await
             .expect("Error during order saving");
     }
 
-    pub fn get(&self,
+    pub async fn get(&self,
                id: Option<String>,
                exchange: Option<Exchange>,
                market_type: Option<MarketType>,
@@ -43,7 +43,7 @@ impl<T: ConnectionTrait> OrderService<T> {
             status,
             side,
             order_type,
-        ).unwrap()
+        ).await.unwrap()
     }
 }
 
@@ -52,7 +52,7 @@ struct OrderRepository<T: ConnectionTrait> {
 }
 
 impl<T: ConnectionTrait> OrderRepository<T> {
-    fn save(&self, order: domain_model::Order) -> Result<(), DbErr> {
+    async fn save(&self, order: domain_model::Order) -> Result<(), DbErr> {
         let order = order::ActiveModel {
             id: ActiveValue::Set(order.id),
             timestamp: ActiveValue::Set(order.timestamp),
@@ -66,7 +66,7 @@ impl<T: ConnectionTrait> OrderRepository<T> {
             size: ActiveValue::Set(order.size),
             avg_price: ActiveValue::Set(order.avg_price)
         };
-        block_on(Order::insert(order)
+        Order::insert(order)
             .on_conflict(
                 sea_query::OnConflict::column(order::Column::Id)
                     .update_columns(vec![
@@ -76,11 +76,12 @@ impl<T: ConnectionTrait> OrderRepository<T> {
                         order::Column::AvgPrice
                     ]).to_owned()
             )
-            .exec(self.db.deref()))?;
+            .exec(self.db.deref())
+            .await?;
         Ok(())
     }
 
-    fn find_by(&self,
+    async fn find_by(&self,
                id: Option<String>,
                exchange: Option<Exchange>,
                market_type: Option<MarketType>,
@@ -114,10 +115,11 @@ impl<T: ConnectionTrait> OrderRepository<T> {
         if let Some(order_type) = order_type {
             condition = condition.add(order::Column::OrderType.eq(json!(order_type)));
         }
-        let result = block_on(order::Entity::find()
+        let result = order::Entity::find()
             .filter(condition)
             .order_by_asc(order::Column::Timestamp)
-            .all(self.db.deref()))?
+            .all(self.db.deref())
+            .await?
             .into_iter()
             .map(|model| {
                 domain_model::Order {

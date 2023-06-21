@@ -7,159 +7,367 @@ mod parser;
 pub mod rest;
 pub mod websocket;
 
+// todo add logging & created order verification
+// account settings:
+// - single-currency margin
+// - isolated margin auto transfer
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc};
-    use std::thread;
-    use std::time::Duration;
+    mod rest {
+        use std::env;
+        use crate::enums::{Side, TdMode};
+        use crate::rest::{OkExRest, PlaceOrderRequest, Trigger};
 
-    use tracing::{debug, Level};
-    use tracing_subscriber::FmtSubscriber;
-    use uuid::Uuid;
-    use fehler::{throw, throws};
-    use anyhow::Error;
-    use serde_json::from_value;
-    use futures::{SinkExt, StreamExt};
-    use futures::executor::block_on;
-    use tokio::sync::Mutex;
-    use tracing::field::debug;
+        pub fn build_private_rest_client() -> OkExRest {
+            OkExRest::with_credential("https://www.okx.com", true,
+                                      &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-KEY").unwrap(),
+                                      &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-SECRET").unwrap(),
+                                      &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-PASSPHRASE").unwrap())
+        }
 
-    use crate::okx::ws::model::{MarkPriceSub, Response};
-    use crate::rest::MarkPriceResponse;
-    use crate::websocket::{Channel, Command, Message, OkExWebsocket};
-    use crate::websocket::models::Ticker;
-
-    use super::*;
-
-    fn init_logger() {
-        let subscriber = FmtSubscriber::builder() // todo log only current app not libraries like hyper ...
-            .with_max_level(Level::DEBUG)
-            .finish();
-
-        tracing::subscriber::set_global_default(subscriber)
-            .expect("Setting default subscriber failed");
-    }
-
-    #[throws(Error)]
-    #[tokio::test]
-    async fn test_handle_tickers() {
-        let mut client = OkExWebsocket::public(true, "wss://ws.okx.com:8443")?;
-        client.send(Command::subscribe(vec![Channel::Tickers {
-            inst_id: "BTC-USDT".to_string(),
-        }]))?;
-
-        client.handle_message(|message| {
-            match message.unwrap() {
-                Message::Data { arg, mut data, .. } => {
-                    assert!(matches!(arg, Channel::Tickers { .. }));
-                    let data = data.pop().unwrap();
-                    let ticker: Ticker = from_value(data).unwrap();
-                    println!("{:?}", ticker);
-                }
-                Message::Error { code, msg, .. } => {
-                    println!("Error {}: {}", code, msg);
-                }
-                Message::Event { .. } => {}
-                _ => unreachable!(),
+        #[tokio::test]
+        async fn test_place_spot_market_buy_order() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::market("BTC-USDT",
+                                                    TdMode::Cash,
+                                                    Side::Buy,
+                                                    100.0,
+                                                    None,
+                                                    None);
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
             }
-        });
-        thread::sleep(Duration::from_secs(5));
-    }
+        }
 
-    #[throws(Error)]
-    #[tokio::test]
-    async fn test_handle_mark_price() {
-        let mut client = OkExWebsocket::public(true, "wss://ws.okx.com:8443")?;
-        client.send(Command::subscribe(vec![Channel::MarkPrice {
-            inst_id: "BTC-USDT".to_string(),
-        }]))?;
-
-        client.handle_message(|message| {
-            match message.unwrap() {
-                Message::Data { arg, mut data, .. } => {
-                    assert!(matches!(arg, Channel::MarkPrice { .. }));
-                    let data = data.pop().unwrap();
-                    let x: MarkPriceResponse = from_value(data).unwrap();
-                    println!("{:?}", x);
-                }
-                Message::Error { code, msg, .. } => {
-                    println!("Error {}: {}", code, msg);
-                }
-                Message::Event { .. } => {}
-                _ => unreachable!(),
+        #[tokio::test]
+        async fn test_place_spot_market_sell_order() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::market("BTC-USDT",
+                                                    TdMode::Cash,
+                                                    Side::Sell,
+                                                    0.0038,
+                                                    None,
+                                                    None);
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
             }
-        });
-        thread::sleep(Duration::from_secs(5));
+        }
+
+        #[tokio::test]
+        async fn test_place_spot_limit_buy_order() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::limit("BTC-USDT",
+                                                   TdMode::Cash,
+                                                   Side::Buy,
+                                                   26000.0,
+                                                   0.0038,
+                                                   None,
+                                                   None);
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
+        }
+
+        #[tokio::test]
+        async fn test_place_spot_limit_sell_order() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::limit("BTC-USDT",
+                                                   TdMode::Cash,
+                                                   Side::Sell,
+                                                   26000.0,
+                                                   0.0038,
+                                                   None,
+                                                   None);
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
+        }
+
+        #[tokio::test]
+        async fn test_place_margin_market_buy_order() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::market("BTC-USDT",
+                                                    TdMode::Isolated,
+                                                    Side::Buy,
+                                                    100.0,
+                                                    None,
+                                                    None);
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
+        }
+
+        #[tokio::test]
+        async fn test_place_margin_market_sell_order() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::market("BTC-USDT",
+                                                    TdMode::Isolated,
+                                                    Side::Sell,
+                                                    0.0038,
+                                                    None,
+                                                    None);
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
+        }
+
+        #[tokio::test]
+        async fn test_place_spot_limit_buy_order_with_sp() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::limit("BTC-USDT",
+                                                   TdMode::Cash,
+                                                   Side::Buy,
+                                                   26_000.0,
+                                                   0.0038,
+                                                   Trigger::new(10_000.0, 9_900.0),
+                                                   None);
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
+        }
+
+        #[tokio::test]
+        async fn test_place_spot_limit_buy_order_with_tp() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::limit("BTC-USDT",
+                                                   TdMode::Cash,
+                                                   Side::Buy,
+                                                   26_000.0,
+                                                   0.0038,
+                                                   None,
+                                                   Trigger::new(100_000.0, 100_100.0));
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
+        }
+
+        #[tokio::test]
+        async fn test_place_spot_limit_sell_order_with_tp_and_sp() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::limit("BTC-USDT",
+                                                   TdMode::Cash,
+                                                   Side::Sell,
+                                                   26_000.0,
+                                                   0.0038,
+                                                   Trigger::new(100_000.0, 100_100.0),
+                                                   Trigger::new(10_000.0, 9_900.0));
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
+        }
+
+        #[tokio::test]
+        async fn test_place_margin_market_buy_order_with_sp() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::market("BTC-USDT",
+                                                    TdMode::Isolated,
+                                                    Side::Buy,
+                                                    100.0,
+                                                    Trigger::new(10_000.0, 9_900.0),
+                                                    None);
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
+        }
+
+        #[tokio::test]
+        async fn test_place_margin_market_buy_order_with_tp() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::market("BTC-USDT",
+                                                    TdMode::Isolated,
+                                                    Side::Buy,
+                                                    100.0,
+                                                    None,
+                                                    Trigger::new(100_000.0, 100_100.0));
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
+        }
+
+        #[tokio::test]
+        async fn test_place_margin_market_sell_order_with_tp_and_sp() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::market("BTC-USDT",
+                                                    TdMode::Isolated,
+                                                    Side::Sell,
+                                                    0.0038,
+                                                    Trigger::new(100_000.0, 100_100.0),
+                                                    Trigger::new(10_000.0, 9_900.0));
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
+        }
     }
 
-    #[throws(Error)]
-    #[tokio::test]
-    async fn test_subscribe_after_handling_start() {
-        let mut client = OkExWebsocket::public(true, "wss://ws.okx.com:8443")?;
-        client.send(Command::subscribe(vec![Channel::Tickers {
-            inst_id: "BTC-USDT".to_string(),
-        }]))?;
+    mod websocket {
+        use std::{env, thread};
+        use std::sync::{Arc, Mutex};
+        use std::time::Duration;
 
-        client.handle_message(|message| {
-            match message.unwrap() {
-                Message::Data { arg, mut data, .. } => {
-                    match arg {
-                        Channel::Tickers { .. } => {
+        use serde_json::from_value;
+        use crate::enums::{InstType, Side, TdMode};
+        use crate::okx::tests::rest::build_private_rest_client;
+
+        use crate::rest::{MarkPriceResponse, OrderDetailsResponse, PlaceOrderRequest};
+        use crate::websocket::{Channel, Command, Message, OkxWsClient};
+
+        async fn build_private_ws_client<T: FnMut(Message) + Send + 'static>(callback: T) -> OkxWsClient {
+            OkxWsClient::private(true, "wss://ws.okx.com:8443",
+                                 &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-KEY").unwrap(),
+                                 &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-SECRET").unwrap(),
+                                 &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-PASSPHRASE").unwrap(), callback).await
+        }
+
+        async fn build_public_ws_client<T: FnMut(Message) + Send + 'static>(callback: T) -> OkxWsClient {
+            OkxWsClient::public(true, "wss://ws.okx.com:8443", callback).await
+        }
+
+        #[tokio::test]
+        async fn test_handle_mark_price() {
+            let result = Arc::new(Mutex::new(Vec::new()));
+            let handler = {
+                let result = Arc::clone(&result);
+                move |message: Message| {
+                    match message {
+                        Message::Data { arg, mut data, .. } => {
+                            assert!(matches!(arg, Channel::MarkPrice { .. }));
                             let data = data.pop().unwrap();
-                            let ticker: Ticker = from_value(data).unwrap();
-                            println!("+ {:?}", ticker);
+                            let mark_price: MarkPriceResponse = from_value(data).unwrap();
+                            dbg!(&mark_price);
+                            result.lock()
+                                .unwrap()
+                                .push(mark_price)
                         }
-                        Channel::MarkPrice { .. } => {
-                            let data = data.pop().unwrap();
-                            let x: MarkPriceResponse = from_value(data).unwrap();
-                            println!("- {:?}", x);
-                        }
-                        _ => debug!("Retrieved message from unhandled channel")
+                        Message::Event { .. } => {}
+                        message => panic!("Unexpected message: '{message:?}'")
                     }
                 }
-                Message::Error { code, msg, .. } => {
-                    println!("Error {}: {}", code, msg);
-                }
-                Message::Event { .. } => {}
-                _ => unreachable!(),
-            }
-        });
-        thread::sleep(Duration::from_secs(5));
-        dbg!("Subscribe on tickers");
+            };
 
-        client.send(Command::subscribe(vec![Channel::MarkPrice {
-            inst_id: "BTC-USDT".to_string(),
-        }]))?;
-        thread::sleep(Duration::from_secs(5));
-    }
-
-    #[throws(Error)]
-    #[tokio::test]
-    async fn test_drop_ws_client() {
-        {
-            let mut client = OkExWebsocket::public(true, "wss://ws.okx.com:8443")?;
+            let client = build_public_ws_client(handler).await;
             client.send(Command::subscribe(vec![Channel::MarkPrice {
                 inst_id: "BTC-USDT".to_string(),
-            }]))?;
+            }])).await;
 
-            client.handle_message(|message| {
-                match message.unwrap() {
-                    Message::Data { arg, mut data, .. } => {
-                        assert!(matches!(arg, Channel::MarkPrice { .. }));
-                        let data = data.pop().unwrap();
-                        let x: MarkPriceResponse = from_value(data).unwrap();
-                        println!("{:?}", x);
-                    }
-                    Message::Error { code, msg, .. } => {
-                        println!("Error {}: {}", code, msg);
-                    }
-                    Message::Event { .. } => {}
-                    _ => unreachable!(),
-                }
-            });
-            thread::sleep(Duration::from_secs(2));
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            assert!(!result.lock().unwrap().is_empty());
         }
-        dbg!("Drop client");
-        thread::sleep(Duration::from_secs(3));
+
+        #[tokio::test]
+        async fn test_handle_order() {
+            let result = Arc::new(Mutex::new(Vec::new()));
+            let handler = {
+                let result = Arc::clone(&result);
+                move |message: Message| {
+                    match message {
+                        Message::Data { arg, mut data, .. } => {
+                            assert!(matches!(arg, Channel::Orders { .. }));
+                            let data = data.pop().unwrap();
+                            let order: OrderDetailsResponse = from_value(data).unwrap();
+                            dbg!(&order);
+                            result.lock()
+                                .unwrap()
+                                .push(order)
+                        }
+                        Message::Event { .. } => {}
+                        Message::Login { .. } => {}
+                        message => panic!("Unexpected message: '{message:?}'")
+                    }
+                }
+            };
+
+            let client = build_private_ws_client(handler).await;
+            client.send(Command::subscribe(vec![Channel::Orders {
+                inst_type: InstType::Any,
+                inst_id: None,
+                uly: None,
+            }])).await;
+
+            tokio::time::sleep(Duration::from_secs(30)).await;
+            assert!(result.lock().unwrap().is_empty());
+
+            let rest_client = build_private_rest_client();
+            let mut request = PlaceOrderRequest::market("BTC-USDT",
+                                                        TdMode::Cash,
+                                                        Side::Buy,
+                                                        100.0,
+                                                        None,
+                                                        None);
+            let order_id = "test";
+            request.cl_ord_id = Some(order_id.to_string());
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            let result = result.lock().unwrap();
+            assert!(!result.is_empty());
+            for order in result.iter() {
+                assert_eq!(order.cl_ord_id, order_id);
+            }
+        }
+
+        // #[tokio::test] // todo not implemented yet
+        async fn test_drop_ws_client() {
+            let result = Arc::new(Mutex::new(Vec::new()));
+            let mut length = 0;
+            {
+                let handler = {
+                    let result = Arc::clone(&result);
+                    move |message: Message| {
+                        match message {
+                            Message::Data { arg, mut data, .. } => {
+                                assert!(matches!(arg, Channel::MarkPrice { .. }));
+                                let data = data.pop().unwrap();
+                                let mark_price: MarkPriceResponse = from_value(data).unwrap();
+                                dbg!(&mark_price);
+                                result.lock()
+                                    .unwrap()
+                                    .push(mark_price)
+                            }
+                            Message::Event { .. } => {}
+                            message => panic!("Unexpected message: '{message:?}'")
+                        }
+                    }
+                };
+
+                let client = build_public_ws_client(handler).await;
+                client.send(Command::subscribe(vec![Channel::MarkPrice {
+                    inst_id: "BTC-USDT".to_string(),
+                }])).await;
+
+                thread::sleep(Duration::from_secs(1));
+                length = result.lock().unwrap().len();
+                assert_ne!(length, 0);
+            }
+            dbg!("Drop client");
+            thread::sleep(Duration::from_secs(1));
+            assert_eq!(length, result.lock().unwrap().len());
+        }
     }
 }
