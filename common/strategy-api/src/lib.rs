@@ -1,7 +1,9 @@
 pub mod utils;
 
 use std::collections::HashMap;
+use std::future::Future;
 use async_trait::async_trait;
+use tokio::runtime::Runtime;
 
 use domain_model::{Action, InstrumentId, Tick};
 use indicators_api::Indicators;
@@ -13,7 +15,16 @@ pub trait Strategy {
     fn name(&self) -> String;
     fn version(&self) -> String;
     fn subscriptions(&self) -> Vec<InstrumentId>;
-    async fn execute(&mut self, tick: &Tick, api: &StrategyApi) -> Vec<Action>;
+
+    fn on_tick_sync(&mut self, tick: &Tick, api: &StrategyApi) -> Vec<Action> {
+        with_tokio_runtime(self.on_tick(tick, api))
+    }
+    async fn on_tick(&mut self, tick: &Tick, api: &StrategyApi) -> Vec<Action>;
+}
+
+fn with_tokio_runtime<T>(future: impl Future<Output=T>) -> T {
+    let rt = Runtime::new().unwrap();
+    rt.block_on(future)
 }
 
 pub struct StrategyApi {

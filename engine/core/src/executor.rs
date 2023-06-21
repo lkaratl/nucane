@@ -24,7 +24,7 @@ impl Executor {
             let is_simulation = deployment.simulation_id == tick.simulation_id;
             let strategy = &mut deployment.plugin.strategy;
             if is_subscribed(strategy, tick) && is_simulation {
-                let mut actions = strategy.execute(tick, &self.api).await;
+                let mut actions = strategy.on_tick_sync(tick, &self.api);
                 actions.iter_mut().for_each(|action| match action {
                     Action::OrderAction(order_action) => order_action.simulation_id = deployment.simulation_id
                 });

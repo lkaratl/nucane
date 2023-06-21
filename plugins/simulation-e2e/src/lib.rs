@@ -6,7 +6,7 @@ use uuid::Uuid;
 use async_trait::async_trait;
 
 use domain_model::{Action, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction, OrderActionType, OrderMarketType, Side, OrderStatus, OrderType, Tick, Timeframe};
-use domain_model::MarginMode::{Cross};
+use domain_model::MarginMode::{Cross, Isolated};
 use strategy_api::{Strategy, StrategyApi, utils};
 
 #[no_mangle]
@@ -14,15 +14,26 @@ pub extern fn load() -> Box<dyn Strategy> {
     Box::<SimulationE2EStrategy>::default()
 }
 
-#[derive(Clone, Default)]
+const STRATEGY_NAME: &str = "simulation-e2e";
+const STRATEGY_VERSION: &str = "1.0";
+const PARAMETER_NAME: &str = "test-parameter";
+const LOGGING_LEVEL: &str = "INFO";
+
+#[derive(Clone)]
 pub struct SimulationE2EStrategy {
     executed: bool,
     order_id: Option<String>,
 }
 
-const STRATEGY_NAME: &str = "simulation-e2e";
-const STRATEGY_VERSION: &str = "1.0";
-const PARAMETER_NAME: &str = "test-parameter";
+impl Default for SimulationE2EStrategy {
+    fn default() -> Self {
+        utils::init_logger(LOGGING_LEVEL);
+        Self{
+            executed: false,
+            order_id: None,
+        }
+    }
+}
 
 #[async_trait]
 impl Strategy for SimulationE2EStrategy {
@@ -49,7 +60,7 @@ impl Strategy for SimulationE2EStrategy {
         }]
     }
 
-    async fn execute(&mut self, tick: &Tick, api: &StrategyApi) -> Vec<Action> {
+    async fn on_tick(&mut self, tick: &Tick, api: &StrategyApi) -> Vec<Action> {
         if !self.executed {
             self.executed = true;
             self.order_id = Some(utils::string_id());
@@ -71,7 +82,7 @@ impl Strategy for SimulationE2EStrategy {
                                     target: Currency::BTC,
                                     source: Currency::USDT,
                                 },
-                                market_type: OrderMarketType::Margin(Cross),
+                                market_type: OrderMarketType::Spot,
                                 order_type: OrderType::Limit(tick.price),
                                 side: Side::Buy,
                                 size: 1000.0,
