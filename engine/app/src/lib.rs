@@ -57,7 +57,6 @@ async fn listen_ticks(executor: Arc<Executor>) {
         }).await;
 }
 
-#[tokio::main]
 async fn listen_plugins(engine_service: Arc<EngineService>) {
     synapse::reader(&CONFIG.application.name)
         .on(Topic::Plugin, move |plugin_event: PluginEvent| {

@@ -68,7 +68,7 @@ impl CandleSyncService {
             if candles_for_save.len() > 5000 {
                 debug!("Save batch of candles for time range: {} - {}",
                     candles_for_save.first().unwrap().timestamp, candles_for_save.last().unwrap().timestamp );
-                self.candle_service.save_many(candles_for_save);
+                self.candle_service.save_many(candles_for_save).await;
                 candles_for_save = Vec::new();
             }
             match &candle {

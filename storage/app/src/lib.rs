@@ -73,7 +73,7 @@ async fn listen_entity_events(order_service: Arc<OrderService<DatabaseConnection
                                                          let audit_service = Arc::clone(&audit_service);
                                                          async move {
                                                              order_service.save(order.clone()).await;
-                                                             audit_service.log_order(order);
+                                                             audit_service.log_order(order).await;
                                                          }
                                                      }
                                                  }).await;
@@ -81,14 +81,14 @@ async fn listen_entity_events(order_service: Arc<OrderService<DatabaseConnection
         let position_service = Arc::clone(&position_service);
         let audit_service = Arc::clone(&audit_service);
         async move {
-            position_service.save(position.clone());
-            audit_service.log_position(position);
+            position_service.save(position.clone()).await;
+            audit_service.log_position(position).await;
         }
     }).await;
     synapse::reader(&CONFIG.application.name).on(Topic::Candle, move |candle: Candle| {
         let candle_service = Arc::clone(&candle_service);
         async move {
-            candle_service.save(candle);
+            candle_service.save(candle).await;
         }
     }).await;
 }
@@ -106,7 +106,7 @@ async fn listen_deployment_events(_: Arc<CandleSyncService>, audit_service: Arc<
                 }
                 DeploymentEvent::Deleted => {}
             }
-            audit_service.log_deployment(deployment);
+            audit_service.log_deployment(deployment).await;
         }
     }).await;
 }
@@ -115,7 +115,7 @@ async fn listen_auditable_events(audit_service: Arc<AuditService<DatabaseConnect
     synapse::reader(&CONFIG.application.name).on(Topic::Simulation, move |simulation: Simulation| {
         let audit_service = Arc::clone(&audit_service);
         async move {
-            audit_service.log_simulation(simulation);
+            audit_service.log_simulation(simulation).await;
         }
     }).await;
 }

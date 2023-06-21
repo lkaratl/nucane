@@ -1,7 +1,5 @@
 use std::fmt::Debug;
 use std::future::Future;
-use std::process::Output;
-use std::thread;
 use std::time::Duration;
 use async_trait::async_trait;
 

@@ -6,12 +6,11 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use tracing::{debug, error, trace};
 
-use domain_model::{Candle, CandleStatus, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Tick, Timeframe};
+use domain_model::{Candle, CandleStatus, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Tick, Timeframe};
 use eac::enums;
-use eac::enums::{InstType, OrdState, OrdType, TdMode};
-use eac::rest::{Account, CandleResponse, CandlesHistoryRequest, MarkPriceResponse, OkExRest, OrderDetailsResponse, PlaceOrderRequest};
-use eac::websocket::{Channel, Command, Message, OkExWebsocket};
-use eac::websocket::async_client::OkxWsClient;
+use eac::enums::{InstType, TdMode};
+use eac::rest::{CandlesHistoryRequest, OkExRest, PlaceOrderRequest};
+use eac::websocket::{Channel, Command, OkxWsClient};
 use interactor_config::CONFIG;
 
 use crate::service::Service;
@@ -59,7 +58,7 @@ impl Service for OKXService {
         let id: &str = &format!("mark-price-{}", &inst_id);
         let already_exists = self.sockets.contains_key(id);
         if !already_exists {
-            let mut client = OkxWsClient::public(false, &self.ws_url, handlers::on_tick(callback, currency_pair.clone(), market_type.clone())).await;
+            let client = OkxWsClient::public(false, &self.ws_url, handlers::on_tick(callback, currency_pair.clone(), market_type.clone())).await;
             client.send(Command::subscribe(vec![Channel::MarkPrice {
                 inst_id,
             }])).await;

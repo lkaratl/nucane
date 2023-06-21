@@ -1,21 +1,3 @@
-use std::net::TcpStream;
-use std::sync::{Arc, mpsc, Mutex};
-use std::sync::mpsc::SyncSender;
-use std::{mem, thread};
-use std::time::Duration;
-
-use fehler::{throw, throws};
-use serde_json::{from_str, to_string};
-pub use serde_json::Value;
-use tracing::{debug, error, info, trace, warn};
-use tungstenite::{connect, WebSocket};
-use tungstenite::protocol::Message as WSMessage;
-use tungstenite::stream::MaybeTlsStream;
-use url::Url;
-
-use crate::okx::credential::Credential;
-use crate::okx::error::OkExError;
-
 pub use self::channel::Channel;
 pub use self::command::Command;
 pub use self::message::{Action, Message};
@@ -24,204 +6,153 @@ mod channel;
 mod command;
 mod message;
 pub mod models;
-pub mod async_client;
 
-pub struct OkExWebsocket {
-    url: Url,
-    credential: Option<Credential>,
-    socket: Arc<Mutex<WebSocket<MaybeTlsStream<TcpStream>>>>,
-    sender: Option<SyncSender<WSHandlerEvents>>,
-    private: bool,
-    sent_commands: Vec<Command>,
+use std::sync::Arc;
+use std::time::Duration;
+use futures::{SinkExt, StreamExt};
+use async_broadcast::{broadcast, Sender};
+use tokio::{select, task};
+use tokio::sync::Mutex;
+use tokio::task::JoinHandle;
+use tokio_tungstenite::{connect_async};
+use tracing::{error, info, trace, debug, warn};
+use tungstenite::Message as WsMessage;
+use url::Url;
+use crate::okx::credential::Credential;
+
+pub struct OkxWsClient {
+    sender: Sender<WsMessage>,
 }
 
-impl OkExWebsocket {
-    #[throws(OkExError)]
-    pub fn public(demo: bool, ws_public_url: &str) -> Self {
+impl OkxWsClient {
+    pub async fn public<T: FnMut(Message) + Send + 'static>(demo: bool, ws_public_url: &str, callback: T) -> Self {
         let mut ws_public_url = format!("{ws_public_url}{}", "/ws/v5/public");
         if demo {
             ws_public_url = format!("{ws_public_url}?brokerId=9999");
         }
-        Self::new_impl(&ws_public_url, false, None)?
+        Self::new(&ws_public_url, None, callback).await
     }
 
-    #[throws(OkExError)]
-    pub fn business(demo: bool, ws_public_url: &str) -> Self {
+    pub async fn business<T: FnMut(Message) + Send + 'static>(demo: bool, ws_public_url: &str, callback: T) -> Self {
         let mut ws_public_url = format!("{ws_public_url}{}", "/ws/v5/business");
         if demo {
             ws_public_url = "wss://wspap.okx.com:8443/ws/v5/business?brokerId=9999".to_string(); // todo unhardcode host
         }
-        Self::new_impl(&ws_public_url, false, None)?
+        Self::new(&ws_public_url, None, callback).await
     }
 
-    #[throws(OkExError)]
-    pub fn private(demo: bool, ws_private_url: &str, api_key: &str, api_secret: &str, passphrase: &str) -> Self {
+    pub async fn private<T: FnMut(Message) + Send + 'static>(demo: bool, ws_private_url: &str, api_key: &str, api_secret: &str, passphrase: &str, callback: T) -> Self {
         let mut ws_private_url = format!("{ws_private_url}{}", "/ws/v5/private");
         if demo {
             ws_private_url = format!("{ws_private_url}?brokerId=9999");
         }
-        Self::new_impl(&ws_private_url, true, Some(Credential::new(api_key, api_secret, passphrase)))?
+        Self::new(&ws_private_url, Some(Credential::new(api_key, api_secret, passphrase)), callback).await
     }
 
-    #[throws(OkExError)]
-    fn new_impl(url: &str, private: bool, credential: Option<Credential>) -> Self {
+    async fn new<T: FnMut(Message) + Send + 'static>(url: &str, credential: Option<Credential>, callback: T) -> Self {
         let url = Url::parse(url).unwrap();
-        let socket = open_connection(url.clone()).unwrap();
-        let websocket = Self {
-            url,
-            credential,
-            socket: Arc::new(Mutex::new(socket)),
-            sender: None,
-            private,
-            sent_commands: Vec::new(),
+        let (_, sender) = run(&url, credential, callback).await;
+        Self {
+            sender,
+        }
+    }
+
+    pub async fn send(&self, command: Command) {
+        let command = match &command {
+            &Command::Ping => "ping".to_string(), // todo maybe not needed
+            command => serde_json::to_string(command).unwrap(),
         };
-        websocket.login()?
+        debug!("Sending '{}' through sender channel", command);
+        self.sender.broadcast(WsMessage::Text(command)).await.unwrap();
     }
+}
 
-    #[throws(OkExError)]
-    fn login(self) -> Self {
-        if self.private {
-            let mut socket = self.socket
-                .lock()
-                .expect("Socket already blocked. Probably by handle_message method");
-            let cred = self.credential.clone().unwrap();
-            login_command(&mut socket, cred)?;
-        }
-        self
-    }
+async fn run<T: FnMut(Message) + Send + 'static>(url: &Url, credential: Option<Credential>, callback: T) -> (JoinHandle<()>, Sender<WsMessage>) {
+    let (tx, rx) = broadcast::<WsMessage>(1);
+    let callback = Arc::new(Mutex::new(callback));
+    let handler_handle = tokio::spawn({
+        let url = url.clone();
+        async move {
+            loop {
+                let callback = Arc::clone(&callback);
+                let rx = rx.clone();
 
-    #[throws(OkExError)]
-    pub fn send(&mut self, command: Command) {
-        self.sent_commands.push(command.clone());
-        if let Some(sender) = &self.sender {
-            sender.send(WSHandlerEvents::Hold)
-                .expect("Error during sending Hold event for massage handler");
-        }
-        let mut socket = self.socket
-            .lock()
-            .expect("Socket already blocked. Probably by handle_message method");
-        send_command(&mut socket, command)?
-    }
+                let (ws_stream, _) = match connect_async(url.clone()).await {
+                    Ok(stream) => stream,
+                    Err(e) => {
+                        error!("Websocket failed to connect: {:?}", e);
+                        tokio::time::sleep(Duration::from_secs(5)).await;
+                        continue;
+                    }
+                };
 
-    pub fn handle_message<T: FnMut(Result<Message, OkExError>) + Send + 'static>(&mut self, mut callback: T) {
-        let (ts, tr) = mpsc::sync_channel::<WSHandlerEvents>(1);
-        self.sender = Some(ts);
-        thread::spawn({
-            let url = self.url.clone();
-            let socket = Arc::clone(&self.socket);
-            let sent_commands = self.sent_commands.clone(); // todo need fix: 1.subscribe 2.start handle 3.new subscribe 4.reconnect not consider sub after handling start
-            let private = self.private;
-            let cred = self.credential.clone();
-            move || {
-                loop {
-                    if let Ok(event) = tr.try_recv() {
-                        match event {
-                            WSHandlerEvents::Hold => thread::sleep(Duration::from_millis(100)),
-                            WSHandlerEvents::Stop => {
-                                info!("Drop OKX websocket");
-                                return;
-                            }
-                        }
+                let (mut write, read) = ws_stream.split();
+
+                // Spawn the write task
+                let credential = credential.clone();
+                tokio::spawn(async move {
+                    if let Some(credential) = credential {
+                        let msg = login_message(credential);
+                        debug!("Send login command to websocket");
+                        let _ = write.send(WsMessage::Text(msg)).await;
                     }
 
-                    let mut socket = socket
-                        .as_ref()
-                        .lock()
-                        .expect("Socket already blocked. Probably by send method");
-                    match socket.read_message() {
-                        Ok(message) => match parse_message(message) {
-                            Ok(message) => callback(Ok(message)),
-                            Err(error) => {
-                                match error {
-                                    OkExError::WebsocketClosed(frame) => {
-                                        if let Some(frame) = frame {
-                                            warn!("Websocket closed with frame: {frame:?}");
-                                        } else {
-                                            warn!("Websocket closed with empty frame");
-                                        }
-                                        reconnect(&mut socket, url.clone(), private, cred.clone(), &sent_commands);
-                                    }
-                                    _ => { callback(Err(error)); }
+                    loop {
+                        let mut rx = rx.new_receiver();
+                        let message_received = task::spawn(async move { rx.recv().await });
+                        let ping_interval_finished = task::spawn(tokio::time::sleep(Duration::from_secs(25)));
+
+                        select! {
+                            message = message_received => {
+                                if let Ok(Ok(msg)) = message {
+                                    debug!("Send to websocket: {}", msg);
+                                    let _ = write.send(msg).await;
                                 }
                             }
-                        },
-                        Err(error) => {
-                            error!("Error during message read from socket: {error}");
-                            reconnect(&mut socket, url.clone(), private, cred.clone(), &sent_commands);
+                            _ = ping_interval_finished => {
+                                debug!("Send ping websocket");
+                                let _ = write.send(WsMessage::Ping(Vec::new())).await;
+                            }
                         }
                     }
+                });
+
+                // Spawn the read task
+                let read_task = tokio::spawn(async move {
+                    let mut callback = callback.lock().await;
+                    read.for_each(|message| {
+                        match message.unwrap() {
+                            WsMessage::Text(message) => {
+                                trace!("Received text: {message:?}");
+                                let message = match serde_json::from_str(&message) {
+                                    Ok(message) => message,
+                                    Err(err) => unreachable!("Cannot deserialize message from OKX: '{message}', error: '{err}'", ),
+                                };
+                                callback(message);
+                            }
+                            WsMessage::Pong(_) => { debug!("Received pong massage"); }
+                            WsMessage::Close(message) => { warn!("Received close: {message:?}"); }
+                            message => { warn!("Received unexpected message: {message:?}"); }
+                        }
+                        futures::future::ready(())
+                    }).await;
+                });
+
+                // Wait for the read task to finish
+                if let Err(e) = read_task.await {
+                    error!("Websocket lost connection: {:?}", e);
+                } else {
+                    error!("Websocket closed without errors");
                 }
+                info!("Websocket reconnecting ...");
             }
-        });
-    }
-
-    fn stop(&mut self) {
-        if let Some(sender) = &self.sender {
-            sender.send(WSHandlerEvents::Stop)
-                .expect("Error during massage handler shutdown");
         }
-    }
+    });
+    tokio::time::sleep(Duration::from_secs(1)).await; // todo remove this hotfix for login response
+    (handler_handle, tx)
 }
 
-#[throws(OkExError)]
-fn login_command(socket: &mut WebSocket<MaybeTlsStream<TcpStream>>, cred: Credential) {
-    debug!("Login to OKX websocket");
-    let login_command = Command::login(cred).unwrap();
-    send_command(socket, login_command)?;
-    thread::sleep(Duration::from_secs(1)); // todo remove this shit
-}
-
-#[throws(OkExError)]
-fn send_command(socket: &mut WebSocket<MaybeTlsStream<TcpStream>>, command: Command) {
-    let command = match &command {
-        &Command::Ping => "ping".to_string(),
-        command => to_string(command)?,
-    };
-    trace!("Sending '{}' through websocket", command);
-    socket.write_message(WSMessage::Text(command))?
-}
-
-#[throws(OkExError)]
-fn open_connection(url: Url) -> WebSocket<MaybeTlsStream<TcpStream>> {
-    let (socket, _) = connect(url)?;
-    socket
-}
-
-fn reconnect(socket: &mut WebSocket<MaybeTlsStream<TcpStream>>, url: Url, private: bool, cred: Option<Credential>, sent_commands: &Vec<Command>) {
-    info!("Reconnect OKX websocket");
-    let _ = mem::replace(socket, open_connection(url).unwrap());
-    if private {
-        login_command(socket, cred.unwrap()).unwrap();
-    }
-    for command in sent_commands {
-        send_command(socket, command.clone()).unwrap();
-    }
-}
-
-impl Drop for OkExWebsocket {
-    fn drop(&mut self) { self.stop() }
-}
-
-enum WSHandlerEvents {
-    Hold,
-    Stop,
-}
-
-#[throws(OkExError)]
-fn parse_message(msg: WSMessage) -> Message {
-    trace!("WS raw message: {msg:?}");
-    match msg {
-        WSMessage::Text(message) => match message.as_str() {
-            "pong" => Message::Pong,
-            others => match from_str(others) {
-                Ok(r) => r,
-                Err(_) => unreachable!("Cannot deserialize message from OkEx: '{}'", others),
-            },
-        },
-        WSMessage::Close(frame) => throw!(OkExError::WebsocketClosed(frame)),
-        WSMessage::Binary(_) => throw!(OkExError::UnexpectedWebsocketBinaryMessage),
-        WSMessage::Ping(_) => throw!(OkExError::UnexpectedWebsocketPingMessage),
-        WSMessage::Pong(_) => throw!(OkExError::UnexpectedWebsocketPongMessage),
-        _ => throw!(OkExError::UnexpectedWebsocketMessage),
-    }
+fn login_message(credential: Credential) -> String {
+    let login_command = Command::login(credential).unwrap();
+    serde_json::to_string(&login_command).unwrap()
 }
