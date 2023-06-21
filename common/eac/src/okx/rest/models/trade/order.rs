@@ -5,6 +5,9 @@ use chrono::{DateTime, Utc};
 use http::Method;
 use serde::{Deserialize, Serialize};
 
+const STOP_LOSE_TYPE: &str = "mark";
+const TAKE_PROFIT_TYPE: &str = "mark";
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlaceOrderRequest {
@@ -20,11 +23,27 @@ pub struct PlaceOrderRequest {
     pub px: Option<String>,
     pub ban_amend: bool,
     pub cl_ord_id: Option<String>,
+    pub sl_trigger_px_type: Option<String>,
+    pub sl_trigger_px: Option<f64>,
+    pub sl_ord_px: Option<f64>,
+    pub tp_trigger_px_type: Option<String>,
+    pub tp_trigger_px: Option<f64>,
+    pub tp_ord_px: Option<f64>,
 }
 
 impl PlaceOrderRequest {
-    pub fn market(inst_id: &str, td_mode: TdMode, side: Side, qty: f64) -> Self {
+    pub fn market(inst_id: &str, td_mode: TdMode, side: Side, qty: f64, stop_lose: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
         let tgt_ccy = if side == Side::Buy { Some("quote_ccy".to_string()) } else { Some("base_ccy".to_string()) };
+        let (sl_trigger_px_type, sl_trigger_px, sl_ord_px) = if let Some(stop_lose) = stop_lose {
+            (Some(STOP_LOSE_TYPE.to_string()), Some(stop_lose.trigger_px), Some(stop_lose.order_px))
+        } else {
+            (None, None, None)
+        };
+        let (tp_trigger_px_type, tp_trigger_px, tp_ord_px) = if let Some(take_profit) = take_profit {
+            (Some(TAKE_PROFIT_TYPE.to_string()), Some(take_profit.trigger_px), Some(take_profit.order_px))
+        } else {
+            (None, None, None)
+        };
         Self {
             inst_id: inst_id.into(),
             td_mode,
@@ -38,11 +57,27 @@ impl PlaceOrderRequest {
             px: None,
             ban_amend: true,
             cl_ord_id: None,
+            sl_trigger_px_type,
+            sl_trigger_px,
+            sl_ord_px,
+            tp_trigger_px_type,
+            tp_trigger_px,
+            tp_ord_px,
         }
     }
 
-    pub fn limit(inst_id: &str, td_mode: TdMode, side: Side, price: f64, qty: f64) -> Self {
+    pub fn limit(inst_id: &str, td_mode: TdMode, side: Side, price: f64, qty: f64, stop_lose: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
         let tgt_ccy = if side == Side::Buy { Some("quote_ccy".to_string()) } else { Some("base_ccy".to_string()) };
+        let (sl_trigger_px_type, sl_trigger_px, sl_ord_px) = if let Some(stop_lose) = stop_lose {
+            (Some(STOP_LOSE_TYPE.to_string()), Some(stop_lose.trigger_px), Some(stop_lose.order_px))
+        } else {
+            (None, None, None)
+        };
+        let (tp_trigger_px_type, tp_trigger_px, tp_ord_px) = if let Some(take_profit) = take_profit {
+            (Some(TAKE_PROFIT_TYPE.to_string()), Some(take_profit.trigger_px), Some(take_profit.order_px))
+        } else {
+            (None, None, None)
+        };
         Self {
             inst_id: inst_id.into(),
             td_mode,
@@ -56,6 +91,12 @@ impl PlaceOrderRequest {
             px: Some(price.to_string()),
             ban_amend: true,
             cl_ord_id: None,
+            sl_trigger_px_type,
+            sl_trigger_px,
+            sl_ord_px,
+            tp_trigger_px_type,
+            tp_trigger_px,
+            tp_ord_px,
         }
     }
 
@@ -67,6 +108,20 @@ impl PlaceOrderRequest {
     pub fn set_cl_ord_id(&mut self, cl_ord_id: &str) -> &mut Self {
         self.cl_ord_id = Some(cl_ord_id.to_string());
         self
+    }
+}
+
+pub struct Trigger {
+    pub trigger_px: f64,
+    pub order_px: f64,
+}
+
+impl Trigger {
+    pub fn new(trigger_px: f64, order_px: f64) -> Option<Self> {
+        Some(Self {
+            trigger_px,
+            order_px,
+        })
     }
 }
 

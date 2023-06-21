@@ -25,8 +25,8 @@ impl SubscriptionManager {
             if let Some(subscription) = subscription {
                 subscription.deployment_ids.push(new_subscription.deployment_id);
             } else {
-                self.service_facade.listen_position(new_instrument.exchange).await;
                 self.service_facade.listen_orders(new_instrument.exchange).await;
+                self.service_facade.listen_position(new_instrument.exchange).await;
                 self.service_facade.subscribe_candles(&new_instrument).await;
                 self.service_facade.subscribe_ticks(&new_instrument).await;
 

@@ -9,7 +9,7 @@ use tracing::{debug, error, trace};
 use domain_model::{Candle, CandleStatus, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Tick, Timeframe};
 use eac::enums;
 use eac::enums::{InstType, TdMode};
-use eac::rest::{CandlesHistoryRequest, OkExRest, PlaceOrderRequest};
+use eac::rest::{CandlesHistoryRequest, OkExRest, PlaceOrderRequest, Trigger};
 use eac::websocket::{Channel, Command, OkxWsClient};
 use interactor_config::CONFIG;
 
@@ -160,10 +160,16 @@ impl Service for OKXService {
             Side::Buy => { enums::Side::Buy }
             Side::Sell => { enums::Side::Sell }
         };
+        let stop_lose = if let Some(stop_lose) = &create_order.stop_lose {
+            Trigger::new(stop_lose.trigger_px, stop_lose.order_px)
+        } else { None };
+        let take_profit = if let Some(take_profit) = &create_order.take_profit {
+            Trigger::new(take_profit.trigger_px, take_profit.order_px)
+        } else { None };
 
         let error_message = match create_order.order_type {
             OrderType::Limit(price) => {
-                let mut request = PlaceOrderRequest::limit(&inst_id, td_mode, side, price, create_order.size);
+                let mut request = PlaceOrderRequest::limit(&inst_id, td_mode, side, price, create_order.size, stop_lose, take_profit);
                 request.set_cl_ord_id(&create_order.id.to_string());
                 let [response] = self.rest_client.request(request).await.unwrap();
                 debug!("Place limit order response: {response:?}");
@@ -172,7 +178,7 @@ impl Service for OKXService {
                 } else { None }
             }
             OrderType::Market => {
-                let mut request = PlaceOrderRequest::market(&inst_id, td_mode, side, create_order.size);
+                let mut request = PlaceOrderRequest::market(&inst_id, td_mode, side, create_order.size, stop_lose, take_profit);
                 request.set_cl_ord_id(&create_order.id.to_string());
                 let [response] = self.rest_client.request(request).await.unwrap();
                 debug!("Place market order response: {response:?}");

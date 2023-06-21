@@ -7,7 +7,7 @@ mod parser;
 pub mod rest;
 pub mod websocket;
 
-// todo add logging
+// todo add logging & created order verification
 // account settings:
 // - single-currency margin
 // - isolated margin auto transfer
@@ -16,7 +16,7 @@ mod tests {
     mod rest {
         use std::env;
         use crate::enums::{Side, TdMode};
-        use crate::rest::{OkExRest, PlaceOrderRequest};
+        use crate::rest::{OkExRest, PlaceOrderRequest, Trigger};
 
         pub fn build_private_rest_client() -> OkExRest {
             OkExRest::with_credential("https://www.okx.com", true,
@@ -28,7 +28,12 @@ mod tests {
         #[tokio::test]
         async fn test_place_spot_market_buy_order() {
             let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::market("BTC-USDT", TdMode::Cash, Side::Buy, 100.0);
+            let request = PlaceOrderRequest::market("BTC-USDT",
+                                                    TdMode::Cash,
+                                                    Side::Buy,
+                                                    100.0,
+                                                    None,
+                                                    None);
             let [response] = rest_client.request(request).await.unwrap();
             if response.s_code != 0 {
                 dbg!(response);
@@ -39,7 +44,12 @@ mod tests {
         #[tokio::test]
         async fn test_place_spot_market_sell_order() {
             let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::market("BTC-USDT", TdMode::Cash, Side::Sell, 0.0038);
+            let request = PlaceOrderRequest::market("BTC-USDT",
+                                                    TdMode::Cash,
+                                                    Side::Sell,
+                                                    0.0038,
+                                                    None,
+                                                    None);
             let [response] = rest_client.request(request).await.unwrap();
             if response.s_code != 0 {
                 dbg!(response);
@@ -50,7 +60,13 @@ mod tests {
         #[tokio::test]
         async fn test_place_spot_limit_buy_order() {
             let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::limit("BTC-USDT", TdMode::Cash, Side::Buy, 26000.0, 0.0038);
+            let request = PlaceOrderRequest::limit("BTC-USDT",
+                                                   TdMode::Cash,
+                                                   Side::Buy,
+                                                   26000.0,
+                                                   0.0038,
+                                                   None,
+                                                   None);
             let [response] = rest_client.request(request).await.unwrap();
             if response.s_code != 0 {
                 dbg!(response);
@@ -61,7 +77,13 @@ mod tests {
         #[tokio::test]
         async fn test_place_spot_limit_sell_order() {
             let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::limit("BTC-USDT", TdMode::Cash, Side::Sell, 26000.0, 0.0038);
+            let request = PlaceOrderRequest::limit("BTC-USDT",
+                                                   TdMode::Cash,
+                                                   Side::Sell,
+                                                   26000.0,
+                                                   0.0038,
+                                                   None,
+                                                   None);
             let [response] = rest_client.request(request).await.unwrap();
             if response.s_code != 0 {
                 dbg!(response);
@@ -69,11 +91,15 @@ mod tests {
             }
         }
 
-        // todo fix needed
-        // #[tokio::test]
+        #[tokio::test]
         async fn test_place_margin_market_buy_order() {
             let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::market("BTC-USDT", TdMode::Isolated, Side::Buy, 100.0);
+            let request = PlaceOrderRequest::market("BTC-USDT",
+                                                    TdMode::Isolated,
+                                                    Side::Buy,
+                                                    100.0,
+                                                    None,
+                                                    None);
             let [response] = rest_client.request(request).await.unwrap();
             if response.s_code != 0 {
                 dbg!(response);
@@ -84,7 +110,12 @@ mod tests {
         #[tokio::test]
         async fn test_place_margin_market_sell_order() {
             let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::market("BTC-USDT", TdMode::Isolated, Side::Sell, 0.0038);
+            let request = PlaceOrderRequest::market("BTC-USDT",
+                                                    TdMode::Isolated,
+                                                    Side::Sell,
+                                                    0.0038,
+                                                    None,
+                                                    None);
             let [response] = rest_client.request(request).await.unwrap();
             if response.s_code != 0 {
                 dbg!(response);
@@ -94,26 +125,101 @@ mod tests {
 
         #[tokio::test]
         async fn test_place_spot_limit_buy_order_with_sp() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::limit("BTC-USDT",
+                                                   TdMode::Cash,
+                                                   Side::Buy,
+                                                   26_000.0,
+                                                   0.0038,
+                                                   Trigger::new(10_000.0, 9_900.0),
+                                                   None);
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
         }
 
         #[tokio::test]
         async fn test_place_spot_limit_buy_order_with_tp() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::limit("BTC-USDT",
+                                                   TdMode::Cash,
+                                                   Side::Buy,
+                                                   26_000.0,
+                                                   0.0038,
+                                                   None,
+                                                   Trigger::new(100_000.0, 100_100.0));
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
         }
 
         #[tokio::test]
-        async fn test_place_spot_limit_buy_order_with_tp_and_sp() {
+        async fn test_place_spot_limit_sell_order_with_tp_and_sp() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::limit("BTC-USDT",
+                                                   TdMode::Cash,
+                                                   Side::Sell,
+                                                   26_000.0,
+                                                   0.0038,
+                                                   Trigger::new(100_000.0, 100_100.0),
+                                                   Trigger::new(10_000.0, 9_900.0));
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
         }
 
         #[tokio::test]
         async fn test_place_margin_market_buy_order_with_sp() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::market("BTC-USDT",
+                                                    TdMode::Isolated,
+                                                    Side::Buy,
+                                                    100.0,
+                                                    Trigger::new(10_000.0, 9_900.0),
+                                                    None);
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
         }
 
         #[tokio::test]
         async fn test_place_margin_market_buy_order_with_tp() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::market("BTC-USDT",
+                                                    TdMode::Isolated,
+                                                    Side::Buy,
+                                                    100.0,
+                                                    None,
+                                                    Trigger::new(100_000.0, 100_100.0));
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
         }
 
         #[tokio::test]
-        async fn test_place_margin_market_buy_order_with_tp_and_sp() {
+        async fn test_place_margin_market_sell_order_with_tp_and_sp() {
+            let rest_client = build_private_rest_client();
+            let request = PlaceOrderRequest::market("BTC-USDT",
+                                                    TdMode::Isolated,
+                                                    Side::Sell,
+                                                    0.0038,
+                                                    Trigger::new(100_000.0, 100_100.0),
+                                                    Trigger::new(10_000.0, 9_900.0));
+            let [response] = rest_client.request(request).await.unwrap();
+            if response.s_code != 0 {
+                dbg!(response);
+                panic!("Error during order creation");
+            }
         }
     }
 
@@ -205,7 +311,12 @@ mod tests {
             assert!(result.lock().unwrap().is_empty());
 
             let rest_client = build_private_rest_client();
-            let mut request = PlaceOrderRequest::market("BTC-USDT", TdMode::Cash, Side::Buy, 100.0);
+            let mut request = PlaceOrderRequest::market("BTC-USDT",
+                                                        TdMode::Cash,
+                                                        Side::Buy,
+                                                        100.0,
+                                                        None,
+                                                        None);
             let order_id = "test";
             request.cl_ord_id = Some(order_id.to_string());
             let [response] = rest_client.request(request).await.unwrap();
