@@ -10,12 +10,13 @@ pub mod models;
 use std::sync::Arc;
 use std::time::Duration;
 use futures::{SinkExt, StreamExt};
-use async_broadcast::{broadcast, Sender};
+use async_broadcast::{broadcast, Receiver, Sender};
+use futures::stream::{SplitSink, SplitStream};
 use tokio::{select, task};
+use tokio::net::TcpStream;
 use tokio::sync::Mutex;
-use tokio::task::JoinHandle;
-use tokio_tungstenite::{connect_async};
-use tracing::{error, info, trace, debug, warn};
+use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
+use tracing::{error, trace, debug, warn};
 use tungstenite::Message as WsMessage;
 use url::Url;
 use crate::okx::credential::Credential;
@@ -51,105 +52,101 @@ impl OkxWsClient {
 
     async fn new<T: FnMut(Message) + Send + 'static>(url: &str, credential: Option<Credential>, callback: T) -> Self {
         let url = Url::parse(url).unwrap();
-        let (_, sender) = run(&url, credential, callback).await;
+        let sender = run(&url, credential, callback).await;
         Self {
             sender,
         }
     }
 
     pub async fn send(&self, command: Command) {
-        let command = match &command {
-            &Command::Ping => "ping".to_string(), // todo maybe not needed
-            command => serde_json::to_string(command).unwrap(),
-        };
+        let command = serde_json::to_string(&command).unwrap();
         debug!("Sending '{}' through sender channel", command);
         self.sender.broadcast(WsMessage::Text(command)).await.unwrap();
     }
 }
 
-async fn run<T: FnMut(Message) + Send + 'static>(url: &Url, credential: Option<Credential>, callback: T) -> (JoinHandle<()>, Sender<WsMessage>) {
+async fn run<T: FnMut(Message) + Send + 'static>(url: &Url, credential: Option<Credential>, callback: T) -> Sender<WsMessage> {
     let (tx, rx) = broadcast::<WsMessage>(1);
     let callback = Arc::new(Mutex::new(callback));
-    let handler_handle = tokio::spawn({
+    tokio::spawn({
         let url = url.clone();
-        async move {
-            loop {
-                let callback = Arc::clone(&callback);
-                let rx = rx.clone();
-
-                let (ws_stream, _) = match connect_async(url.clone()).await {
-                    Ok(stream) => stream,
-                    Err(e) => {
-                        error!("Websocket failed to connect: {:?}", e);
-                        tokio::time::sleep(Duration::from_secs(5)).await;
-                        continue;
-                    }
-                };
-
-                let (mut write, read) = ws_stream.split();
-
-                // Spawn the write task
-                let credential = credential.clone();
-                tokio::spawn(async move {
-                    if let Some(credential) = credential {
-                        let msg = login_message(credential);
-                        debug!("Send login command to websocket");
-                        let _ = write.send(WsMessage::Text(msg)).await;
-                    }
-
-                    loop {
-                        let mut rx = rx.new_receiver();
-                        let message_received = task::spawn(async move { rx.recv().await });
-                        let ping_interval_finished = task::spawn(tokio::time::sleep(Duration::from_secs(25)));
-
-                        select! {
-                            message = message_received => {
-                                if let Ok(Ok(msg)) = message {
-                                    debug!("Send to websocket: {}", msg);
-                                    let _ = write.send(msg).await;
-                                }
-                            }
-                            _ = ping_interval_finished => {
-                                debug!("Send ping websocket");
-                                let _ = write.send(WsMessage::Ping(Vec::new())).await;
-                            }
-                        }
-                    }
-                });
-
-                // Spawn the read task
-                let read_task = tokio::spawn(async move {
-                    let mut callback = callback.lock().await;
-                    read.for_each(|message| {
-                        match message.unwrap() {
-                            WsMessage::Text(message) => {
-                                trace!("Received text: {message:?}");
-                                let message = match serde_json::from_str(&message) {
-                                    Ok(message) => message,
-                                    Err(err) => unreachable!("Cannot deserialize message from OKX: '{message}', error: '{err}'", ),
-                                };
-                                callback(message);
-                            }
-                            WsMessage::Pong(_) => { debug!("Received pong massage"); }
-                            WsMessage::Close(message) => { warn!("Received close: {message:?}"); }
-                            message => { warn!("Received unexpected message: {message:?}"); }
-                        }
-                        futures::future::ready(())
-                    }).await;
-                });
-
-                // Wait for the read task to finish
-                if let Err(e) = read_task.await {
-                    error!("Websocket lost connection: {:?}", e);
-                } else {
-                    error!("Websocket closed without errors");
-                }
-                info!("Websocket reconnecting ...");
-            }
-        }
+        handling_loop(url, credential, rx, callback)
     });
     tokio::time::sleep(Duration::from_secs(1)).await; // todo remove this hotfix for login response
-    (handler_handle, tx)
+    tx
+}
+
+async fn handling_loop<T: FnMut(Message) + Send + 'static>(url: Url, credential: Option<Credential>, receiver: Receiver<WsMessage>, callback: Arc<Mutex<T>>) {
+    loop {
+        let callback = Arc::clone(&callback);
+        let rx = receiver.clone();
+
+        let (ws_stream, _) = match connect_async(url.clone()).await {
+            Ok(stream) => stream,
+            Err(e) => {
+                error!("Websocket failed to connect: {:?}", e);
+                tokio::time::sleep(Duration::from_secs(5)).await;
+                warn!("Websocket reconnecting ...");
+                continue;
+            }
+        };
+
+        let (sink, stream) = ws_stream.split();
+        let credential = credential.clone();
+        tokio::spawn(write(rx, sink, credential));
+        let read_task = tokio::spawn(read(stream, callback));
+
+        if let Err(e) = read_task.await {
+            error!("Websocket lost connection: {:?}", e);
+        } else {
+            warn!("Websocket closed without errors");
+        }
+        warn!("Websocket reconnecting ...");
+    }
+}
+
+async fn write(receiver: Receiver<WsMessage>, mut sink: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, WsMessage>, credential: Option<Credential>) {
+    if let Some(credential) = credential {
+        let msg = login_message(credential);
+        trace!("Send login command to websocket");
+        let _ = sink.send(WsMessage::Text(msg)).await;
+    }
+
+    loop {
+        let mut rx = receiver.new_receiver();
+        let message_received = task::spawn(async move { rx.recv().await });
+        let ping_interval_finished = task::spawn(tokio::time::sleep(Duration::from_secs(25)));
+
+        select! {
+            message = message_received => {
+                if let Ok(Ok(msg)) = message {
+                    trace!("Send to websocket: {}", msg);
+                    let _ = sink.send(msg).await;
+                }
+            }
+            _ = ping_interval_finished => {
+                trace!("Send ping websocket");
+                let _ = sink.send(WsMessage::Ping(Vec::new())).await;
+            }
+        }
+    }
+}
+
+async fn read<T: FnMut(Message) + Send + 'static>(stream: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>, callback: Arc<Mutex<T>>) {
+    let mut callback = callback.lock().await;
+    stream.for_each(|message| {
+        match message.unwrap() {
+            WsMessage::Text(message) => {
+                trace!("Received text: {message:?}");
+                let message = serde_json::from_str(&message).expect("Cannot deserialize message from OKX");
+                callback(message);
+            }
+            WsMessage::Pong(_) => { trace!("Received pong massage"); }
+            WsMessage::Close(message) => { warn!("Received close: {message:?}"); }
+            message => { warn!("Received unexpected message: {message:?}"); }
+        }
+        futures::future::ready(())
+    }).await
 }
 
 fn login_message(credential: Credential) -> String {

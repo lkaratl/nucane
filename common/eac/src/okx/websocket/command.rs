@@ -12,7 +12,6 @@ use crate::okx::credential::Credential;
 pub enum Command {
     Subscribe(Vec<Channel>),
     Login(Vec<LoginArgs>),
-    Ping,
 }
 
 impl Command {
@@ -36,10 +35,6 @@ impl Command {
             timestamp,
             sign,
         }])
-    }
-
-    pub fn ping() -> Command {
-        Command::Ping
     }
 }
 
