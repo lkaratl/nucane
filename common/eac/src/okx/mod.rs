@@ -13,16 +13,40 @@ pub mod websocket;
 // - isolated margin auto transfer
 #[cfg(test)]
 mod tests {
+    use tracing_subscriber::EnvFilter;
+    use tracing_subscriber::fmt::SubscriberBuilder;
+
+    const LOGGING_LEVEL: &str = "DEBUG";
+
+    pub fn init_logger(directives: &str) {
+        let subscriber = SubscriberBuilder::default()
+            .with_env_filter(EnvFilter::new(directives))
+            .with_file(true)
+            .with_line_number(true)
+            .finish();
+
+        tracing::subscriber::set_global_default(subscriber)
+            .expect("Setting default subscriber failed");
+    }
+
     mod rest {
         use std::env;
+        use std::sync::{Arc, Mutex};
+        use chrono::{TimeZone, Utc};
+        use tracing::debug;
         use crate::enums::{Side, TdMode};
-        use crate::rest::{OkExRest, PlaceOrderRequest, Trigger};
+        use crate::okx::tests::{init_logger, LOGGING_LEVEL};
+        use crate::rest::{CandlesHistoryRequest, OkExRest, PlaceOrderRequest, RateLimitedRestClient, Trigger};
 
         pub fn build_private_rest_client() -> OkExRest {
             OkExRest::with_credential("https://www.okx.com", true,
                                       &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-KEY").unwrap(),
                                       &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-SECRET").unwrap(),
                                       &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-PASSPHRASE").unwrap())
+        }
+
+        pub fn build_public_rest_rate_limited_client() -> RateLimitedRestClient {
+            RateLimitedRestClient::new(OkExRest::new("https://www.okx.com", true))
         }
 
         #[tokio::test]
@@ -220,6 +244,33 @@ mod tests {
                 dbg!(response);
                 panic!("Error during order creation");
             }
+        }
+
+        // todo try to break this test
+        #[tokio::test]
+        async fn test_request_rate_limit() {
+            init_logger(LOGGING_LEVEL);
+            let rest_client = Arc::new(tokio::sync::Mutex::new(build_public_rest_rate_limited_client()));
+            let request = CandlesHistoryRequest {
+                inst_id: "BTC-USDT".to_string(),
+                bar: Some("1H".to_string()),
+                before: Some(1682899200000u64.to_string()),
+                after: Some(1682899200000u64.to_string()),
+                limit: Some(100),
+            };
+            let mut handles = Vec::new();
+            for _ in 0..=100 {
+                let handle = tokio::spawn({
+                    let rest_client = Arc::clone(&rest_client);
+                    let request = request.clone();
+                    async move {
+                        let response = rest_client.lock().await.request(request).await.unwrap();
+                        debug!("{:?}", response)
+                    }
+                });
+                handles.push(handle);
+            }
+            futures::future::join_all(handles).await;
         }
     }
 

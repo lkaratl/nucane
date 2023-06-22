@@ -3,7 +3,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use anyhow::{bail, Error};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -173,6 +173,22 @@ impl FromStr for Timeframe {
             "FourH" => Ok(Timeframe::FourH),
             "OneD" => Ok(Timeframe::OneD),
             input => bail!("Unknown market type: {input}")
+        }
+    }
+}
+
+impl Into<Duration> for Timeframe {
+    fn into(self) -> Duration {
+        match self {
+            Timeframe::OneS => Duration::seconds(1),
+            Timeframe::OneM => Duration::minutes(1),
+            Timeframe::FiveM => Duration::minutes(5),
+            Timeframe::FifteenM => Duration::minutes(15),
+            Timeframe::ThirtyM => Duration::minutes(30),
+            Timeframe::OneH => Duration::hours(1),
+            Timeframe::TwoH => Duration::hours(2),
+            Timeframe::FourH => Duration::hours(4),
+            Timeframe::OneD => Duration::days(1),
         }
     }
 }
@@ -529,7 +545,7 @@ pub struct CreateOrder {
     pub side: Side,
     pub size: f64,
     pub stop_lose: Option<Trigger>,
-    pub take_profit: Option<Trigger>
+    pub take_profit: Option<Trigger>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

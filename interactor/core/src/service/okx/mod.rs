@@ -4,12 +4,12 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use tracing::{debug, error, trace};
+use tracing::{debug, error, info, trace};
 
 use domain_model::{Candle, CandleStatus, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Tick, Timeframe};
 use eac::enums;
 use eac::enums::{InstType, TdMode};
-use eac::rest::{CandlesHistoryRequest, OkExRest, PlaceOrderRequest, Trigger};
+use eac::rest::{CandlesHistoryRequest, OkExRest, PlaceOrderRequest, RateLimitedRestClient, Trigger};
 use eac::websocket::{Channel, Command, OkxWsClient};
 use interactor_config::CONFIG;
 
@@ -22,7 +22,7 @@ pub struct OKXService {
     api_passphrase: String,
     ws_url: String,
     sockets: HashMap<String, OkxWsClient>,
-    rest_client: OkExRest,
+    rest_client: RateLimitedRestClient,
 }
 
 impl OKXService {
@@ -42,7 +42,7 @@ impl OKXService {
             api_passphrase: api_passphrase.to_owned(),
             ws_url: ws_url.to_owned(),
             sockets: HashMap::new(),
-            rest_client,
+            rest_client: RateLimitedRestClient::new(rest_client),
         }
     }
 }
@@ -147,7 +147,7 @@ impl Service for OKXService {
         }
     }
 
-    async fn place_order(&self, create_order: &CreateOrder) -> Order {
+    async fn place_order(&mut self, create_order: &CreateOrder) -> Order {
         let inst_id = format!("{}-{}",
                               create_order.pair.target,
                               create_order.pair.source);
@@ -218,7 +218,7 @@ impl Service for OKXService {
         }
     }
 
-    async fn candles_history(&self,
+    async fn candles_history(&mut self,
                              currency_pair: &CurrencyPair,
                              market_type: &MarketType,
                              timeframe: Timeframe,

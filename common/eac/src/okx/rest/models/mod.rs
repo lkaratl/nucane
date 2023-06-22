@@ -17,6 +17,7 @@ pub trait Request: Serialize {
     const SIGNED: bool = false;
     const ENDPOINT: &'static str;
     const HAS_PAYLOAD: bool = true;
+    const REQUESTS_PER_SECOND: u8 = 100;
     type Response: DeserializeOwned;
 
     #[inline]

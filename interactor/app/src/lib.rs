@@ -22,13 +22,14 @@ pub async fn run() {
     } else {
         info!("+ interactor running in LIVE mode...");
     }
-    listen_deployment_events().await;
-    listen_actions().await;
+    let service_facade = Arc::new(Mutex::new(ServiceFacade::new()));
 
-    let service_facade = ServiceFacade::new(); // todo use only one instance of service facade
+    listen_deployment_events(Arc::clone(&service_facade)).await;
+    listen_actions(Arc::clone(&service_facade)).await;
+
     let router = Router::new()
         .route(GET_CANDLES_HISTORY, get(get_candles_history))
-        .with_state(Arc::new(service_facade));
+        .with_state(service_facade);
 
     let address = SocketAddr::new(IpAddr::from([0, 0, 0, 0]), CONFIG.application.port);
     axum::Server::bind(&address)
@@ -37,8 +38,7 @@ pub async fn run() {
         .unwrap();
 }
 
-async fn listen_deployment_events() {
-    let service_facade = ServiceFacade::new();
+async fn listen_deployment_events(service_facade: Arc<Mutex<ServiceFacade>>) {
     let subscription_manager = Arc::new(Mutex::new(SubscriptionManager::new(service_facade)));
     synapse::reader(&CONFIG.application.name).on(Topic::Deployment, move |deployment: Deployment| {
         let subscription_manager = Arc::clone(&subscription_manager);
@@ -59,7 +59,8 @@ async fn listen_deployment_events() {
                         deployment.id, deployment.strategy_name, deployment.strategy_version);
                         subscription_manager.lock()
                             .await
-                            .unsubscribe(deployment.id);
+                            .unsubscribe(deployment.id)
+                            .await;
                     }
                 }
             }
@@ -67,8 +68,7 @@ async fn listen_deployment_events() {
     }).await;
 }
 
-async fn listen_actions() {
-    let service_facade = Arc::new(ServiceFacade::new());
+async fn listen_actions(service_facade: Arc<Mutex<ServiceFacade>>) {
     synapse::reader(&CONFIG.application.name).on(Topic::Action,
                                                  move |action: Action| {
                                                      let service_facade = Arc::clone(&service_facade);
@@ -79,7 +79,11 @@ async fn listen_actions() {
                                                              trace!("Action event: {action:?}");
                                                              match action {
                                                                  Action::OrderAction(OrderAction { order: OrderActionType::CreateOrder(create_order), exchange, .. }) =>
-                                                                     service_facade.place_order(exchange, create_order).await,
+                                                                     service_facade
+                                                                         .lock()
+                                                                         .await
+                                                                         .place_order(exchange, create_order)
+                                                                         .await,
                                                                  action => warn!("Temporary unsupported action: {action:?}")
                                                              }
                                                          }
@@ -88,7 +92,7 @@ async fn listen_actions() {
 }
 
 async fn get_candles_history(Query(query_params): Query<CandlesHistoryQuery>,
-                             State(service_facade): State<Arc<ServiceFacade>>) -> Json<Vec<Candle>> {
+                             State(service_facade): State<Arc<Mutex<ServiceFacade>>>) -> Json<Vec<Candle>> {
     let instrument_id = InstrumentId {
         exchange: query_params.exchange,
         market_type: query_params.market_type,
@@ -97,10 +101,13 @@ async fn get_candles_history(Query(query_params): Query<CandlesHistoryQuery>,
             source: query_params.source,
         },
     };
-    let result = service_facade.candles_history(&instrument_id,
-                                                query_params.timeframe,
-                                                query_params.from_timestamp.map(|millis| Utc.timestamp_millis_opt(millis).unwrap()),
-                                                query_params.to_timestamp.map(|millis| Utc.timestamp_millis_opt(millis).unwrap()),
-                                                Some(query_params.limit)).await;
+    let result = service_facade
+        .lock()
+        .await
+        .candles_history(&instrument_id,
+                         query_params.timeframe,
+                         query_params.from_timestamp.map(|millis| Utc.timestamp_millis_opt(millis).unwrap()),
+                         query_params.to_timestamp.map(|millis| Utc.timestamp_millis_opt(millis).unwrap()),
+                         Some(query_params.limit)).await;
     Json(result)
 }

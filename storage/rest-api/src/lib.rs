@@ -6,6 +6,31 @@ pub mod endpoints {
     pub const GET_AUDIT: &str = "/api/v1/storage/audit";
 }
 
+pub mod dto {
+    use domain_model::Timeframe;
+    use storage_core::candle_sync::SyncReport;
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct SyncReportDto {
+        pub timeframe: Timeframe,
+        pub total: u64,
+        pub exists: u64,
+        pub synced: u64,
+    }
+
+    impl From<SyncReport> for SyncReportDto {
+        fn from(value: SyncReport) -> Self {
+            Self {
+                timeframe: value.timeframe,
+                total: value.total,
+                exists: value.exists,
+                synced: value.synced,
+            }
+        }
+    }
+}
+
 pub mod path_query {
     use serde::{Deserialize, Serialize};
     use domain_model::{Currency, Exchange, MarketType, OrderStatus, OrderType, Side, Timeframe};
@@ -51,7 +76,8 @@ pub mod path_query {
 
     #[derive(Debug, Deserialize, Serialize)]
     pub struct CandleSyncQuery {
-        pub duration: Option<i64>,
+        pub timeframes: String,
+        pub from: i64,
+        pub to: Option<i64>,
     }
-
 }

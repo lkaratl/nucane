@@ -1,23 +1,25 @@
 pub mod config;
 
 use std::net::{IpAddr, SocketAddr};
+use std::str::FromStr;
 use std::sync::Arc;
-use std::thread;
 
 use axum::{Json, Router};
 use axum::extract::{Query, State};
+use axum::http::StatusCode;
 use axum::routing::{get, post};
 use chrono::{Duration, TimeZone, Utc};
 use sea_orm::{Database, DatabaseConnection};
-use tracing::{info};
+use tracing::{error, info};
 
-use domain_model::{AuditEvent, Candle, CurrencyPair, Deployment, DeploymentEvent, InstrumentId, Order, Position, Simulation};
+use domain_model::{AuditEvent, Candle, CurrencyPair, Deployment, DeploymentEvent, InstrumentId, Order, Position, Simulation, Timeframe};
 use interactor_rest_client::InteractorClient;
 use storage_core::audit::AuditService;
 use storage_core::candle::CandleService;
-use storage_core::candle_sync::CandleSyncService;
+use storage_core::candle_sync::{CandleSyncService, SyncReport};
 use storage_core::order::OrderService;
 use storage_core::position::PositionService;
+use storage_rest_api::dto::SyncReportDto;
 use storage_rest_api::endpoints::{GET_AUDIT, POST_CANDLES_SYNC, GET_CANDLES, GET_ORDERS, GET_POSITIONS};
 use storage_rest_api::path_query::{AuditQuery, CandlesQuery, CandleSyncQuery, OrdersQuery, PositionsQuery};
 use synapse::{SynapseListen, Topic};
@@ -93,18 +95,22 @@ async fn listen_entity_events(order_service: Arc<OrderService<DatabaseConnection
     }).await;
 }
 
-async fn listen_deployment_events(_: Arc<CandleSyncService>, audit_service: Arc<AuditService<DatabaseConnection>>) {
+async fn listen_deployment_events(candle_sync_service: Arc<CandleSyncService>, audit_service: Arc<AuditService<DatabaseConnection>>) {
     synapse::reader(&CONFIG.application.name).on(Topic::Deployment, move |deployment: Deployment| {
         let audit_service = Arc::clone(&audit_service);
+        let candle_sync_service = Arc::clone(&candle_sync_service);
         async move {
-            match deployment.event {
-                DeploymentEvent::Created => {
-                    for _ in &deployment.subscriptions {
-                        // todo uncomment after sync process refactoring
-                        // candle_sync_service.sync(instrument_id);
+            if deployment.simulation_id.is_none() {
+                match deployment.event {
+                    DeploymentEvent::Created => {
+                        let from = Utc::now() - Duration::days(30);
+                        let timeframes = [Timeframe::ThirtyM, Timeframe::OneH, Timeframe::FourH, Timeframe::OneD];
+                        for instrument_id in &deployment.subscriptions {
+                            candle_sync_service.sync(instrument_id, &timeframes, from, None).await;
+                        }
                     }
+                    DeploymentEvent::Deleted => {}
                 }
-                DeploymentEvent::Deleted => {}
             }
             audit_service.log_deployment(deployment).await;
         }
@@ -175,7 +181,20 @@ async fn get_audit(Query(query_params): Query<AuditQuery>,
 
 async fn candles_sync(Query(query_params): Query<CandleSyncQuery>,
                       State(candle_sync_service): State<Arc<CandleSyncService>>,
-                      Json(request): Json<InstrumentId>) {
-    let duration = query_params.duration.map(Duration::days);
-    thread::spawn(move || candle_sync_service.sync(&request, duration));
+                      Json(request): Json<InstrumentId>) -> Result<Json<Vec<SyncReportDto>>, StatusCode> {
+    let timeframes: Vec<_> = query_params.timeframes.split(',')
+        .map(Timeframe::from_str)
+        .map(|timeframe| timeframe.unwrap())
+        .collect();
+    let from = Utc.timestamp_millis_opt(query_params.from).unwrap();
+    let to = query_params.to.map(|millis| Utc.timestamp_millis_opt(millis).unwrap());
+    let result = candle_sync_service.sync(&request, &timeframes, from, to).await
+        .map_err(|err| {
+            error!("Error syncing candles: {}", err);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .into_iter()
+        .map(SyncReportDto::from)
+        .collect();
+    Ok(Json(result))
 }

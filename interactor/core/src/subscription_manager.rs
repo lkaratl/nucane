@@ -1,3 +1,5 @@
+use std::sync::{Arc};
+use tokio::sync::Mutex;
 use tracing::debug;
 use uuid::Uuid;
 
@@ -6,11 +8,11 @@ use crate::service::ServiceFacade;
 
 pub struct SubscriptionManager {
     subscriptions: Vec<Subscriptions>,
-    service_facade: ServiceFacade,
+    service_facade: Arc<Mutex<ServiceFacade>>,
 }
 
 impl SubscriptionManager {
-    pub fn new(service_facade: ServiceFacade) -> Self {
+    pub fn new(service_facade: Arc<Mutex<ServiceFacade>>) -> Self {
         Self {
             subscriptions: Vec::new(),
             service_facade,
@@ -25,10 +27,11 @@ impl SubscriptionManager {
             if let Some(subscription) = subscription {
                 subscription.deployment_ids.push(new_subscription.deployment_id);
             } else {
-                self.service_facade.listen_orders(new_instrument.exchange).await;
-                self.service_facade.listen_position(new_instrument.exchange).await;
-                self.service_facade.subscribe_candles(&new_instrument).await;
-                self.service_facade.subscribe_ticks(&new_instrument).await;
+                let mut service_facade = self.service_facade.lock().await;
+                service_facade.listen_orders(new_instrument.exchange).await;
+                service_facade.listen_position(new_instrument.exchange).await;
+                service_facade.subscribe_candles(&new_instrument).await;
+                service_facade.subscribe_ticks(&new_instrument).await;
 
                 self.subscriptions.push(Subscriptions {
                     instrument_id: new_instrument,
@@ -38,16 +41,17 @@ impl SubscriptionManager {
         }
     }
 
-    pub fn unsubscribe(&mut self, deployment_id: Uuid) {
+    pub async fn unsubscribe(&mut self, deployment_id: Uuid) {
         debug!("Unsubscribe: {}", deployment_id);
         self.subscriptions.iter_mut()
             .for_each(|subscription| {
                 subscription.deployment_ids.retain(|id| !id.eq(&deployment_id));
             });
+        let mut service_facade = self.service_facade.lock().await;
         self.subscriptions.retain(|subscription| {
             if subscription.deployment_ids.is_empty() {
-                self.service_facade.unsubscribe_candles(&subscription.instrument_id);
-                self.service_facade.unsubscribe_ticks(&subscription.instrument_id);
+                service_facade.unsubscribe_candles(&subscription.instrument_id);
+                service_facade.unsubscribe_ticks(&subscription.instrument_id);
                 false
             } else {
                 true
