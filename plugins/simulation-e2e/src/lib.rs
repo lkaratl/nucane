@@ -83,9 +83,9 @@ impl Strategy for SimulationE2EStrategy {
                                     source: Currency::USDT,
                                 },
                                 market_type: OrderMarketType::Spot,
-                                order_type: OrderType::Limit(tick.price),
+                                order_type: OrderType::Limit(tick.price * 0.9),
                                 side: Side::Buy,
-                                size: 1000.0,
+                                size: 10.0 / tick.price,
                                 stop_lose: None,
                                 take_profit: None
                             }

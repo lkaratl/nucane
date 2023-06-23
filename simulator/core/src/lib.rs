@@ -7,6 +7,7 @@ use tracing::{debug, info};
 use uuid::Uuid;
 
 use domain_model::{Action, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderActionType, OrderMarketType, OrderStatus, OrderType, Position, Side, Simulation, SimulationPosition, Tick, Timeframe};
+use engine_rest_api::dto::CreateDeploymentDto;
 use engine_rest_client::EngineClient;
 use storage_rest_client::StorageClient;
 use synapse::SynapseSend;
@@ -53,11 +54,14 @@ impl SimulationService {
                 logger.log(format!("| Initial position: {}-{}= '{}'", position.exchange, position.currency, position.end));
                 synapse::writer().send(&Position::from(position.clone()));
             });
-        let deployment = self.engine_client.create_deployment(
-            Some(simulation.id),
-            &simulation.strategy_id,
-            &simulation.strategy_version,
-            simulation.params.clone())
+
+        let create_deployment = CreateDeploymentDto {
+            simulation_id: Some(simulation.id),
+            strategy_name: simulation.strategy_id.clone(),
+            strategy_version: simulation.strategy_version.clone(),
+            params: simulation.params.clone(),
+        };
+        let deployment = self.engine_client.create_deployment(vec![create_deployment])
             .await
             .unwrap();
 
@@ -75,7 +79,10 @@ impl SimulationService {
             } else { simulation.end };
             debug!("Batch processing from start: {batch_start} to end: {batch_end}");
 
-            let ticks = self.get_ticks(simulation.id, batch_start, batch_end, &deployment.subscriptions).await;
+            let subscriptions = deployment.iter()
+                .flat_map(|deployment| deployment.subscriptions.clone())
+                .collect();
+            let ticks = self.get_ticks(simulation.id, batch_start, batch_end, &subscriptions).await;
             debug!("Ticks len: {}", ticks.len());
             ticks_len += ticks.len();
             for tick in &ticks {
@@ -99,9 +106,11 @@ impl SimulationService {
         let profit_clear = self.calculate_profit(&positions, simulation.start).await;
         let fees = self.calculate_fees(&positions, simulation.end).await;
 
-        self.engine_client.remove_deployment(deployment.id)
-            .await
-            .unwrap();
+        for deployment in deployment {
+            self.engine_client.remove_deployment(deployment.id)
+                .await
+                .unwrap();
+        }
         let report = SimulationReport {
             simulation_id: simulation.id,
             start: simulation.start,

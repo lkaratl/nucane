@@ -21,7 +21,7 @@ pub mod dto {
     }
 
     #[derive(Deserialize, Serialize, Debug)]
-    pub struct CreateDeployment {
+    pub struct CreateDeploymentDto {
         pub simulation_id: Option<Uuid>,
         pub strategy_name: String,
         pub strategy_version: String,
