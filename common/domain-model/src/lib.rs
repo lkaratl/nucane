@@ -140,7 +140,7 @@ impl fmt::Display for CandleStatus {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Copy, Clone)]
+#[derive(Debug, Deserialize, Serialize, Copy, Clone, PartialEq, Eq)]
 pub enum Timeframe {
     OneS,
     OneM,

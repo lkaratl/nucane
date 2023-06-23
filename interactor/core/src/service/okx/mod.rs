@@ -238,7 +238,7 @@ impl Service for OKXService {
             Timeframe::OneH => "1H",
             Timeframe::TwoH => "2H",
             Timeframe::FourH => "4H",
-            Timeframe::OneD => "1D",
+            Timeframe::OneD => "1Dutc",
         };
         let request = CandlesHistoryRequest {
             inst_id,

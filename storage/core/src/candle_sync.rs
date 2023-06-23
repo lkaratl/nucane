@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, DurationRound, Utc};
 use sea_orm::DatabaseConnection;
 use tracing::{debug, error, info, trace, warn};
 
@@ -40,6 +40,7 @@ impl CandleSyncService {
             let report = self.sync_timeframe(instrument_id, timeframe, from, to).await?;
             reports.push(report);
         }
+        info!("Finish candles sync: {reports:?}");
         Ok(reports)
     }
 
@@ -49,8 +50,11 @@ impl CandleSyncService {
                             from: DateTime<Utc>,
                             to: DateTime<Utc>) -> Result<SyncReport> {
         info!("Start sync for timeframe: {timeframe}");
+        let duration: Duration = timeframe.clone().into();
+        let from = from.duration_round(duration)?;
+        let to = to.duration_round(duration)?;
         let mut handles = Vec::new();
-        let batch_step = Duration::days(7);
+        let batch_step = Duration::days(5);
         let mut batch_start = from;
         while batch_start < to {
             let mut batch_end = batch_start + batch_step;
@@ -71,11 +75,17 @@ impl CandleSyncService {
 
             batch_start = batch_end
         }
-        let reports: Vec<_> = futures::future::join_all(handles)
-            .await
-            .into_iter()
-            .map(|r| r.unwrap().unwrap())
-            .collect();
+        let mut reports: Vec<_> = Vec::new();
+        for report in futures::future::join_all(handles).await {
+            let report = report.map_err(|err| {
+                error!("Error sync batch for timeframe: {timeframe}, from: {from}, to: {to}, error: {err:?}");
+                err
+            })?.map_err(|err| {
+                error!("Error sync batch for timeframe: {timeframe}, from: {from}, to: {to}, error: {err:?}");
+                err
+            })?;
+            reports.push(report);
+        }
 
         let mut result = SyncReport {
             timeframe: timeframe.clone(),
@@ -132,6 +142,7 @@ async fn sync_batch(candle_service: Arc<CandleService<DatabaseConnection>>,
                 if saved_candle.timestamp != timestamp {
                     warn!("Inconsistent candle: {}, for timestamp: {}", saved_candle.timestamp, timestamp);
                     if let Some(actual_candle) = actual_candles.take(timestamp).await {
+                        debug!("Add new candle: {}", actual_candle.timestamp);
                         candles_for_save.push(actual_candle);
                     } else {
                         error!("Can't load required actual candle for timestamp: {}", timestamp);
@@ -142,6 +153,7 @@ async fn sync_batch(candle_service: Arc<CandleService<DatabaseConnection>>,
             }
             None => {
                 if let Some(actual_candle) = actual_candles.take(timestamp).await {
+                    debug!("Add new candle: {}", actual_candle.timestamp);
                     candles_for_save.push(actual_candle);
                 } else {
                     error!("Can't load required actual candle for timestamp: {}", timestamp);
@@ -186,7 +198,7 @@ impl ActualCandlesLazyVec {
     }
 
     async fn fetch(&mut self, timestamp: DateTime<Utc>) {
-        debug!("Fetch candles for timestamp: {}", timestamp);
+        trace!("Fetch candles for timestamp: {}", timestamp);
         let time_step: Duration = self.timeframe.into();
         let time_offset = time_step / 2;
 
@@ -209,7 +221,11 @@ impl ActualCandlesLazyVec {
             .map(|index| self.candles.remove(index));
         if candle.is_none() {
             self.fetch(timestamp).await;
-            Some(self.candles.remove(0))
+            if self.candles.is_empty() {
+                None
+            } else {
+                Some(self.candles.remove(0))
+            }
         } else { candle }
     }
 
@@ -222,6 +238,7 @@ impl ActualCandlesLazyVec {
     }
 }
 
+#[derive(Debug)]
 pub struct SyncReport {
     pub timeframe: Timeframe,
     pub total: u64,

@@ -41,7 +41,7 @@ impl InteractorClient {
         let endpoint = format!("{}{}", self.url, GET_CANDLES_HISTORY);
         let mut url = Url::parse(&endpoint)?;
         url.set_query(Some(&to_string(&query)?));
-        info!("Request url: {url:?}");
+        trace!("Request url: {url:?}");
         let result = self.client.get(url)
             .send()
             .await?

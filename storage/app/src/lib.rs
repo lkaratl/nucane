@@ -104,7 +104,7 @@ async fn listen_deployment_events(candle_sync_service: Arc<CandleSyncService>, a
                 match deployment.event {
                     DeploymentEvent::Created => {
                         let from = Utc::now() - Duration::days(30);
-                        let timeframes = [Timeframe::ThirtyM, Timeframe::OneH, Timeframe::FourH, Timeframe::OneD];
+                        let timeframes = [Timeframe::FifteenM, Timeframe::ThirtyM, Timeframe::OneH, Timeframe::FourH, Timeframe::OneD];
                         for instrument_id in &deployment.subscriptions {
                             candle_sync_service.sync(instrument_id, &timeframes, from, None).await;
                         }

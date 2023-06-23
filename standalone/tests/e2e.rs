@@ -2,17 +2,20 @@ use std::collections::HashMap;
 use std::sync::Once;
 
 use chrono::{TimeZone, Utc};
+use tracing::debug;
 use tracing_subscriber::fmt::SubscriberBuilder;
 use tracing_subscriber::EnvFilter;
 
-use domain_model::{Currency, Exchange, Side};
+use domain_model::{Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Side, Timeframe};
 use simulator_rest_api::dto::CreatePositionDto;
 use simulator_rest_client::SimulatorClient;
+use storage_rest_client::StorageClient;
 
 static mut INITED: bool = false;
 static INIT: Once = Once::new();
 
-const SIMULATOR_URL: &'static str = "http://localhost:8084";
+const STORAGE_URL: &str = "http://localhost:8082";
+const SIMULATOR_URL: &str = "http://localhost:8084";
 
 async fn init() {
     unsafe {
@@ -34,6 +37,69 @@ fn init_logger() {
 
     tracing::subscriber::set_global_default(subscriber)
         .expect("Setting default subscriber failed");
+}
+
+// clean storage before this test
+#[tokio::test]
+async fn test_e2e_candles_sync() {
+    init().await;
+    let strorage_client = StorageClient::new(STORAGE_URL);
+
+    let instrument_id = InstrumentId {
+        exchange: Exchange::OKX,
+        market_type: MarketType::Spot,
+        pair: CurrencyPair {
+            target: Currency::BTC,
+            source: Currency::USDT,
+        },
+    };
+    let timeframes = [Timeframe::FiveM, Timeframe::OneH, Timeframe::OneD];
+    let from = Utc.timestamp_millis_opt(1682899200000).unwrap();
+    let to = Utc.timestamp_millis_opt(1685577600000).unwrap();
+
+    let reports = strorage_client.sync_candles(&instrument_id, &timeframes, from, Some(to)).await.unwrap();
+    debug!("{reports:?}");
+    let mut reports_iter = reports.iter();
+
+    let report = reports_iter.next().unwrap();
+    assert_eq!(report.timeframe, Timeframe::FiveM);
+    assert_eq!(report.total, 8928);
+    assert_eq!(report.exists, 0);
+    assert_eq!(report.synced, 8928);
+
+    let report = reports_iter.next().unwrap();
+    assert_eq!(report.timeframe, Timeframe::OneH);
+    assert_eq!(report.total, 744);
+    assert_eq!(report.exists, 0);
+    assert_eq!(report.synced, 744);
+
+    let report = reports_iter.next().unwrap();
+    assert_eq!(report.timeframe, Timeframe::OneD);
+    assert_eq!(report.total, 31);
+    assert_eq!(report.exists, 0);
+    assert_eq!(report.synced, 31);
+
+    let reports = strorage_client.sync_candles(&instrument_id, &timeframes, from, Some(to)).await.unwrap();
+    debug!("{reports:?}");
+    let mut reports_iter = reports.iter();
+
+    let report = reports_iter.next().unwrap();
+    assert_eq!(report.timeframe, Timeframe::FiveM);
+    assert_eq!(report.total, 8928);
+    assert_eq!(report.exists, 8928);
+    assert_eq!(report.synced, 0);
+
+    let report = reports_iter.next().unwrap();
+    assert_eq!(report.timeframe, Timeframe::OneH);
+    assert_eq!(report.total, 744);
+    assert_eq!(report.exists, 744);
+    assert_eq!(report.synced, 0);
+
+    let report = reports_iter.next().unwrap();
+    assert_eq!(report.timeframe, Timeframe::OneD);
+    assert_eq!(report.total, 31);
+    assert_eq!(report.exists, 31);
+    assert_eq!(report.synced, 0);
 }
 
 #[tokio::test]
