@@ -118,7 +118,7 @@ fn convert_to_deployment_info(value: MutexGuard<Deployment>) -> DeploymentInfo {
     DeploymentInfo {
         id: value.id,
         simulation_id: value.simulation_id,
-        strategy_id: value.plugin.strategy.name(),
+        strategy_name: value.plugin.strategy.name(),
         strategy_version: value.plugin.strategy.version(),
         params: value.params.clone(),
         subscriptions: value.plugin.strategy.subscriptions(),

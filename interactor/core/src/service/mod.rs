@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use tracing::debug;
 use tracing::trace;
 
@@ -127,5 +127,18 @@ impl ServiceFacade {
             Exchange::OKX => &mut self.okx_service,
         };
         service.candles_history(&instrument_id.pair, &instrument_id.market_type, timeframe, from_timestamp, to_timestamp, limit).await
+    }
+
+    pub async fn price(&mut self, instrument_id: &InstrumentId, timestamp: DateTime<Utc>) -> f64 {
+        let service = match instrument_id.exchange {
+            Exchange::OKX => &mut self.okx_service,
+        };
+        let from = timestamp - Duration::seconds(1);
+        let to = timestamp + Duration::seconds(1);
+        service.candles_history(&instrument_id.pair, &instrument_id.market_type, Timeframe::OneS, Some(from), Some(to), Some(1))
+            .await
+            .first()
+            .unwrap()
+            .open_price
     }
 }

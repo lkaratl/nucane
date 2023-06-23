@@ -12,8 +12,8 @@ use domain_model::{Action, Candle, CurrencyPair, Deployment, DeploymentEvent, In
 use interactor_config::CONFIG;
 use interactor_core::service::ServiceFacade;
 use interactor_core::subscription_manager::SubscriptionManager;
-use interactor_rest_api::endpoints::GET_CANDLES_HISTORY;
-use interactor_rest_api::path_query::CandlesHistoryQuery;
+use interactor_rest_api::endpoints::{GET_CANDLES_HISTORY, GET_PRICE};
+use interactor_rest_api::path_query::{CandlesQuery, PriceQuery};
 use synapse::{SynapseListen, Topic};
 
 pub async fn run() {
@@ -29,6 +29,7 @@ pub async fn run() {
 
     let router = Router::new()
         .route(GET_CANDLES_HISTORY, get(get_candles_history))
+        .route(GET_PRICE, get(get_price))
         .with_state(service_facade);
 
     let address = SocketAddr::new(IpAddr::from([0, 0, 0, 0]), CONFIG.application.port);
@@ -91,7 +92,7 @@ async fn listen_actions(service_facade: Arc<Mutex<ServiceFacade>>) {
                                                  }).await;
 }
 
-async fn get_candles_history(Query(query_params): Query<CandlesHistoryQuery>,
+async fn get_candles_history(Query(query_params): Query<CandlesQuery>,
                              State(service_facade): State<Arc<Mutex<ServiceFacade>>>) -> Json<Vec<Candle>> {
     let instrument_id = InstrumentId {
         exchange: query_params.exchange,
@@ -110,4 +111,25 @@ async fn get_candles_history(Query(query_params): Query<CandlesHistoryQuery>,
                          query_params.to_timestamp.map(|millis| Utc.timestamp_millis_opt(millis).unwrap()),
                          Some(query_params.limit)).await;
     Json(result)
+}
+
+async fn get_price(Query(query_params): Query<PriceQuery>,
+                   State(service_facade): State<Arc<Mutex<ServiceFacade>>>) -> Json<f64> {
+    let timestamp = query_params.timestamp
+        .map(|millis| Utc.timestamp_millis_opt(millis).unwrap())
+        .unwrap_or(Utc::now());
+    let instrument_id = InstrumentId {
+        exchange: query_params.exchange,
+        market_type: query_params.market_type,
+        pair: CurrencyPair {
+            target: query_params.target,
+            source: query_params.source,
+        },
+    };
+    let price = service_facade
+        .lock()
+        .await
+        .price(&instrument_id,
+               timestamp).await;
+    Json(price)
 }

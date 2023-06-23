@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fs;
 
 use chrono::{DateTime, Duration, Utc};
@@ -6,15 +5,17 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 use uuid::Uuid;
 
-use domain_model::{Action, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderActionType, OrderMarketType, OrderStatus, OrderType, Position, Side, Simulation, SimulationPosition, Tick, Timeframe};
-use engine_rest_api::dto::CreateDeploymentDto;
+use domain_model::{Action, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderActionType, OrderMarketType, OrderStatus, OrderType, Position, Side, Simulation, SimulationDeployment, SimulationPosition, Tick, Timeframe};
+use engine_rest_api::dto::{CreateDeploymentDto};
 use engine_rest_client::EngineClient;
+use interactor_rest_client::InteractorClient;
 use storage_rest_client::StorageClient;
 use synapse::SynapseSend;
 
 pub struct SimulationService {
     engine_client: EngineClient,
     storage_client: StorageClient,
+    interactor_client: InteractorClient,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -22,9 +23,7 @@ pub struct SimulationReport {
     pub simulation_id: Uuid,
     pub start: DateTime<Utc>,
     pub end: DateTime<Utc>,
-    pub strategy_id: String,
-    pub strategy_version: String,
-    pub strategy_params: HashMap<String, String>,
+    pub deployments: Vec<SimulationDeployment>,
     pub ticks: usize,
     pub actions: u16,
     pub profit: f64,
@@ -37,37 +36,26 @@ pub struct SimulationReport {
 impl SimulationService {
     pub fn new(strategy_engine_client: EngineClient,
                storage_client: StorageClient,
+                interactor_client: InteractorClient
     ) -> Self {
         SimulationService {
             engine_client: strategy_engine_client,
             storage_client,
+            interactor_client,
         }
     }
 
     pub async fn run(&self, simulation: Simulation) -> SimulationReport {
         let mut logger = Logger::new(simulation.id);
-        logger.log(format!("Start simulation: '{}'", simulation.id));
-        synapse::writer().send(&simulation);
-        let mut positions = simulation.positions.clone();
-        positions.iter()
-            .for_each(|position| {
-                logger.log(format!("| Initial position: {}-{}= '{}'", position.exchange, position.currency, position.end));
-                synapse::writer().send(&Position::from(position.clone()));
-            });
+        let report = self.run_simulation_with_logger(simulation, &mut logger).await;
+        logger.save();
+        report
+    }
 
-        let create_deployment = CreateDeploymentDto {
-            simulation_id: Some(simulation.id),
-            strategy_name: simulation.strategy_id.clone(),
-            strategy_version: simulation.strategy_version.clone(),
-            params: simulation.params.clone(),
-        };
-        let deployment = self.engine_client.create_deployment(vec![create_deployment])
-            .await
-            .unwrap();
-
-        let mut ticks_len = 0;
-        let mut active_orders = Vec::new();
-        let mut actions_count = 0;
+    async fn run_simulation_with_logger(&self, mut simulation: Simulation, logger: &mut Logger) -> SimulationReport {
+        logger.log(format!("Start simulation: '{:?}'", simulation));
+        self.create_positions(&simulation).await;
+        self.create_deployments(&mut simulation).await;
 
         let mut batch_start = simulation.start;
         let mut batch_end = simulation.start;
@@ -77,28 +65,41 @@ impl SimulationService {
             batch_end = if new_batch_end < simulation.end {
                 new_batch_end
             } else { simulation.end };
-            debug!("Batch processing from start: {batch_start} to end: {batch_end}");
 
-            let subscriptions = deployment.iter()
-                .flat_map(|deployment| deployment.subscriptions.clone())
-                .collect();
-            let ticks = self.get_ticks(simulation.id, batch_start, batch_end, &subscriptions).await;
-            debug!("Ticks len: {}", ticks.len());
-            ticks_len += ticks.len();
-            for tick in &ticks {
-                // info!("| Tick: {} '{}' {}-{}= '{}'", tick.instrument_id.exchange, tick.timestamp, tick.instrument_id.pair.target, tick.instrument_id.pair.source, tick.price);
-                let actions = self.engine_client.create_actions(tick).await.unwrap();
-                for action in &actions {
-                    logger.log(format!("|* Action: {:?} \n   for tick: {} '{}' {}-{}= '{}'", action, tick.instrument_id.exchange, tick.timestamp, tick.instrument_id.pair.target, tick.instrument_id.pair.source, tick.price));
-                    actions_count += 1;
-                    self.execute_action(action, &mut active_orders, &mut logger).await;
-                }
-                self.check_active_orders(&mut active_orders, tick, &mut positions, &mut logger).await;
-            }
+            self.run_simulation_batch(logger, &mut simulation, batch_start, batch_end).await;
 
             batch_start += Duration::days(7);
         }
+        self.delete_deployments(&simulation.deployments).await;
 
+        let report = self.build_report(simulation).await;
+        logger.log(format!("{report:?}"));
+        report
+    }
+
+    async fn run_simulation_batch(&self, logger: &mut Logger, mut simulation: &mut Simulation, batch_start: DateTime<Utc>, batch_end: DateTime<Utc>) {
+        debug!("Batch processing from start: {batch_start} to end: {batch_end}");
+        let ticks = self.get_ticks(logger, simulation, batch_start, batch_end).await;
+        let positions = &mut simulation.positions;
+        let active_orders = &mut simulation.active_orders;
+        debug!("Ticks len: {}", ticks.len());
+        simulation.ticks_len += ticks.len();
+        for tick in &ticks {
+            info!("| Tick: {} '{}' {}-{}= '{}'", tick.instrument_id.exchange, tick.timestamp,
+            tick.instrument_id.pair.target,
+            tick.instrument_id.pair.source, tick.price);
+            let actions = self.engine_client.create_actions(tick).await.unwrap();
+            for action in &actions {
+                logger.log(format!("|* Action: {:?} \n   for tick: {} '{}' {}-{}= '{}'", action, tick.instrument_id.exchange, tick.timestamp, tick.instrument_id.pair.target, tick.instrument_id.pair.source, tick.price));
+                simulation.actions_count += 1;
+                self.execute_action(action, active_orders, logger).await;
+            }
+            self.check_active_orders(active_orders, tick, positions, logger).await;
+        }
+    }
+
+    async fn build_report(&self, simulation: Simulation) -> SimulationReport {
+        let mut positions = simulation.positions;
         positions.iter_mut()
             .for_each(|position| position.diff = position.end - position.start);
 
@@ -106,29 +107,19 @@ impl SimulationService {
         let profit_clear = self.calculate_profit(&positions, simulation.start).await;
         let fees = self.calculate_fees(&positions, simulation.end).await;
 
-        for deployment in deployment {
-            self.engine_client.remove_deployment(deployment.id)
-                .await
-                .unwrap();
-        }
-        let report = SimulationReport {
+        SimulationReport {
             simulation_id: simulation.id,
             start: simulation.start,
             end: simulation.end,
-            strategy_id: simulation.strategy_id,
-            strategy_version: simulation.strategy_version,
-            strategy_params: simulation.params,
-            ticks: ticks_len,
-            actions: actions_count,
+            deployments: simulation.deployments,
+            ticks: simulation.ticks_len,
+            actions: simulation.actions_count,
             profit,
             profit_clear,
             assets: positions,
             fees,
-            active_orders,
-        };
-        logger.log(format!("{report:?}"));
-        logger.save();
-        report
+            active_orders: simulation.active_orders,
+        }
     }
 
     async fn calculate_profit(&self, positions_diff: &[SimulationPosition], timestamp: DateTime<Utc>) -> f64 {
@@ -165,17 +156,12 @@ impl SimulationService {
 
     async fn convert_currency(&self, instrument_id: &InstrumentId, timestamp: DateTime<Utc>, value: f64, conversion_type: CurrencyConversion) -> f64 {
         if instrument_id.pair.source == instrument_id.pair.target { return value; }
-        let from_timestamp = timestamp - Duration::minutes(1);
-        let to_timestamp = timestamp - Duration::minutes(1);
-        let candles = self.storage_client.get_candles(instrument_id, Some(Timeframe::OneS), Some(from_timestamp), Some(to_timestamp), Some(1))
+        let price = self.interactor_client.get_price(instrument_id, Some(timestamp))
             .await
-            .expect("No find candle for currency conversion");
-        let candle = candles
-            .first()
-            .expect("No find candle for currency conversion");
+            .expect("No find price for currency conversion");
         match conversion_type {
-            CurrencyConversion::ToTarget => value / candle.close_price,
-            CurrencyConversion::ToSource => value * candle.close_price
+            CurrencyConversion::ToTarget => value / price,
+            CurrencyConversion::ToSource => value * price
         }
     }
 
@@ -204,6 +190,43 @@ impl SimulationService {
                     OrderActionType::PatchOrder => unimplemented!(),
                     OrderActionType::CancelOrder => unimplemented!(),
                 }
+            }
+        }
+    }
+
+    async fn create_positions(&self, simulation: &Simulation) {
+        simulation.positions.clone()
+            .iter()
+            .for_each(|position| {
+                synapse::writer().send(&Position::from(position.clone()));
+            });
+    }
+
+    async fn create_deployments(&self, simulation: &mut Simulation) {
+        let create_deployments = simulation.deployments.iter()
+            .map(|strategy| convert_to_create_deployment_dto(strategy.clone(), simulation.id))
+            .collect();
+        let created_deployments = self.engine_client.create_deployment(create_deployments)
+            .await
+            .unwrap();
+        for deployment in created_deployments {
+            for simulation_deployment in simulation.deployments.iter_mut() {
+                if deployment.strategy_name == simulation_deployment.strategy_name &&
+                    deployment.strategy_version == simulation_deployment.strategy_version &&
+                    deployment.params == simulation_deployment.params {
+                    simulation_deployment.deployment_id = Some(deployment.id);
+                    simulation_deployment.subscriptions = deployment.subscriptions.clone();
+                }
+            }
+        }
+    }
+
+    async fn delete_deployments(&self, deployments: &[SimulationDeployment]) {
+        for deployment in deployments {
+            if let Some(deployment_id) = deployment.deployment_id {
+                self.engine_client.remove_deployment(deployment_id)
+                    .await
+                    .unwrap();
             }
         }
     }
@@ -239,6 +262,7 @@ impl SimulationService {
         });
     }
 
+    // todo refactor
     async fn execute_order(&self, order: &mut Order, quote: f64, positions: &mut Vec<SimulationPosition>, logger: &mut Logger) {
         logger.log(format!("|--> Execute Order: {}, quote: '{}'", order.id, quote));
         let mut target_position = None;
@@ -313,28 +337,33 @@ impl SimulationService {
         synapse::writer().send(order);
     }
 
-    async fn get_ticks(&self, simulation_id: Uuid, start: DateTime<Utc>, end: DateTime<Utc>, instrument_ids: &Vec<InstrumentId>) -> Vec<Tick> {
+    async fn get_ticks(&self, logger: &mut Logger, simulation: &Simulation, from: DateTime<Utc>, to: DateTime<Utc>) -> Vec<Tick> {
         let mut ticks = Vec::new();
-        let simulation_id = Some(simulation_id);
-        for instrument_id in instrument_ids {
-            let candles = self.storage_client.get_candles(instrument_id,
-                                                          Some(Timeframe::OneS),
-                                                          Some(start),
-                                                          Some(end),
-                                                          None)
-                .await
-                .unwrap();
-            let mut first_iter = candles.iter();
-            for next_candle in candles.iter().skip(1) {
-                let previous_candle = first_iter.next().unwrap();
-                if Price(previous_candle.open_price) != Price(next_candle.open_price) {
-                    ticks.push(Tick {
-                        id: Uuid::new_v4(),
-                        simulation_id,
-                        timestamp: next_candle.timestamp,
-                        instrument_id: instrument_id.clone(),
-                        price: next_candle.open_price,
-                    });
+        let simulation_id = Some(simulation.id);
+        for deployments in &simulation.deployments {
+            let timeframe = deployments.timeframe;
+            for instrument_id in &deployments.subscriptions {
+                let sync_report = self.storage_client.sync_candles(instrument_id, &[timeframe], from, Some(to)).await.unwrap();
+                logger.log(format!("|> Sync candles for {}-{} from: {from}, to: {to}, report: {sync_report:?}", instrument_id.pair.target, instrument_id.pair.source));
+                let candles = self.storage_client.get_candles(instrument_id,
+                                                              Some(timeframe),
+                                                              Some(from),
+                                                              Some(to),
+                                                              None)
+                    .await
+                    .unwrap();
+                let mut first_iter = candles.iter();
+                for next_candle in candles.iter().skip(1) {
+                    let previous_candle = first_iter.next().unwrap();
+                    if Price(previous_candle.open_price) != Price(next_candle.open_price) {
+                        ticks.push(Tick {
+                            id: Uuid::new_v4(),
+                            simulation_id,
+                            timestamp: next_candle.timestamp,
+                            instrument_id: instrument_id.clone(),
+                            price: next_candle.open_price,
+                        });
+                    }
                 }
             }
         }
@@ -389,6 +418,15 @@ fn get_fee(exchange: Exchange, market_type: OrderMarketType, side: Side, size: f
                 }
             }
         }
+    }
+}
+
+fn convert_to_create_deployment_dto(value: SimulationDeployment, simulation_id: Uuid) -> CreateDeploymentDto {
+    CreateDeploymentDto {
+        simulation_id: Some(simulation_id),
+        strategy_name: value.strategy_name,
+        strategy_version: value.strategy_version,
+        params: value.params,
     }
 }
 

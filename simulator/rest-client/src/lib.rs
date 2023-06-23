@@ -1,11 +1,9 @@
-use std::collections::HashMap;
-
 use anyhow::Error;
 use chrono::{DateTime, Utc};
 use reqwest::{Client, Url};
 use tracing::{trace};
 use simulator_core::SimulationReport;
-use simulator_rest_api::dto::{CreatePositionDto, CreateSimulationDto};
+use simulator_rest_api::dto::{CreatePositionDto, CreateSimulationDeploymentDto, CreateSimulationDto};
 use simulator_rest_api::endpoints::POST_SIMULATION;
 
 pub struct SimulatorClient {
@@ -25,16 +23,12 @@ impl SimulatorClient {
                                 start: DateTime<Utc>,
                                 end: DateTime<Utc>,
                                 positions: Vec<CreatePositionDto>,
-                                strategy_id: &str,
-                                strategy_version: &str,
-                                params: HashMap<String, String>, ) -> Result<SimulationReport, Error> {
+                                strategies: Vec<CreateSimulationDeploymentDto>) -> Result<SimulationReport, Error> {
         let body = CreateSimulationDto {
             start: start.timestamp_millis(),
             end: end.timestamp_millis(),
             positions,
-            strategy_id: strategy_id.to_string(),
-            strategy_version: strategy_version.to_string(),
-            params,
+            strategies,
         };
 
         let endpoint = format!("{}{}", self.url, POST_SIMULATION);

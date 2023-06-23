@@ -16,9 +16,11 @@ pub struct Simulation {
     pub start: DateTime<Utc>,
     pub end: DateTime<Utc>,
     pub positions: Vec<SimulationPosition>,
-    pub strategy_id: String,
-    pub strategy_version: String,
-    pub params: HashMap<String, String>,
+    pub deployments: Vec<SimulationDeployment>,
+
+    pub ticks_len: usize,
+    pub actions_count: u16,
+    pub active_orders: Vec<Order>,
 }
 
 impl AuditTags for Simulation {
@@ -33,6 +35,16 @@ impl Synapse for Simulation {
     fn topic(&self) -> Topic {
         Topic::Simulation
     }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct SimulationDeployment {
+    pub deployment_id: Option<Uuid>,
+    pub timeframe: Timeframe,
+    pub strategy_name: String,
+    pub strategy_version: String,
+    pub params: HashMap<String, String>,
+    pub subscriptions: Vec<InstrumentId>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

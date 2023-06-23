@@ -5,8 +5,8 @@ use serde_urlencoded::to_string;
 use tracing::{info, trace};
 
 use domain_model::{Candle, InstrumentId, Timeframe};
-use interactor_rest_api::endpoints::GET_CANDLES_HISTORY;
-use interactor_rest_api::path_query::CandlesHistoryQuery;
+use interactor_rest_api::endpoints::{GET_CANDLES_HISTORY, GET_PRICE};
+use interactor_rest_api::path_query::{CandlesQuery, PriceQuery};
 
 pub struct InteractorClient {
     url: String,
@@ -27,7 +27,7 @@ impl InteractorClient {
                                      from_timestamp: Option<DateTime<Utc>>,
                                      to_timestamp: Option<DateTime<Utc>>,
                                      limit: Option<u8>) -> Result<Vec<Candle>, Error> {
-        let query = CandlesHistoryQuery {
+        let query = CandlesQuery {
             exchange: instrument_id.exchange,
             market_type: instrument_id.market_type,
             target: instrument_id.pair.target,
@@ -39,6 +39,29 @@ impl InteractorClient {
         };
 
         let endpoint = format!("{}{}", self.url, GET_CANDLES_HISTORY);
+        let mut url = Url::parse(&endpoint)?;
+        url.set_query(Some(&to_string(&query)?));
+        trace!("Request url: {url:?}");
+        let result = self.client.get(url)
+            .send()
+            .await?
+            .json()
+            .await?;
+        Ok(result)
+    }
+
+    pub async fn get_price(&self,
+                           instrument_id: &InstrumentId,
+                           timestamp: Option<DateTime<Utc>>) -> Result<f64, Error> {
+        let query = PriceQuery {
+            exchange: instrument_id.exchange,
+            market_type: instrument_id.market_type,
+            target: instrument_id.pair.target,
+            source: instrument_id.pair.source,
+            timestamp: timestamp.map(|timestamp| timestamp.timestamp_millis())
+        };
+
+        let endpoint = format!("{}{}", self.url, GET_PRICE);
         let mut url = Url::parse(&endpoint)?;
         url.set_query(Some(&to_string(&query)?));
         trace!("Request url: {url:?}");
@@ -72,7 +95,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_candles_history(){
+    async fn test_get_candles_history() {
         init_logger("DEBUG");
         let instrument_id = InstrumentId {
             exchange: Exchange::OKX,
