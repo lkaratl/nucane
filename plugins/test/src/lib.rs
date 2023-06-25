@@ -85,7 +85,7 @@ impl Strategy for TestStrategy {
                                 order_type: OrderType::Market,
                                 side: Side::Buy,
                                 size: 10.0,
-                                stop_lose: None,
+                                stop_loss: None,
                                 take_profit: None,
                             }
                         ),
@@ -111,7 +111,7 @@ impl Strategy for TestStrategy {
                                 order_type: OrderType::Limit(tick.price * 0.9),
                                 side: Side::Buy,
                                 size: 10.0 / tick.price,
-                                stop_lose: Trigger::new(tick.price * 0.5, tick.price * 0.4),
+                                stop_loss: Trigger::new(tick.price * 0.5, tick.price * 0.4),
                                 take_profit: Trigger::new(tick.price * 2.0, tick.price * 2.1),
                             }
                         ),
@@ -137,7 +137,7 @@ impl Strategy for TestStrategy {
                                 order_type: OrderType::Market,
                                 side: Side::Sell,
                                 size: 10.0 / tick.price,
-                                stop_lose: Trigger::new(tick.price * 2.0, tick.price * 2.1),
+                                stop_loss: Trigger::new(tick.price * 2.0, tick.price * 2.1),
                                 take_profit: Trigger::new(tick.price * 0.5, tick.price * 0.4),
                             }
                         ),

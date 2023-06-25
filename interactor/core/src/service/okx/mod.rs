@@ -160,8 +160,8 @@ impl Service for OKXService {
             Side::Buy => { enums::Side::Buy }
             Side::Sell => { enums::Side::Sell }
         };
-        let stop_lose = if let Some(stop_lose) = &create_order.stop_lose {
-            Trigger::new(stop_lose.trigger_px, stop_lose.order_px)
+        let stop_loss = if let Some(stop_loss) = &create_order.stop_loss {
+            Trigger::new(stop_loss.trigger_px, stop_loss.order_px)
         } else { None };
         let take_profit = if let Some(take_profit) = &create_order.take_profit {
             Trigger::new(take_profit.trigger_px, take_profit.order_px)
@@ -169,7 +169,7 @@ impl Service for OKXService {
 
         let error_message = match create_order.order_type {
             OrderType::Limit(price) => {
-                let mut request = PlaceOrderRequest::limit(&inst_id, td_mode, side, price, create_order.size, stop_lose, take_profit);
+                let mut request = PlaceOrderRequest::limit(&inst_id, td_mode, side, price, create_order.size, stop_loss, take_profit);
                 request.set_cl_ord_id(&create_order.id.to_string());
                 let [response] = self.rest_client.request(request).await.unwrap();
                 debug!("Place limit order response: {response:?}");
@@ -178,7 +178,7 @@ impl Service for OKXService {
                 } else { None }
             }
             OrderType::Market => {
-                let mut request = PlaceOrderRequest::market(&inst_id, td_mode, side, create_order.size, stop_lose, take_profit);
+                let mut request = PlaceOrderRequest::market(&inst_id, td_mode, side, create_order.size, stop_loss, take_profit);
                 request.set_cl_ord_id(&create_order.id.to_string());
                 let [response] = self.rest_client.request(request).await.unwrap();
                 debug!("Place market order response: {response:?}");
@@ -200,6 +200,8 @@ impl Service for OKXService {
                 side: create_order.side,
                 size: create_order.size,
                 avg_price: 0.0,
+                stop_loss: create_order.stop_loss.clone(),
+                take_profit: create_order.take_profit.clone(),
             }
         } else {
             Order {
@@ -214,6 +216,8 @@ impl Service for OKXService {
                 side: create_order.side,
                 size: create_order.size,
                 avg_price: 0.0,
+                stop_loss: create_order.stop_loss.clone(),
+                take_profit: create_order.take_profit.clone(),
             }
         }
     }

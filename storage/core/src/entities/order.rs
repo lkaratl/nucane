@@ -20,6 +20,8 @@ pub struct Model {
     pub size: f64,
     #[sea_orm(column_type = "Double")]
     pub avg_price: f64,
+    pub stop_loss: Option<Json>,
+    pub take_profit: Option<Json>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -26,14 +26,14 @@ impl<T: ConnectionTrait> OrderService<T> {
     }
 
     pub async fn get(&self,
-               id: Option<String>,
-               exchange: Option<Exchange>,
-               market_type: Option<MarketType>,
-               target: Option<Currency>,
-               source: Option<Currency>,
-               status: Option<OrderStatus>,
-               side: Option<Side>,
-               order_type: Option<OrderType>) -> Vec<domain_model::Order> {
+                     id: Option<String>,
+                     exchange: Option<Exchange>,
+                     market_type: Option<MarketType>,
+                     target: Option<Currency>,
+                     source: Option<Currency>,
+                     status: Option<OrderStatus>,
+                     side: Option<Side>,
+                     order_type: Option<OrderType>) -> Vec<domain_model::Order> {
         self.repository.find_by(
             id,
             exchange,
@@ -64,7 +64,9 @@ impl<T: ConnectionTrait> OrderRepository<T> {
             order_type: ActiveValue::Set(json!(order.order_type)),
             side: ActiveValue::Set(order.side.to_string()),
             size: ActiveValue::Set(order.size),
-            avg_price: ActiveValue::Set(order.avg_price)
+            avg_price: ActiveValue::Set(order.avg_price),
+            stop_loss: ActiveValue::Set(order.stop_loss.map(|sl| json!(sl))),
+            take_profit: ActiveValue::Set(order.take_profit.map(|tp| json!(tp))),
         };
         Order::insert(order)
             .on_conflict(
@@ -73,7 +75,9 @@ impl<T: ConnectionTrait> OrderRepository<T> {
                         order::Column::Status,
                         order::Column::OrderType,
                         order::Column::Size,
-                        order::Column::AvgPrice
+                        order::Column::AvgPrice,
+                        order::Column::StopLoss,
+                        order::Column::TakeProfit,
                     ]).to_owned()
             )
             .exec(self.db.deref())
@@ -82,14 +86,14 @@ impl<T: ConnectionTrait> OrderRepository<T> {
     }
 
     async fn find_by(&self,
-               id: Option<String>,
-               exchange: Option<Exchange>,
-               market_type: Option<MarketType>,
-               target: Option<Currency>,
-               source: Option<Currency>,
-               status: Option<OrderStatus>,
-               side: Option<Side>,
-               order_type: Option<OrderType>) -> Result<Vec<domain_model::Order>, DbErr> {
+                     id: Option<String>,
+                     exchange: Option<Exchange>,
+                     market_type: Option<MarketType>,
+                     target: Option<Currency>,
+                     source: Option<Currency>,
+                     status: Option<OrderStatus>,
+                     side: Option<Side>,
+                     order_type: Option<OrderType>) -> Result<Vec<domain_model::Order>, DbErr> {
         let mut condition = Condition::all();
         if let Some(id) = id {
             condition = condition.add(order::Column::Id.eq(id));
@@ -133,7 +137,9 @@ impl<T: ConnectionTrait> OrderRepository<T> {
                     order_type: serde_json::from_value(model.order_type).unwrap(),
                     side: Side::from_str(&model.side).unwrap(),
                     size: model.size,
-                    avg_price: model.avg_price
+                    avg_price: model.avg_price,
+                    stop_loss: model.stop_loss.map(|sl| serde_json::from_value(sl).unwrap()),
+                    take_profit: model.take_profit.map(|tp| serde_json::from_value(tp).unwrap()),
                 }
             }).collect();
 

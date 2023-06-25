@@ -14,7 +14,7 @@ fn main() {
 }
 
 fn init_logger() {
-    let file_appender = tracing_appender::rolling::never("./", "nucane.log");
+    let file_appender = tracing_appender::rolling::never("./logs", "nucane.log");
 
     let log_output = fmt::Layer::new()
         .with_writer(io::stdout)

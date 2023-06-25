@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use chrono::Utc;
 use serde_json::from_value;
-use tracing::{debug, error, trace};
+use tracing::{debug, error, info, trace};
 use uuid::Uuid;
-use domain_model::{Candle, CandleStatus, Currency, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Tick, Timeframe};
+use domain_model::{Candle, CandleStatus, Currency, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Tick, Timeframe, Trigger};
 use eac::{enums};
 use eac::enums::{OrdState, OrdType, TdMode};
 use eac::rest::{Account, CandleResponse, MarkPriceResponse, OrderDetailsResponse};
@@ -73,7 +73,7 @@ pub fn on_order<C: Fn(Order) + Send + 'static>(callback: C) -> impl FnMut(Messag
     move |message: Message| {
         match message {
             Message::Data { arg: _, data, .. } => {
-                debug!("Retrieved massage with raw payload: {:?}", &data);
+                info!("Retrieved massage with raw payload: {:?}", &data);
                 for item in data {
                     let order_details: OrderDetailsResponse = from_value(item).unwrap();
                     if !order_details.cl_ord_id.is_empty() {
@@ -108,6 +108,18 @@ pub fn on_order<C: Fn(Order) + Send + 'static>(callback: C) -> impl FnMut(Messag
                                 order_type => panic!("Unsupported order type: {order_type:?}")
                             }
                         };
+                        let stop_loss = if order_details.sl_trigger_px.is_some() &&
+                            order_details.sl_ord_px.is_some() {
+                            Trigger::new(order_details.sl_trigger_px.unwrap(), order_details.sl_ord_px.unwrap())
+                        } else {
+                            None
+                        };
+                        let take_profit = if order_details.tp_trigger_px.is_some() &&
+                            order_details.tp_ord_px.is_some() {
+                            Trigger::new(order_details.tp_trigger_px.unwrap(), order_details.tp_ord_px.unwrap())
+                        } else {
+                            None
+                        };
                         let order = Order {
                             id: order_details.cl_ord_id,
                             timestamp: Utc::now(),
@@ -120,6 +132,8 @@ pub fn on_order<C: Fn(Order) + Send + 'static>(callback: C) -> impl FnMut(Messag
                             side,
                             size: order_details.sz,
                             avg_price: order_details.avg_px,
+                            stop_loss,
+                            take_profit,
                         };
                         callback(order);
                     }

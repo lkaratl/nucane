@@ -33,10 +33,11 @@ pub struct SimulationReport {
     pub active_orders: Vec<Order>,
 }
 
+// todo instance per simulation
 impl SimulationService {
     pub fn new(strategy_engine_client: EngineClient,
                storage_client: StorageClient,
-                interactor_client: InteractorClient
+               interactor_client: InteractorClient,
     ) -> Self {
         SimulationService {
             engine_client: strategy_engine_client,
@@ -85,12 +86,11 @@ impl SimulationService {
         debug!("Ticks len: {}", ticks.len());
         simulation.ticks_len += ticks.len();
         for tick in &ticks {
-            info!("| Tick: {} '{}' {}-{}= '{}'", tick.instrument_id.exchange, tick.timestamp,
-            tick.instrument_id.pair.target,
-            tick.instrument_id.pair.source, tick.price);
+            logger.log(format!("| Tick: {} '{}' {}-{}='{}'", tick.instrument_id.exchange, tick.timestamp,
+                               tick.instrument_id.pair.target, tick.instrument_id.pair.source, tick.price));
             let actions = self.engine_client.create_actions(tick).await.unwrap();
             for action in &actions {
-                logger.log(format!("|* Action: {:?} \n   for tick: {} '{}' {}-{}= '{}'", action, tick.instrument_id.exchange, tick.timestamp, tick.instrument_id.pair.target, tick.instrument_id.pair.source, tick.price));
+                logger.log(format!("|* Action: {:?} \n   for tick: {} '{}' {}-{}='{}'", action, tick.instrument_id.exchange, tick.timestamp, tick.instrument_id.pair.target, tick.instrument_id.pair.source, tick.price));
                 simulation.actions_count += 1;
                 self.execute_action(action, active_orders, logger).await;
             }
@@ -182,9 +182,12 @@ impl SimulationService {
                             side: create_order.side,
                             size: create_order.size,
                             avg_price: 0.0,
+                            stop_loss: create_order.stop_loss.clone(),
+                            take_profit: create_order.take_profit.clone(),
                         };
                         synapse::writer().send(&order);
-                        logger.log(format!("|-> Place Order: {} {:?} {:?} '{}-{}' {} '{}' {}", order.exchange, order.market_type, order.order_type, order.pair.target, order.pair.source, order.side, order.size, order.id));
+                        logger.log(format!("|-> Place Order: {} {:?} {:?} '{}-{}' {} '{}', stop-loss: {:?}, take-profit: {:?}, id: '{}'",
+                                           order.exchange, order.market_type, order.order_type, order.pair.target, order.pair.source, order.side, order.size, order.stop_loss, order.take_profit, order.id));
                         active_orders.push(order);
                     }
                     OrderActionType::PatchOrder => unimplemented!(),
@@ -232,107 +235,161 @@ impl SimulationService {
     }
 
     async fn check_active_orders(&self, active_orders: &mut Vec<Order>, tick: &Tick, positions: &mut Vec<SimulationPosition>, logger: &mut Logger) {
-        let mut executed_orders = Vec::new();
+        let mut completed_orders = Vec::new();
         for order in &mut *active_orders {
             match order.order_type {
                 OrderType::Limit(price) => {
-                    match order.side {
-                        Side::Buy if tick.price <= price => {
-                            self.execute_order(order, price, positions, logger).await;
-                            executed_orders.push(order.id.clone());
-                        }
-                        Side::Sell if tick.price >= price => {
-                            self.execute_order(order, price, positions, logger).await;
-                            executed_orders.push(order.id.clone());
-                        }
-                        _ => {}
+                    if self.check_limit_order(order, price, tick, positions, logger).await {
+                        completed_orders.push(order.id.clone());
                     }
                 }
                 OrderType::Market => {
-                    self.execute_order(order, tick.price, positions, logger).await;
-                    executed_orders.push(order.id.clone());
+                    if self.check_market_order(order, tick, positions, logger).await {
+                        completed_orders.push(order.id.clone());
+                    }
                 }
             }
         }
-        active_orders.retain(|order| if executed_orders.contains(&order.id) {
-            logger.log(format!("|--> Order successfully processed: '{}'", order.id));
+        active_orders.retain(|order| if completed_orders.contains(&order.id) {
+            logger.log(format!("|---> Order fully processed: '{}'", order.id));
             false
         } else {
             true
         });
     }
 
-    // todo refactor
+    async fn check_limit_order(&self, order: &mut Order, price: f64, tick: &Tick, positions: &mut Vec<SimulationPosition>, logger: &mut Logger) -> bool {
+        if order.status != OrderStatus::Completed {
+            match order.side {
+                Side::Buy if tick.price <= price => {
+                    logger.log(format!("|--> Execute limit order: {}, price: '{}'", order.id, price));
+                    self.execute_order(order, price, positions, logger).await;
+                    order.side = change_side(order.side);
+                }
+                Side::Sell if tick.price >= price => {
+                    logger.log(format!("|--> Execute limit order: {}, price: '{}'", order.id, price));
+                    self.execute_order(order, price, positions, logger).await;
+                    order.side = change_side(order.side);
+                }
+                _ => {}
+            }
+            false
+        } else {
+            self.check_sp_and_tp(order, tick, positions, logger).await
+        }
+    }
+
+    async fn check_market_order(&self, order: &mut Order, tick: &Tick, positions: &mut Vec<SimulationPosition>, logger: &mut Logger) -> bool {
+        if order.status != OrderStatus::Completed {
+            logger.log(format!("|--> Execute market order: {}, price: '{}'", order.id, tick.price));
+            self.execute_order(order, tick.price, positions, logger).await;
+            order.side = change_side(order.side);
+        }
+        self.check_sp_and_tp(order, tick, positions, logger).await
+    }
+
+    async fn check_sp_and_tp(&self, order: &mut Order, tick: &Tick, positions: &mut Vec<SimulationPosition>, logger: &mut Logger) -> bool {
+        let mut fully_completed = true;
+        if let Some(stop_loss) = &order.stop_loss {
+            let price = stop_loss.order_px;
+            if self.check_sl(order, price, tick, positions, logger).await {
+                logger.log(format!("|X-> Execute SL {} '{}' for order: {} with price: '{}' executed", order.side, price, order.id, tick.price));
+                return true;
+            } else {
+                fully_completed = false;
+            }
+        }
+        if let Some(take_profit) = &order.take_profit {
+            let price = take_profit.order_px;
+            if self.check_tp(order, take_profit.order_px, tick, positions, logger).await {
+                logger.log(format!("|X-> Execute TP {} '{}' for order: {} with price: '{}' executed", order.side, price, order.id, tick.price));
+                return true;
+            } else {
+                fully_completed = false;
+            }
+        }
+        fully_completed
+    }
+
+    async fn check_sl(&self, order: &mut Order, price: f64, tick: &Tick, positions: &mut Vec<SimulationPosition>, logger: &mut Logger) -> bool {
+        match order.side {
+            Side::Buy if tick.price >= price => {
+                self.execute_order(order, price, positions, logger).await;
+                true
+            }
+            Side::Sell if tick.price <= price => {
+                self.execute_order(order, price, positions, logger).await;
+                true
+            }
+            _ => false
+        }
+    }
+
+    async fn check_tp(&self, order: &mut Order, price: f64, tick: &Tick, positions: &mut Vec<SimulationPosition>, logger: &mut Logger) -> bool {
+        match order.side {
+            Side::Buy if tick.price <= price => {
+                self.execute_order(order, price, positions, logger).await;
+                true
+            }
+            Side::Sell if tick.price >= price => {
+                self.execute_order(order, price, positions, logger).await;
+                true
+            }
+            _ => false
+        }
+    }
+
     async fn execute_order(&self, order: &mut Order, quote: f64, positions: &mut Vec<SimulationPosition>, logger: &mut Logger) {
-        logger.log(format!("|--> Execute Order: {}, quote: '{}'", order.id, quote));
+        let target_position_index = positions.iter()
+            .position(|position| position.currency == order.pair.target);
+        let source_position_index = positions.iter()
+            .position(|position| position.currency == order.pair.source);
+
+        if target_position_index.is_none() {
+            positions.push(SimulationPosition {
+                simulation_id: order.simulation_id.unwrap(),
+                exchange: order.exchange,
+                currency: order.pair.target,
+                start: 0.0,
+                end: 0.0,
+                diff: 0.0,
+                fees: 0.0,
+            });
+        }
+        if source_position_index.is_none() {
+            positions.push(SimulationPosition {
+                simulation_id: order.simulation_id.unwrap(),
+                exchange: order.exchange,
+                currency: order.pair.source,
+                start: 0.0,
+                end: 0.0,
+                diff: 0.0,
+                fees: 0.0,
+            });
+        }
+
         let mut target_position = None;
         let mut source_position = None;
+
         positions.iter_mut()
             .for_each(|position| if position.currency == order.pair.target {
                 target_position = Some(position);
             } else if position.currency == order.pair.source {
                 source_position = Some(position);
             });
+
+        let fee_percent = get_fee_percent(order.exchange, order.market_type, order.side);
         match order.side {
             Side::Buy => {
-                let fee = get_fee(order.exchange, order.market_type, order.side, order.size);
-                let source_size = order.size;
-                let source_position = source_position.expect("No asset to execute order");
-                source_position.end -= source_size + fee;
-                source_position.fees += fee;
-                synapse::writer().send(&Position::from(source_position.clone()));
-                logger.log(format!("|--> Update position: {} {} '{} | -{} | -{}'", source_position.exchange, source_position.currency, source_position.end, source_size, fee));
-
-                let target_size = source_size / quote;
-                if let Some(target_position) = target_position {
-                    target_position.end += target_size;
-                    synapse::writer().send(&Position::from(target_position.clone()));
-                    logger.log(format!("|--> Update position: {} {} '{} | +{}'", target_position.exchange, target_position.currency, target_position.end, target_size));
-                } else {
-                    let new_position = SimulationPosition {
-                        simulation_id: order.simulation_id.unwrap(),
-                        exchange: order.exchange,
-                        currency: order.pair.target,
-                        start: 0.0,
-                        end: target_size,
-                        diff: target_size,
-                        fees: 0.0,
-                    };
-                    synapse::writer().send(&Position::from(new_position.clone()));
-                    logger.log(format!("|--> New position: {} {} '{}'", new_position.exchange, new_position.currency, new_position.end));
-                    positions.push(new_position);
-                }
+                let source_size = order.size / quote;
+                update_positions(source_size, order.size, fee_percent, target_position, source_position, logger)
             }
             Side::Sell => {
-                let target_size = order.size;
-                let fee = get_fee(order.exchange, order.market_type, order.side, target_size);
-                let target_position = target_position.expect("No asset to execute order");
-                target_position.end -= target_size + fee;
-                target_position.fees += fee;
-                synapse::writer().send(&Position::from(target_position.clone()));
-                logger.log(format!("|--> Update position: {} {} '{} | -{} | -{}'", target_position.exchange, target_position.currency, target_position.end, target_size, fee));
-
-                let source_size = target_size * quote;
-                if let Some(source_position) = source_position {
-                    source_position.end += source_size;
-                    synapse::writer().send(&Position::from(source_position.clone()));
-                    logger.log(format!("|--> Update position: {} {} '{} | +{}'", source_position.exchange, source_position.currency, source_position.end, source_size));
-                } else {
-                    let new_position = SimulationPosition {
-                        simulation_id: order.simulation_id.unwrap(),
-                        exchange: order.exchange,
-                        currency: order.pair.target,
-                        start: 0.0,
-                        end: source_size,
-                        diff: source_size,
-                        fees: 0.0,
-                    };
-                    synapse::writer().send(&Position::from(new_position.clone()));
-                    logger.log(format!("|--> New position: {} {} '{}'", new_position.exchange, new_position.currency, new_position.end));
-                    positions.push(new_position);
-                }
+                let source_size = order.size * quote;
+                update_positions(source_size, order.size, fee_percent, source_position, target_position, logger);
             }
-        }
+        };
+        order.avg_price = quote;
         order.status = OrderStatus::Completed;
         synapse::writer().send(order);
     }
@@ -372,6 +429,27 @@ impl SimulationService {
     }
 }
 
+fn update_positions(target_size: f64, source_size: f64, fee_percent: f64, target_position: Option<&mut SimulationPosition>, source_position: Option<&mut SimulationPosition>, logger: &mut Logger) {
+    let source_position = source_position.expect("No source asset to execute order");
+    source_position.end -= source_size;
+    synapse::writer().send(&Position::from(source_position.clone()));
+    logger.log(format!("|--> Update position: {} {} '{} | -{}'", source_position.exchange, source_position.currency, source_position.end, source_size));
+
+    let target_position = target_position.expect("No target asset to execute order");
+    let fee = calculate_fee_size(target_size, fee_percent);
+    target_position.end += target_size - fee;
+    target_position.fees += fee;
+    synapse::writer().send(&Position::from(target_position.clone()));
+    logger.log(format!("|--> Update position: {} {} '{} | +{} | -{}'", target_position.exchange, target_position.currency, target_position.end, target_size, fee));
+}
+
+fn change_side(side: Side) -> Side {
+    match side {
+        Side::Buy => Side::Sell,
+        Side::Sell => Side::Buy,
+    }
+}
+
 #[derive(PartialEq, Debug)]
 struct Price(f64);
 
@@ -395,30 +473,34 @@ impl Logger {
     }
 
     fn save(&self) {
-        fs::write(format!("./simulation-{}.log", self.simulation_id), self.file_content.join("\n"))
+        fs::write(format!("./logs/simulation-{}.log", self.simulation_id), self.file_content.join("\n"))
             .expect("Error during saving simulation log")
     }
 }
 
-fn get_fee(exchange: Exchange, market_type: OrderMarketType, side: Side, size: f64) -> f64 {
+fn get_fee_percent(exchange: Exchange, market_type: OrderMarketType, side: Side) -> f64 {
     match exchange {
         Exchange::OKX => {
             match market_type {
                 OrderMarketType::Spot => {
                     match side {
-                        Side::Buy => size * 0.08 / 100.0,
-                        Side::Sell => size * 0.1 / 100.0
+                        Side::Buy => 0.08,
+                        Side::Sell => 0.1
                     }
                 }
                 OrderMarketType::Margin(_) => {
                     match side {
-                        Side::Buy => size * 0.02 / 100.0,
-                        Side::Sell => size * 0.05 / 100.0
+                        Side::Buy => 0.02,
+                        Side::Sell => 0.05
                     }
                 }
             }
         }
     }
+}
+
+fn calculate_fee_size(size: f64, fee_percent: f64) -> f64 {
+    size * fee_percent / 100.0
 }
 
 fn convert_to_create_deployment_dto(value: SimulationDeployment, simulation_id: Uuid) -> CreateDeploymentDto {

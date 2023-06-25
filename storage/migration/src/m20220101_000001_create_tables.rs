@@ -42,6 +42,10 @@ impl MigrationTrait for Migration {
             .col(ColumnDef::new(Order::AvgPrice)
                 .double()
                 .not_null())
+            .col(ColumnDef::new(Order::StopLoss)
+                .json())
+            .col(ColumnDef::new(Order::TakeProfit)
+                .json())
             .to_owned())
             .await?;
 
@@ -172,6 +176,8 @@ enum Order {
     Side,
     Size,
     AvgPrice,
+    StopLoss,
+    TakeProfit,
 }
 
 #[derive(Iden)]

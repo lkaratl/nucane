@@ -7,7 +7,7 @@ use tracing_subscriber::fmt::SubscriberBuilder;
 use tracing_subscriber::EnvFilter;
 
 use domain_model::{Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Side, Timeframe};
-use simulator_rest_api::dto::CreatePositionDto;
+use simulator_rest_api::dto::{CreatePositionDto, CreateSimulationDeploymentDto};
 use simulator_rest_client::SimulatorClient;
 use storage_rest_client::StorageClient;
 
@@ -114,15 +114,21 @@ async fn test_e2e_simulation() {
         size: 5000.0,
     }];
 
+    let strategy = CreateSimulationDeploymentDto {
+        simulation_id: None,
+        timeframe: Timeframe::FiveM,
+        strategy_name: "simulation-e2e".to_string(),
+        strategy_version: "1.0".to_string(),
+        params: HashMap::from([(
+            "test-parameter".to_string(),
+            "test-value".to_string()
+        )]),
+    };
+
     let simulation_report = simulator_client.run_simulation(Utc.timestamp_millis_opt(1685879400000).unwrap(),
                                                             Utc.timestamp_millis_opt(1685880000000).unwrap(),
                                                             positions,
-                                                            "simulation-e2e",
-                                                            "1.0",
-                                                            HashMap::from([(
-                                                                "test-parameter".to_string(),
-                                                                "test-value".to_string()
-                                                            )]))
+                                                            vec![strategy])
         .await
         .unwrap();
 

@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use http::Method;
 use serde::{Deserialize, Serialize};
 
-const STOP_LOSE_TYPE: &str = "mark";
+const STOP_LOSS_TYPE: &str = "mark";
 const TAKE_PROFIT_TYPE: &str = "mark";
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -32,10 +32,10 @@ pub struct PlaceOrderRequest {
 }
 
 impl PlaceOrderRequest {
-    pub fn market(inst_id: &str, td_mode: TdMode, side: Side, qty: f64, stop_lose: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
+    pub fn market(inst_id: &str, td_mode: TdMode, side: Side, qty: f64, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
         let tgt_ccy = if side == Side::Buy { Some("quote_ccy".to_string()) } else { Some("base_ccy".to_string()) };
-        let (sl_trigger_px_type, sl_trigger_px, sl_ord_px) = if let Some(stop_lose) = stop_lose {
-            (Some(STOP_LOSE_TYPE.to_string()), Some(stop_lose.trigger_px), Some(stop_lose.order_px))
+        let (sl_trigger_px_type, sl_trigger_px, sl_ord_px) = if let Some(stop_loss) = stop_loss {
+            (Some(STOP_LOSS_TYPE.to_string()), Some(stop_loss.trigger_px), Some(stop_loss.order_px))
         } else {
             (None, None, None)
         };
@@ -66,10 +66,10 @@ impl PlaceOrderRequest {
         }
     }
 
-    pub fn limit(inst_id: &str, td_mode: TdMode, side: Side, price: f64, qty: f64, stop_lose: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
+    pub fn limit(inst_id: &str, td_mode: TdMode, side: Side, price: f64, qty: f64, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
         let tgt_ccy = if side == Side::Buy { Some("quote_ccy".to_string()) } else { Some("base_ccy".to_string()) };
-        let (sl_trigger_px_type, sl_trigger_px, sl_ord_px) = if let Some(stop_lose) = stop_lose {
-            (Some(STOP_LOSE_TYPE.to_string()), Some(stop_lose.trigger_px), Some(stop_lose.order_px))
+        let (sl_trigger_px_type, sl_trigger_px, sl_ord_px) = if let Some(stop_loss) = stop_loss {
+            (Some(STOP_LOSS_TYPE.to_string()), Some(stop_loss.trigger_px), Some(stop_loss.order_px))
         } else {
             (None, None, None)
         };
@@ -202,10 +202,14 @@ pub struct OrderDetailsResponse {
     #[serde(deserialize_with = "crate::okx::parser::from_str")]
     pub avg_px: f64,
     pub lever: String,
-    pub tp_trigger_px: String,
-    pub tp_ord_px: String,
-    pub sl_trigger_px: String,
-    pub sl_ord_px: String,
+    #[serde(deserialize_with = "crate::okx::parser::from_str_opt")]
+    pub sl_trigger_px: Option<f64>,
+    #[serde(deserialize_with = "crate::okx::parser::from_str_opt")]
+    pub sl_ord_px: Option<f64>,
+    #[serde(deserialize_with = "crate::okx::parser::from_str_opt")]
+    pub tp_trigger_px: Option<f64>,
+    #[serde(deserialize_with = "crate::okx::parser::from_str_opt")]
+    pub tp_ord_px: Option<f64>,
     pub fee_ccy: String,
     #[serde(deserialize_with = "crate::okx::parser::from_str")]
     pub fee: f64,

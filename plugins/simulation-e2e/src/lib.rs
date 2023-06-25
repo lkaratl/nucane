@@ -86,7 +86,7 @@ impl Strategy for SimulationE2EStrategy {
                                 order_type: OrderType::Limit(tick.price * 0.9),
                                 side: Side::Buy,
                                 size: 10.0 / tick.price,
-                                stop_lose: None,
+                                stop_loss: None,
                                 take_profit: None
                             }
                         ),

@@ -268,6 +268,8 @@ pub struct Order {
     pub side: Side,
     pub size: f64,
     pub avg_price: f64,
+    pub stop_loss: Option<Trigger>,
+    pub take_profit: Option<Trigger>,
 }
 
 impl Synapse for Order {
@@ -556,7 +558,7 @@ pub struct CreateOrder {
     pub order_type: OrderType,
     pub side: Side,
     pub size: f64,
-    pub stop_lose: Option<Trigger>,
+    pub stop_loss: Option<Trigger>,
     pub take_profit: Option<Trigger>,
 }
 
