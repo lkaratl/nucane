@@ -5,6 +5,7 @@ use tracing::{error, info};
 
 use domain_model::{Action, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction, OrderActionType, OrderMarketType, Side, OrderStatus, OrderType, Tick, Trigger};
 use domain_model::MarginMode::Isolated;
+use domain_model::Size::{Source, Target};
 use strategy_api::{Strategy, StrategyApi, utils};
 
 #[no_mangle]
@@ -21,7 +22,6 @@ pub struct TestStrategy {
     pub executed: bool,
     pub spot_market_buy: Option<String>,
     pub spot_limit_buy_with_sl_and_tp: Option<String>,
-    pub margin_market_sell_with_sl_and_tp: Option<String>,
 }
 
 impl Default for TestStrategy {
@@ -31,7 +31,6 @@ impl Default for TestStrategy {
             executed: false,
             spot_market_buy: None,
             spot_limit_buy_with_sl_and_tp: None,
-            margin_market_sell_with_sl_and_tp: None,
         }
     }
 }
@@ -62,7 +61,6 @@ impl Strategy for TestStrategy {
             self.executed = true;
             self.spot_market_buy = Some(utils::string_id());
             self.spot_limit_buy_with_sl_and_tp = Some(utils::string_id());
-            self.margin_market_sell_with_sl_and_tp = Some(utils::string_id());
             return vec![
                 // todo hide it to factory or builder
                 Action::OrderAction(
@@ -84,8 +82,8 @@ impl Strategy for TestStrategy {
                                 market_type: OrderMarketType::Spot,
                                 order_type: OrderType::Market,
                                 side: Side::Buy,
-                                size: 10.0,
-                                stop_lose: None,
+                                size: Source(10.0),
+                                stop_loss: None,
                                 take_profit: None,
                             }
                         ),
@@ -110,35 +108,9 @@ impl Strategy for TestStrategy {
                                 market_type: OrderMarketType::Spot,
                                 order_type: OrderType::Limit(tick.price * 0.9),
                                 side: Side::Buy,
-                                size: 10.0 / tick.price,
-                                stop_lose: Trigger::new(tick.price * 0.5, tick.price * 0.4),
+                                size: Source(10.0),
+                                stop_loss: Trigger::new(tick.price * 0.5, tick.price * 0.4),
                                 take_profit: Trigger::new(tick.price * 2.0, tick.price * 2.1),
-                            }
-                        ),
-                    }
-                ),
-                Action::OrderAction(
-                    OrderAction {
-                        id: Uuid::new_v4(),
-                        simulation_id: None,
-                        strategy_name: self.name(),
-                        strategy_version: self.version(),
-                        timestamp: Utc::now(),
-                        status: OrderStatus::Created,
-                        exchange: Exchange::OKX,
-                        order: OrderActionType::CreateOrder(
-                            CreateOrder {
-                                id: self.margin_market_sell_with_sl_and_tp.clone().unwrap(),
-                                pair: CurrencyPair {
-                                    target: Currency::BTC,
-                                    source: Currency::USDT,
-                                },
-                                market_type: OrderMarketType::Margin(Isolated),
-                                order_type: OrderType::Market,
-                                side: Side::Sell,
-                                size: 10.0 / tick.price,
-                                stop_lose: Trigger::new(tick.price * 2.0, tick.price * 2.1),
-                                take_profit: Trigger::new(tick.price * 0.5, tick.price * 0.4),
                             }
                         ),
                     }
@@ -192,27 +164,6 @@ impl TestStrategy {
                         info!("Spot limit buy order with sl and tp InProgress");
                     }
                     self.spot_limit_buy_with_sl_and_tp = None;
-                }
-            }
-        }
-        if self.margin_market_sell_with_sl_and_tp.is_some() {
-            let orders = api.storage.get_orders(self.margin_market_sell_with_sl_and_tp.clone(),
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None).await;
-            info!("{orders:?}");
-            if let Ok(orders) = orders {
-                if let Some(order) = orders.first() {
-                    if order.status == OrderStatus::Completed {
-                        info!("Margin market sell order with sl and tp successfully filled");
-                    } else if order.status == OrderStatus::InProgress {
-                        info!("Margin market sell order with sl and tp InProgress");
-                    }
-                    self.margin_market_sell_with_sl_and_tp = None;
                 }
             }
         }

@@ -4,12 +4,12 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use tracing::{debug, error, trace};
+use tracing::{debug, error, info, trace};
 
-use domain_model::{Candle, CandleStatus, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Tick, Timeframe};
-use eac::enums;
+use domain_model::{Candle, CandleStatus, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Size, Tick, Timeframe};
+use eac::{enums, rest};
 use eac::enums::{InstType, TdMode};
-use eac::rest::{CandlesHistoryRequest, OkExRest, PlaceOrderRequest, Trigger};
+use eac::rest::{CandlesHistoryRequest, OkExRest, PlaceOrderRequest, RateLimitedRestClient, Trigger};
 use eac::websocket::{Channel, Command, OkxWsClient};
 use interactor_config::CONFIG;
 
@@ -22,7 +22,7 @@ pub struct OKXService {
     api_passphrase: String,
     ws_url: String,
     sockets: HashMap<String, OkxWsClient>,
-    rest_client: OkExRest,
+    rest_client: RateLimitedRestClient,
 }
 
 impl OKXService {
@@ -42,7 +42,7 @@ impl OKXService {
             api_passphrase: api_passphrase.to_owned(),
             ws_url: ws_url.to_owned(),
             sockets: HashMap::new(),
-            rest_client,
+            rest_client: RateLimitedRestClient::new(rest_client),
         }
     }
 }
@@ -147,7 +147,7 @@ impl Service for OKXService {
         }
     }
 
-    async fn place_order(&self, create_order: &CreateOrder) -> Order {
+    async fn place_order(&mut self, create_order: &CreateOrder) -> Order {
         let inst_id = format!("{}-{}",
                               create_order.pair.target,
                               create_order.pair.source);
@@ -160,16 +160,19 @@ impl Service for OKXService {
             Side::Buy => { enums::Side::Buy }
             Side::Sell => { enums::Side::Sell }
         };
-        let stop_lose = if let Some(stop_lose) = &create_order.stop_lose {
-            Trigger::new(stop_lose.trigger_px, stop_lose.order_px)
+        let stop_loss = if let Some(stop_loss) = &create_order.stop_loss {
+            Trigger::new(stop_loss.trigger_px, stop_loss.order_px)
         } else { None };
         let take_profit = if let Some(take_profit) = &create_order.take_profit {
             Trigger::new(take_profit.trigger_px, take_profit.order_px)
         } else { None };
-
+        let size = match create_order.size {
+            Size::Target(size) => rest::Size::Target(size),
+            Size::Source(size) => rest::Size::Source(size)
+        };
         let error_message = match create_order.order_type {
             OrderType::Limit(price) => {
-                let mut request = PlaceOrderRequest::limit(&inst_id, td_mode, side, price, create_order.size, stop_lose, take_profit);
+                let mut request = PlaceOrderRequest::limit(&inst_id, td_mode, side, price, size, stop_loss, take_profit);
                 request.set_cl_ord_id(&create_order.id.to_string());
                 let [response] = self.rest_client.request(request).await.unwrap();
                 debug!("Place limit order response: {response:?}");
@@ -178,7 +181,7 @@ impl Service for OKXService {
                 } else { None }
             }
             OrderType::Market => {
-                let mut request = PlaceOrderRequest::market(&inst_id, td_mode, side, create_order.size, stop_lose, take_profit);
+                let mut request = PlaceOrderRequest::market(&inst_id, td_mode, side, size, stop_loss, take_profit);
                 request.set_cl_ord_id(&create_order.id.to_string());
                 let [response] = self.rest_client.request(request).await.unwrap();
                 debug!("Place market order response: {response:?}");
@@ -188,6 +191,7 @@ impl Service for OKXService {
             }
         };
         if let Some(error_message) = error_message {
+            error!("Failed to place order: {}", error_message);
             Order {
                 id: create_order.id.to_owned(),
                 timestamp: Utc::now(),
@@ -198,8 +202,10 @@ impl Service for OKXService {
                 market_type: create_order.market_type,
                 order_type: create_order.order_type,
                 side: create_order.side,
-                size: create_order.size,
+                size: create_order.size.clone(),
                 avg_price: 0.0,
+                stop_loss: create_order.stop_loss.clone(),
+                take_profit: create_order.take_profit.clone(),
             }
         } else {
             Order {
@@ -212,13 +218,15 @@ impl Service for OKXService {
                 market_type: create_order.market_type,
                 order_type: create_order.order_type,
                 side: create_order.side,
-                size: create_order.size,
+                size: create_order.size.clone(),
                 avg_price: 0.0,
+                stop_loss: create_order.stop_loss.clone(),
+                take_profit: create_order.take_profit.clone(),
             }
         }
     }
 
-    async fn candles_history(&self,
+    async fn candles_history(&mut self,
                              currency_pair: &CurrencyPair,
                              market_type: &MarketType,
                              timeframe: Timeframe,
@@ -238,7 +246,7 @@ impl Service for OKXService {
             Timeframe::OneH => "1H",
             Timeframe::TwoH => "2H",
             Timeframe::FourH => "4H",
-            Timeframe::OneD => "1D",
+            Timeframe::OneD => "1Dutc",
         };
         let request = CandlesHistoryRequest {
             inst_id,

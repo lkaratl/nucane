@@ -6,8 +6,10 @@ edition.workspace = true
 [dependencies]
 domain-model = { workspace = true }
 synapse = { workspace = true }
+engine-rest-api = { workspace = true }
 engine-rest-client = { workspace = true }
 storage-rest-client = { workspace = true }
+interactor-rest-client = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
 uuid = { workspace = true }

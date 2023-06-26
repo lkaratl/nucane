@@ -3,7 +3,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use anyhow::{bail, Error};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -16,9 +16,11 @@ pub struct Simulation {
     pub start: DateTime<Utc>,
     pub end: DateTime<Utc>,
     pub positions: Vec<SimulationPosition>,
-    pub strategy_id: String,
-    pub strategy_version: String,
-    pub params: HashMap<String, String>,
+    pub deployments: Vec<SimulationDeployment>,
+
+    pub ticks_len: usize,
+    pub actions_count: u16,
+    pub active_orders: Vec<Order>,
 }
 
 impl AuditTags for Simulation {
@@ -33,6 +35,16 @@ impl Synapse for Simulation {
     fn topic(&self) -> Topic {
         Topic::Simulation
     }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct SimulationDeployment {
+    pub deployment_id: Option<Uuid>,
+    pub timeframe: Timeframe,
+    pub strategy_name: String,
+    pub strategy_version: String,
+    pub params: HashMap<String, String>,
+    pub subscriptions: Vec<InstrumentId>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -140,7 +152,7 @@ impl fmt::Display for CandleStatus {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Copy, Clone)]
+#[derive(Debug, Deserialize, Serialize, Copy, Clone, PartialEq, Eq)]
 pub enum Timeframe {
     OneS,
     OneM,
@@ -173,6 +185,22 @@ impl FromStr for Timeframe {
             "FourH" => Ok(Timeframe::FourH),
             "OneD" => Ok(Timeframe::OneD),
             input => bail!("Unknown market type: {input}")
+        }
+    }
+}
+
+impl Into<Duration> for Timeframe {
+    fn into(self) -> Duration {
+        match self {
+            Timeframe::OneS => Duration::seconds(1),
+            Timeframe::OneM => Duration::minutes(1),
+            Timeframe::FiveM => Duration::minutes(5),
+            Timeframe::FifteenM => Duration::minutes(15),
+            Timeframe::ThirtyM => Duration::minutes(30),
+            Timeframe::OneH => Duration::hours(1),
+            Timeframe::TwoH => Duration::hours(2),
+            Timeframe::FourH => Duration::hours(4),
+            Timeframe::OneD => Duration::days(1),
         }
     }
 }
@@ -238,8 +266,10 @@ pub struct Order {
     pub market_type: OrderMarketType,
     pub order_type: OrderType,
     pub side: Side,
-    pub size: f64,
+    pub size: Size,
     pub avg_price: f64,
+    pub stop_loss: Option<Trigger>,
+    pub take_profit: Option<Trigger>,
 }
 
 impl Synapse for Order {
@@ -263,6 +293,12 @@ impl AuditTags for Order {
         }
         tags
     }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub enum Size {
+    Target(f64),
+    Source(f64),
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -527,9 +563,9 @@ pub struct CreateOrder {
     pub market_type: OrderMarketType,
     pub order_type: OrderType,
     pub side: Side,
-    pub size: f64,
-    pub stop_lose: Option<Trigger>,
-    pub take_profit: Option<Trigger>
+    pub size: Size,
+    pub stop_loss: Option<Trigger>,
+    pub take_profit: Option<Trigger>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

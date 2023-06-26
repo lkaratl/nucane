@@ -7,7 +7,7 @@ use crate::registry::Deployment;
 use anyhow::{Result};
 use thiserror::Error;
 use tokio::sync::Mutex;
-use tracing::error;
+use tracing::{debug, error, trace};
 use domain_model::DeploymentEvent;
 use plugin_loader::Plugin;
 use synapse::SynapseSend;
@@ -35,6 +35,7 @@ impl EngineService {
     }
 
     pub async fn add_or_update_deployment(&self, simulation_id: Option<Uuid>, strategy_name: &str, strategy_version: &str, params: &HashMap<String, String>) -> Result<Arc<Mutex<Deployment>>, EngineError> {
+        debug!("Create deployment for strategy with name: '{strategy_name}' and version: '{strategy_version}' and params: '{params:?}'");
         let plugin = self.load_plugin(strategy_name, strategy_version, params).await?;
         let existing_deployment = self.remove_deployment_by_name_and_version(strategy_name, strategy_version).await;
         let deployment = if let Some(deployment) = existing_deployment {

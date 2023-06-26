@@ -1,5 +1,6 @@
 pub mod endpoints {
-    pub const GET_CANDLES_HISTORY: &str = "/api/v1/interactor/candles/history";
+    pub const GET_CANDLES_HISTORY: &str = "/api/v1/interactor/candles";
+    pub const GET_PRICE: &str = "/api/v1/interactor/price";
 }
 
 pub mod path_query {
@@ -10,7 +11,7 @@ pub mod path_query {
     #[serde_inline_default]
     #[derive(Debug, Deserialize, Serialize)]
     #[allow(unused)]
-    pub struct CandlesHistoryQuery {
+    pub struct CandlesQuery {
         pub exchange: Exchange,
         pub market_type: MarketType,
         pub target: Currency,
@@ -20,5 +21,14 @@ pub mod path_query {
         pub to_timestamp: Option<i64>,
         #[serde_inline_default(100)]
         pub limit: u8,
+    }
+
+    #[derive(Debug, Deserialize, Serialize)]
+    pub struct PriceQuery {
+        pub timestamp: Option<i64>,
+        pub exchange: Exchange,
+        pub market_type: MarketType,
+        pub target: Currency,
+        pub source: Currency,
     }
 }

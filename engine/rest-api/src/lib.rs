@@ -14,14 +14,14 @@ pub mod dto {
     pub struct DeploymentInfo {
         pub id: Uuid,
         pub simulation_id: Option<Uuid>,
-        pub strategy_id: String,
+        pub strategy_name: String,
         pub strategy_version: String,
         pub params: HashMap<String, String>,
         pub subscriptions: Vec<InstrumentId>,
     }
 
     #[derive(Deserialize, Serialize, Debug)]
-    pub struct CreateDeployment {
+    pub struct CreateDeploymentDto {
         pub simulation_id: Option<Uuid>,
         pub strategy_name: String,
         pub strategy_version: String,

@@ -6,7 +6,7 @@ use reqwest::{Client, Response};
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::{from_str, to_string as to_jstring};
 use serde_urlencoded::to_string as to_ustring;
-use tracing::{error, trace};
+use tracing::{debug, error, trace};
 use url::Url;
 use crate::okx::error::OkExError;
 
@@ -24,9 +24,9 @@ pub struct OkExRest {
 }
 
 impl OkExRest {
-    pub fn new(url: String, demo: bool) -> Self {
+    pub fn new(url: &str, demo: bool) -> Self {
         OkExRest {
-            url,
+            url: url.to_string(),
             client: Client::new(),
             credential: None,
             demo,

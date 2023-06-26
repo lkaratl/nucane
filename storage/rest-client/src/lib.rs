@@ -5,8 +5,9 @@ use serde_urlencoded::to_string;
 use tracing::{debug, trace};
 
 use domain_model::{Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position, Side, Timeframe, AuditEvent};
-use storage_rest_api::endpoints::{GET_AUDIT, GET_CANDLES, GET_ORDERS, GET_POSITIONS};
-use storage_rest_api::path_query::{AuditQuery, CandlesQuery, OrdersQuery, PositionsQuery};
+use storage_rest_api::dto::SyncReportDto;
+use storage_rest_api::endpoints::{GET_AUDIT, GET_CANDLES, GET_ORDERS, GET_POSITIONS, POST_CANDLES_SYNC};
+use storage_rest_api::path_query::{AuditQuery, CandlesQuery, CandleSyncQuery, OrdersQuery, PositionsQuery};
 
 pub struct StorageClient {
     url: String,
@@ -19,6 +20,34 @@ impl StorageClient {
             url: url.to_string(),
             client: Client::new(),
         }
+    }
+
+    pub async fn sync_candles(&self,
+                             instrument_id: &InstrumentId,
+                             timeframes: &[Timeframe],
+                             from: DateTime<Utc>,
+                             to: Option<DateTime<Utc>>) -> Result<Vec<SyncReportDto>, Error> {
+        let timeframes = timeframes.iter()
+            .map(|timeframe| timeframe.to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+        let query = CandleSyncQuery {
+            timeframes,
+            from: from.timestamp_millis(),
+            to: to.map(|timestamp| timestamp.timestamp_millis())
+        };
+
+        let endpoint = format!("{}{}", self.url, POST_CANDLES_SYNC);
+        let mut url = Url::parse(&endpoint)?;
+        url.set_query(Some(&to_string(&query)?));
+        trace!("Request url: {url:?}");
+        let result = self.client.post(url)
+            .json(instrument_id)
+            .send()
+            .await?
+            .json()
+            .await?;
+        Ok(result)
     }
 
     pub async fn get_candles(&self,

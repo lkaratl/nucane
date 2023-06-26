@@ -42,5 +42,6 @@ impl Request for CandlesHistoryRequest {
     const SIGNED: bool = false;
     const ENDPOINT: &'static str = "/api/v5/market/history-candles";
     const HAS_PAYLOAD: bool = true;
+    const REQUESTS_PER_SECOND: u8 = 10;
     type Response = Vec<CandleResponse>;
 }

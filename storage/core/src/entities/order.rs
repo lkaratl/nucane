@@ -16,10 +16,11 @@ pub struct Model {
     pub market_type: Json,
     pub order_type: Json,
     pub side: String,
-    #[sea_orm(column_type = "Double")]
-    pub size: f64,
+    pub size: Json,
     #[sea_orm(column_type = "Double")]
     pub avg_price: f64,
+    pub stop_loss: Option<Json>,
+    pub take_profit: Option<Json>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

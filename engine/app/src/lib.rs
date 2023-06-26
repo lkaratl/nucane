@@ -15,7 +15,7 @@ use domain_model::{Action, PluginEvent, PluginEventType, Tick};
 use engine_core::executor::Executor;
 use engine_core::registry::Deployment;
 use engine_core::service::{EngineError, EngineService};
-use engine_rest_api::dto::{CreateDeployment, DeploymentInfo};
+use engine_rest_api::dto::{CreateDeploymentDto, DeploymentInfo};
 use engine_rest_api::endpoints::{POST_CREATE_ACTIONS, GET_POST_DEPLOYMENTS, DELETE_DEPLOYMENTS_BY_ID};
 use registry_rest_client::RegistryClient;
 use synapse::{SynapseListen, Topic};
@@ -30,7 +30,7 @@ pub async fn run() {
     let registry_client = Arc::new(RegistryClient::new("http://localhost:8085"));
     let engine_service = Arc::new(EngineService::new(Arc::clone(&registry_client)));
     listen_ticks(Arc::clone(&executor)).await;
-    // listen_plugins(Arc::clone(&engine_service)); // todo problem with tokio async runtime
+    // listen_plugins(Arc::clone(&engine_service)); // todo fix problem with tokio async runtime
 
     let router = Router::new()
         .route(GET_POST_DEPLOYMENTS, get(get_deployments).post(create_deployment))
@@ -83,16 +83,19 @@ async fn get_deployments(State(engine_service): State<Arc<EngineService>>) -> Js
     Json(result)
 }
 
-async fn create_deployment(State(engine_service): State<Arc<EngineService>>, Json(request): Json<CreateDeployment>) -> Result<Json<DeploymentInfo>, StatusCode> {
-    debug!("Create deployment request, for strategy with name: '{}' and version: '{}'", request.strategy_name, request.strategy_version);
-    trace!("Deployment body: {request:?}");
-    let deployment = engine_service.add_or_update_deployment(request.simulation_id, &request.strategy_name, &request.strategy_version, &request.params).await
-        .map_err(|err|
-            match err {
-                EngineError::PluginNotFound => StatusCode::NOT_FOUND,
-                EngineError::PluginLoadingError => StatusCode::INTERNAL_SERVER_ERROR
-            })?;
-    Ok(Json(convert_to_deployment_info(deployment.lock().await)))
+async fn create_deployment(State(engine_service): State<Arc<EngineService>>, Json(request): Json<Vec<CreateDeploymentDto>>) -> Result<Json<Vec<DeploymentInfo>>, StatusCode> {
+    let mut result = Vec::new();
+    for create_deployment in request {
+        let deployment = engine_service.add_or_update_deployment(create_deployment.simulation_id, &create_deployment.strategy_name, &create_deployment.strategy_version, &create_deployment.params).await
+            .map_err(|err|
+                match err {
+                    EngineError::PluginNotFound => StatusCode::NOT_FOUND,
+                    EngineError::PluginLoadingError => StatusCode::INTERNAL_SERVER_ERROR
+                })?;
+        let deployment_info = convert_to_deployment_info(deployment.lock().await);
+        result.push(deployment_info);
+    }
+    Ok(Json(result))
 }
 
 async fn delete_deployment(State(engine_service): State<Arc<EngineService>>, Path(deployment_id): Path<String>) -> Json<Option<DeploymentInfo>> {
@@ -115,7 +118,7 @@ fn convert_to_deployment_info(value: MutexGuard<Deployment>) -> DeploymentInfo {
     DeploymentInfo {
         id: value.id,
         simulation_id: value.simulation_id,
-        strategy_id: value.plugin.strategy.name(),
+        strategy_name: value.plugin.strategy.name(),
         strategy_version: value.plugin.strategy.version(),
         params: value.params.clone(),
         subscriptions: value.plugin.strategy.subscriptions(),
