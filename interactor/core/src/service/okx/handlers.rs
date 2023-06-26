@@ -4,7 +4,7 @@ use chrono::Utc;
 use serde_json::from_value;
 use tracing::{debug, error, info, trace};
 use uuid::Uuid;
-use domain_model::{Candle, CandleStatus, Currency, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Tick, Timeframe, Trigger};
+use domain_model::{Candle, CandleStatus, Currency, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Size, Tick, Timeframe, Trigger};
 use eac::{enums};
 use eac::enums::{OrdState, OrdType, TdMode};
 use eac::rest::{Account, CandleResponse, MarkPriceResponse, OrderDetailsResponse};
@@ -101,12 +101,19 @@ pub fn on_order<C: Fn(Order) + Send + 'static>(callback: C) -> impl FnMut(Messag
                             enums::Side::Buy => Side::Buy,
                             enums::Side::Sell => Side::Sell
                         };
-                        let order_type = {
-                            match order_details.ord_type {
+                        let order_type = match order_details.ord_type {
                                 OrdType::Market => OrderType::Market,
                                 OrdType::Limit => OrderType::Limit(order_details.px.unwrap()),
                                 order_type => panic!("Unsupported order type: {order_type:?}")
+                            };
+                        let size = match order_details.ord_type {
+                            OrdType::Market => match order_details.tgt_ccy.as_str() {
+                                "quote_ccy" => Size::Source(order_details.sz),
+                                "base_ccy" => Size::Target(order_details.sz),
+                                _ => panic!("Empty target currency")
                             }
+                            OrdType::Limit => Size::Target(order_details.sz),
+                            order_type => panic!("Unsupported order type: {order_type:?}")
                         };
                         let stop_loss = if order_details.sl_trigger_px.is_some() &&
                             order_details.sl_ord_px.is_some() {
@@ -130,7 +137,7 @@ pub fn on_order<C: Fn(Order) + Send + 'static>(callback: C) -> impl FnMut(Messag
                             market_type,
                             order_type,
                             side,
-                            size: order_details.sz,
+                            size,
                             avg_price: order_details.avg_px,
                             stop_loss,
                             take_profit,

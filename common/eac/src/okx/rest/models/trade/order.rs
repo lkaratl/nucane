@@ -32,8 +32,11 @@ pub struct PlaceOrderRequest {
 }
 
 impl PlaceOrderRequest {
-    pub fn market(inst_id: &str, td_mode: TdMode, side: Side, qty: f64, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
-        let tgt_ccy = if side == Side::Buy { Some("quote_ccy".to_string()) } else { Some("base_ccy".to_string()) };
+    pub fn market(inst_id: &str, td_mode: TdMode, side: Side, qty: Size, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
+        let (tgt_ccy, qty) = match qty {
+            Size::Target(qty) => ("base_ccy".to_string(), qty),
+            Size::Source(qty) => ("quote_ccy".to_string(), qty)
+        };
         let (sl_trigger_px_type, sl_trigger_px, sl_ord_px) = if let Some(stop_loss) = stop_loss {
             (Some(STOP_LOSS_TYPE.to_string()), Some(stop_loss.trigger_px), Some(stop_loss.order_px))
         } else {
@@ -48,7 +51,7 @@ impl PlaceOrderRequest {
             inst_id: inst_id.into(),
             td_mode,
             ccy: None,
-            tgt_ccy,
+            tgt_ccy: Some(tgt_ccy),
             tag: None,
             side,
             pos_side: None,
@@ -66,8 +69,11 @@ impl PlaceOrderRequest {
         }
     }
 
-    pub fn limit(inst_id: &str, td_mode: TdMode, side: Side, price: f64, qty: f64, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
-        let tgt_ccy = if side == Side::Buy { Some("quote_ccy".to_string()) } else { Some("base_ccy".to_string()) };
+    pub fn limit(inst_id: &str, td_mode: TdMode, side: Side, price: f64, qty: Size, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
+        let qty = match qty {
+            Size::Target(qty) => qty,
+            Size::Source(qty) => qty / price
+        };
         let (sl_trigger_px_type, sl_trigger_px, sl_ord_px) = if let Some(stop_loss) = stop_loss {
             (Some(STOP_LOSS_TYPE.to_string()), Some(stop_loss.trigger_px), Some(stop_loss.order_px))
         } else {
@@ -82,7 +88,7 @@ impl PlaceOrderRequest {
             inst_id: inst_id.into(),
             td_mode,
             ccy: None,
-            tgt_ccy,
+            tgt_ccy: None,
             tag: None,
             side,
             pos_side: None,
@@ -109,6 +115,11 @@ impl PlaceOrderRequest {
         self.cl_ord_id = Some(cl_ord_id.to_string());
         self
     }
+}
+
+pub enum Size {
+    Target(f64),
+    Source(f64),
 }
 
 pub struct Trigger {
@@ -189,6 +200,7 @@ pub struct OrderDetailsResponse {
     pub pnl: f64,
     pub ord_type: OrdType,
     pub side: Side,
+    pub tgt_ccy: String,
     // pub pos_side: PosSide,
     pub td_mode: TdMode,
     #[serde(deserialize_with = "crate::okx::parser::from_str")]

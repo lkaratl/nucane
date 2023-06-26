@@ -7,6 +7,7 @@ use async_trait::async_trait;
 
 use domain_model::{Action, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction, OrderActionType, OrderMarketType, Side, OrderStatus, OrderType, Tick, Timeframe};
 use domain_model::MarginMode::{Cross, Isolated};
+use domain_model::Size::Source;
 use strategy_api::{Strategy, StrategyApi, utils};
 
 #[no_mangle]
@@ -85,7 +86,7 @@ impl Strategy for SimulationE2EStrategy {
                                 market_type: OrderMarketType::Spot,
                                 order_type: OrderType::Limit(tick.price * 0.9),
                                 side: Side::Buy,
-                                size: 10.0 / tick.price,
+                                size: Source(10.0),
                                 stop_loss: None,
                                 take_profit: None
                             }

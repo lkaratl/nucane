@@ -266,7 +266,7 @@ pub struct Order {
     pub market_type: OrderMarketType,
     pub order_type: OrderType,
     pub side: Side,
-    pub size: f64,
+    pub size: Size,
     pub avg_price: f64,
     pub stop_loss: Option<Trigger>,
     pub take_profit: Option<Trigger>,
@@ -293,6 +293,12 @@ impl AuditTags for Order {
         }
         tags
     }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub enum Size {
+    Target(f64),
+    Source(f64),
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -557,7 +563,7 @@ pub struct CreateOrder {
     pub market_type: OrderMarketType,
     pub order_type: OrderType,
     pub side: Side,
-    pub size: f64,
+    pub size: Size,
     pub stop_loss: Option<Trigger>,
     pub take_profit: Option<Trigger>,
 }

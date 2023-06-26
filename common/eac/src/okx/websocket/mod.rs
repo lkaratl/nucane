@@ -72,7 +72,7 @@ async fn run<T: FnMut(Message) + Send + 'static>(url: &Url, credential: Option<C
         let url = url.clone();
         handling_loop(url, credential, rx, callback)
     });
-    tokio::time::sleep(Duration::from_secs(1)).await; // todo remove this hotfix for login response
+    tokio::time::sleep(Duration::from_secs(2)).await; // todo remove this hotfix for login response
     tx
 }
 

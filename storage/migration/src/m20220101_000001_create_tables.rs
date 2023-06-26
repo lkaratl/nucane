@@ -37,7 +37,7 @@ impl MigrationTrait for Migration {
                 .string()
                 .not_null())
             .col(ColumnDef::new(Order::Size)
-                .double()
+                .json()
                 .not_null())
             .col(ColumnDef::new(Order::AvgPrice)
                 .double()

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 use uuid::Uuid;
 
-use domain_model::{Action, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderActionType, OrderMarketType, OrderStatus, OrderType, Position, Side, Simulation, SimulationDeployment, SimulationPosition, Tick, Timeframe};
+use domain_model::{Action, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderActionType, OrderMarketType, OrderStatus, OrderType, Position, Side, Simulation, SimulationDeployment, SimulationPosition, Size, Tick, Timeframe};
 use engine_rest_api::dto::{CreateDeploymentDto};
 use engine_rest_client::EngineClient;
 use interactor_rest_client::InteractorClient;
@@ -180,13 +180,13 @@ impl SimulationService {
                             order_type: create_order.order_type,
                             pair: create_order.pair,
                             side: create_order.side,
-                            size: create_order.size,
+                            size: create_order.size.clone(),
                             avg_price: 0.0,
                             stop_loss: create_order.stop_loss.clone(),
                             take_profit: create_order.take_profit.clone(),
                         };
                         synapse::writer().send(&order);
-                        logger.log(format!("|-> Place Order: {} {:?} {:?} '{}-{}' {} '{}', stop-loss: {:?}, take-profit: {:?}, id: '{}'",
+                        logger.log(format!("|-> Place Order: {} {:?} {:?} '{}-{}' {} '{:?}', stop-loss: {:?}, take-profit: {:?}, id: '{}'",
                                            order.exchange, order.market_type, order.order_type, order.pair.target, order.pair.source, order.side, order.size, order.stop_loss, order.take_profit, order.id));
                         active_orders.push(order);
                     }
@@ -379,14 +379,16 @@ impl SimulationService {
             });
 
         let fee_percent = get_fee_percent(order.exchange, order.market_type, order.side);
+        let (target_size, source_size) = match order.size {
+            Size::Target(size) => (size, size * quote),
+            Size::Source(size) => (size / quote, size)
+        };
         match order.side {
             Side::Buy => {
-                let source_size = order.size / quote;
-                update_positions(source_size, order.size, fee_percent, target_position, source_position, logger)
+                update_positions(target_size, source_size, fee_percent, target_position, source_position, logger)
             }
             Side::Sell => {
-                let source_size = order.size * quote;
-                update_positions(source_size, order.size, fee_percent, source_position, target_position, logger);
+                update_positions(source_size, target_size, fee_percent, source_position, target_position, logger);
             }
         };
         order.avg_price = quote;
