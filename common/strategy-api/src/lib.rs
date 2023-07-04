@@ -4,6 +4,8 @@ use std::collections::HashMap;
 use std::future::Future;
 use async_trait::async_trait;
 use tokio::runtime::Runtime;
+use tracing::span;
+use tracing::Level;
 
 use domain_model::{Action, InstrumentId, Tick};
 use indicators_api::Indicators;
@@ -17,6 +19,9 @@ pub trait Strategy {
     fn subscriptions(&self) -> Vec<InstrumentId>;
 
     fn on_tick_sync(&mut self, tick: &Tick, api: &StrategyApi) -> Vec<Action> {
+        let tick_id = format!("{} '{}' {}-{}='{}'", tick.instrument_id.exchange, tick.timestamp,
+                              tick.instrument_id.pair.target, tick.instrument_id.pair.source, tick.price);
+        let _span = span!(Level::INFO, "strategy", name = self.name(), version = self.version(), tick_id).entered();
         with_tokio_runtime(self.on_tick(tick, api))
     }
     async fn on_tick(&mut self, tick: &Tick, api: &StrategyApi) -> Vec<Action>;

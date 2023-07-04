@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Duration, Utc};
-use tracing::debug;
+use tracing::{debug, info};
 use tracing::trace;
 
 use domain_model::{Candle, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarketType, Order, Position, Tick, Timeframe};
@@ -87,8 +87,8 @@ impl ServiceFacade {
             Exchange::OKX => &mut self.okx_service,
         };
         service.listen_orders(|order| {
-            debug!("Retrieved new order from exchange: '{}', market type: '{:?}', pair: '{}-{}', order type: '{:?}'",
-            order.exchange, order.market_type, order.pair.target, order.pair.source, order.order_type);
+            debug!("Retrieved new order with id: '{}' from exchange: '{}', market type: '{:?}', pair: '{}-{}', order type: '{:?}', stop-loss: '{:?}', take-profit: '{:?}'",
+            order.id, order.exchange, order.market_type, order.pair.target, order.pair.source, order.order_type, order.stop_loss, order.take_profit);
             trace!("Send order to synapse: {order:?}");
             synapse::writer().send(&order);
         }).await;
@@ -108,8 +108,8 @@ impl ServiceFacade {
     }
 
     pub async fn place_order(&mut self, exchange: Exchange, create_order: CreateOrder) {
-        debug!("Placing new order for exchange: '{exchange}', market type: '{:?}', pair: '{}-{}', order type: '{:?}'",
-        create_order.market_type, create_order.pair.target, create_order.pair.source, create_order.order_type);
+        info!("Placing new order with id: '{}' for exchange: '{exchange}', market type: '{:?}', pair: '{}-{}', order type: '{:?}', stop-loss: '{:?}', take-profit: '{:?}'",
+            create_order.id, create_order.market_type, create_order.pair.target, create_order.pair.source, create_order.order_type, create_order.stop_loss, create_order.take_profit);
         let service = match exchange {
             Exchange::OKX => &mut self.okx_service,
         };

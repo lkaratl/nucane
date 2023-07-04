@@ -543,6 +543,15 @@ pub enum OrderStatus {
     Canceled,
 }
 
+impl OrderStatus {
+    pub fn is_finished(&self) -> bool {
+        match self {
+            OrderStatus::Created | OrderStatus::InProgress => false,
+            OrderStatus::Failed(_) | OrderStatus::Completed | OrderStatus::Canceled => true
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct OrderInProgressStatus {
     pub order_id: String,
