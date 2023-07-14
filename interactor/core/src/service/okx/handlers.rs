@@ -11,7 +11,7 @@ use eac::rest::{Account, CandleResponse, MarkPriceResponse, OrderDetailsResponse
 use eac::websocket::{Channel, Message};
 
 const TICK_PRICE_DEVIATION_MULTIPLIER: f64 = 1000.0;
-const TICK_PRICE_THRESHOLD: f64 = 5.0;
+const TICK_PRICE_THRESHOLD: f64 = 2.0;
 
 pub fn on_tick<C: Fn(Tick) + Send + 'static>(callback: C, currency_pair: CurrencyPair, market_type: MarketType) -> impl FnMut(Message) {
     let mut deviation_percent = 1f64;
