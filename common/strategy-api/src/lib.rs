@@ -2,9 +2,10 @@ pub mod utils;
 
 use std::collections::HashMap;
 use std::future::Future;
+use std::time::Duration;
 use async_trait::async_trait;
-use tokio::runtime::Runtime;
-use tracing::span;
+use tokio::time::error::Elapsed;
+use tracing::{error, span};
 use tracing::Level;
 
 use domain_model::{Action, InstrumentId, Tick};
@@ -22,14 +23,22 @@ pub trait Strategy {
         let tick_id = format!("{} '{}' {}-{}='{}'", tick.instrument_id.exchange, tick.timestamp,
                               tick.instrument_id.pair.target, tick.instrument_id.pair.source, tick.price);
         let _span = span!(Level::INFO, "strategy", name = self.name(), version = self.version(), tick_id).entered();
-        with_tokio_runtime(self.on_tick(tick, api))
+        let runtime = with_tokio_runtime(self.on_tick(tick, api));
+        match runtime {
+            Ok(actions) => actions,
+            Err(_) => {
+                error!("Timeout during tick processing, strategy: '{}:{}'", self.name(), self.version());
+                Vec::new()
+            }
+        }
     }
+
     async fn on_tick(&mut self, tick: &Tick, api: &StrategyApi) -> Vec<Action>;
 }
 
-fn with_tokio_runtime<T>(future: impl Future<Output=T>) -> T {
-    let rt = Runtime::new().unwrap();
-    rt.block_on(future)
+#[tokio::main]
+async fn with_tokio_runtime<T: Default>(future: impl Future<Output=T>) -> Result<T, Elapsed> {
+    tokio::time::timeout(Duration::from_secs(5), future).await
 }
 
 pub struct StrategyApi {

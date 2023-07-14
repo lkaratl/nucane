@@ -20,7 +20,7 @@ pub async fn find(predicate: impl Fn(&MutexGuard<Deployment>) -> bool) -> Vec<Ar
     for deployment in deployments.iter() {
         let guard = deployment.lock().await;
         if predicate(&guard) {
-            result.push(Arc::clone(&deployment));
+            result.push(Arc::clone(deployment));
         }
     }
     result
