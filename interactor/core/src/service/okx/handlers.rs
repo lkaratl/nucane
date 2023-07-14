@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use chrono::Utc;
 use serde_json::from_value;
-use tracing::{debug, error, info, trace};
+use tracing::{error, info, trace};
 use uuid::Uuid;
 use domain_model::{Candle, CandleStatus, Currency, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Size, Tick, Timeframe, Trigger};
 use eac::{enums};
@@ -10,31 +10,35 @@ use eac::enums::{OrdState, OrdType, TdMode};
 use eac::rest::{Account, CandleResponse, MarkPriceResponse, OrderDetailsResponse};
 use eac::websocket::{Channel, Message};
 
+const TICK_PRICE_DEVIATION_MULTIPLIER: f64 = 1000.0;
+const TICK_PRICE_THRESHOLD: f64 = 5.0;
+
 pub fn on_tick<C: Fn(Tick) + Send + 'static>(callback: C, currency_pair: CurrencyPair, market_type: MarketType) -> impl FnMut(Message) {
-    let mut price = 0f64;
+    let mut deviation_percent = 1f64;
     move |message| {
         match message {
             Message::Data { arg: _, mut data, .. } => {
                 trace!("Retrieved massage with raw payload: {:?}", &data);
                 let data = data.pop().unwrap();
                 let mark_price: MarkPriceResponse = from_value(data).unwrap();
-                if price == mark_price.mark_px {
-                    return;
-                } else {
-                    price = mark_price.mark_px;
+
+                let price = mark_price.mark_px;
+                let deviation = price / deviation_percent - TICK_PRICE_DEVIATION_MULTIPLIER;
+                if !(TICK_PRICE_THRESHOLD * -1.0..=TICK_PRICE_THRESHOLD).contains(&deviation) {
+                    deviation_percent = price / TICK_PRICE_DEVIATION_MULTIPLIER;
+                    let tick = Tick {
+                        id: Uuid::new_v4(),
+                        simulation_id: None,
+                        timestamp: mark_price.ts,
+                        instrument_id: InstrumentId {
+                            exchange: Exchange::OKX,
+                            market_type,
+                            pair: currency_pair,
+                        },
+                        price,
+                    };
+                    callback(tick);
                 }
-                let tick = Tick {
-                    id: Uuid::new_v4(),
-                    simulation_id: None,
-                    timestamp: mark_price.ts,
-                    instrument_id: InstrumentId {
-                        exchange: Exchange::OKX,
-                        market_type,
-                        pair: currency_pair,
-                    },
-                    price: mark_price.mark_px,
-                };
-                callback(tick);
             }
             Message::Error { code, msg, .. } => error!("Error {}: {}", code, msg),
             _ => {}
@@ -102,10 +106,10 @@ pub fn on_order<C: Fn(Order) + Send + 'static>(callback: C) -> impl FnMut(Messag
                             enums::Side::Sell => Side::Sell
                         };
                         let order_type = match order_details.ord_type {
-                                OrdType::Market => OrderType::Market,
-                                OrdType::Limit => OrderType::Limit(order_details.px.unwrap()),
-                                order_type => panic!("Unsupported order type: {order_type:?}")
-                            };
+                            OrdType::Market => OrderType::Market,
+                            OrdType::Limit => OrderType::Limit(order_details.px.unwrap()),
+                            order_type => panic!("Unsupported order type: {order_type:?}")
+                        };
                         let size = match order_details.ord_type {
                             OrdType::Market => match order_details.tgt_ccy.as_str() {
                                 "quote_ccy" => Size::Source(order_details.sz),
