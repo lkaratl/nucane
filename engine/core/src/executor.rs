@@ -1,3 +1,4 @@
+use tracing::debug;
 use domain_model::{Action, Tick};
 use strategy_api::{Strategy, StrategyApi};
 use synapse::SynapseSend;
@@ -24,6 +25,9 @@ impl Executor {
             let is_simulation = deployment.simulation_id == tick.simulation_id;
             let strategy = &mut deployment.plugin.strategy;
             if is_subscribed(strategy, tick) && is_simulation {
+                debug!("Processing tick: '{} {}-{}={}' for strategy: '{}:{}'",
+                    tick.instrument_id.exchange, tick.instrument_id.pair.target, tick.instrument_id.pair.source, tick.price,
+                    strategy.name(), strategy.version());
                 let mut actions = strategy.on_tick_sync(tick, &self.api);
                 actions.iter_mut().for_each(|action| match action {
                     Action::OrderAction(order_action) => order_action.simulation_id = deployment.simulation_id
