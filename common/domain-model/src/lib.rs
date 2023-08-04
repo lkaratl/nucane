@@ -430,6 +430,7 @@ pub enum Currency {
     PAX,
     JFI,
     OKB,
+    DOGE,
 }
 
 impl fmt::Display for Currency {
@@ -467,6 +468,7 @@ impl FromStr for Currency {
             "PAX" => Ok(Currency::PAX),
             "JFI" => Ok(Currency::JFI),
             "OKB" => Ok(Currency::OKB),
+            "DOGE" => Ok(Currency::DOGE),
             input => bail!("Unknown currency: {input}")
         }
     }
