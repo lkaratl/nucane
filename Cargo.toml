@@ -71,7 +71,7 @@ storage-core = { path = "storage/core" }
 storage-rest-api = { path = "storage/rest-api" }
 storage-rest-client = { path = "storage/rest-client" }
 
-rdkafka = { version = "0.31.0", features = ["cmake-build"] }
+rdkafka = { version = "0.33.2", features = ["dynamic-linking"] }
 tokio = { version = "1.28", features = ["full"] }
 futures = "0.3.28"
 uuid = { version = "1.3.2", features = ["v4", "serde"] }
