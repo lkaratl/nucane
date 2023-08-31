@@ -1,6 +1,6 @@
 steps:
   - label: ":hammer: Build"
-    command: ls
+    command: sleep 120
     artifact_paths: "./target/release"
     plugins:
       - docker#v5.8.0:
