@@ -1,6 +1,7 @@
 steps:
   - label: ":hammer: Build"
     commands:
+      - "apt update && sudo apt upgrade && sudo apt install -y cmake" # requiered by rdkafka crate
       - "cargo build --release"
       - "sleep 60"
     artifact_paths: "./target/release"
