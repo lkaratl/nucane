@@ -1,9 +1,9 @@
 steps:
   - label: ":hammer: Build"
-    command: sleep 120
-#    artifact_paths: "./target/release"
+    commands:
+      - "cargo build --release"
+      - "sleep 60"
+    artifact_paths: "./target/release"
     plugins:
       - docker#v5.8.0:
           image: "rust:latest"
-          volumes:
-            - ".:/app"
