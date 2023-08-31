@@ -5,3 +5,5 @@ steps:
     plugins:
       - docker#v5.8.0:
           image: "rust:latest"
+          volumes:
+            - ".:/app"
