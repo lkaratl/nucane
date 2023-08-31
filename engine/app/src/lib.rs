@@ -66,7 +66,7 @@ async fn listen_plugins(engine_service: Arc<EngineService>) {
                     let name = &plugin_event.strategy_name;
                     let version = &plugin_event.strategy_version;
                     debug!("Received update event for plugin with name: '{}', version: '{}'", name, version);
-                    if let Some(err) = engine_service.update_plugin(name, version).err() {
+                    if let Some(err) = engine_service.update_plugin(name, version).await.err() {
                         error!("Error during update deployment with name: '{}', version: '{}'. Error: '{}'", name, version, err);
                     } else { info!("Deployments for plugin with name: '{}', version: '{}' successfully updated", name, version); }
                 }
@@ -86,7 +86,7 @@ async fn get_deployments(State(engine_service): State<Arc<EngineService>>) -> Js
 async fn create_deployment(State(engine_service): State<Arc<EngineService>>, Json(request): Json<Vec<CreateDeploymentDto>>) -> Result<Json<Vec<DeploymentInfo>>, StatusCode> {
     let mut result = Vec::new();
     for create_deployment in request {
-        let deployment = engine_service.add_or_update_deployment(create_deployment.simulation_id, &create_deployment.strategy_name, &create_deployment.strategy_version, &create_deployment.params).await
+        let deployment = engine_service.add_deployment(create_deployment.simulation_id, &create_deployment.strategy_name, &create_deployment.strategy_version, &create_deployment.params).await
             .map_err(|err|
                 match err {
                     EngineError::PluginNotFound => StatusCode::NOT_FOUND,

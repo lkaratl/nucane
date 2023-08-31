@@ -4,7 +4,6 @@ use async_trait::async_trait;
 use tracing::{error, info};
 
 use domain_model::{Action, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction, OrderActionType, OrderMarketType, Side, OrderStatus, OrderType, Tick, Trigger};
-use domain_model::MarginMode::Isolated;
 use domain_model::Size::{Source, Target};
 use strategy_api::{Strategy, StrategyApi, utils};
 
@@ -26,7 +25,7 @@ pub struct TestStrategy {
 
 impl Default for TestStrategy {
     fn default() -> Self {
-        utils::init_logger(LOGGING_LEVEL);
+        utils::init_logger(&format!("{STRATEGY_NAME}-{STRATEGY_VERSION}"),LOGGING_LEVEL);
         Self{
             executed: false,
             spot_market_buy: None,

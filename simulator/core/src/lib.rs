@@ -88,6 +88,7 @@ impl SimulationService {
         for tick in &ticks {
             logger.log(format!("| Tick: {} '{}' {}-{}='{}'", tick.instrument_id.exchange, tick.timestamp,
                                tick.instrument_id.pair.target, tick.instrument_id.pair.source, tick.price));
+            self.check_active_orders(active_orders, tick, positions, logger).await;
             let actions = self.engine_client.create_actions(tick).await.unwrap();
             for action in &actions {
                 logger.log(format!("|* Action: {:?} \n   for tick: {} '{}' {}-{}='{}'", action, tick.instrument_id.exchange, tick.timestamp, tick.instrument_id.pair.target, tick.instrument_id.pair.source, tick.price));
@@ -476,7 +477,7 @@ impl Logger {
 
     fn save(&self) {
         fs::write(format!("./logs/simulation-{}.log", self.simulation_id), self.file_content.join("\n"))
-            .expect("Error during saving simulation log")
+            .expect("Error during saving simulation log");
     }
 }
 

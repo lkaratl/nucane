@@ -1,6 +1,7 @@
+use std::io;
 use nanoid::nanoid;
-use tracing_subscriber::EnvFilter;
-use tracing_subscriber::fmt::SubscriberBuilder;
+use tracing_subscriber::{EnvFilter, fmt, Layer};
+use tracing_subscriber::layer::SubscriberExt;
 
 const ID_KEYS: [char; 62] = [
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
@@ -13,12 +14,21 @@ pub fn string_id() -> String {
     nanoid!(32, &ID_KEYS)
 }
 
-pub fn init_logger(directives: &str) {
-    let subscriber = SubscriberBuilder::default()
-        .with_env_filter(EnvFilter::new(directives))
+pub fn init_logger(file_name: &str, directives: &str) {
+    let file_appender = tracing_appender::rolling::never("./logs", format!("{file_name}.log"));
+
+    let log_output = fmt::Layer::new()
+        .with_writer(io::stdout)
         .with_file(true)
         .with_line_number(true)
-        .finish();
+        .and_then(
+            fmt::Layer::new().with_writer(file_appender)
+                .with_file(true)
+                .with_line_number(true));
+
+    let subscriber = tracing_subscriber::registry()
+        .with(EnvFilter::new(directives))
+        .with(log_output);
 
     tracing::subscriber::set_global_default(subscriber)
         .expect("Setting default subscriber failed");

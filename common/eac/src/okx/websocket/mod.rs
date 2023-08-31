@@ -16,7 +16,7 @@ use tokio::{select, task};
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
-use tracing::{error, trace, debug, warn};
+use tracing::{error, trace, debug, warn, info};
 use tungstenite::Message as WsMessage;
 use url::Url;
 use crate::okx::credential::Credential;
@@ -72,7 +72,6 @@ async fn run<T: FnMut(Message) + Send + 'static>(url: &Url, credential: Option<C
         let url = url.clone();
         handling_loop(url, credential, rx, callback)
     });
-    tokio::time::sleep(Duration::from_secs(2)).await; // todo remove this hotfix for login response
     tx
 }
 
@@ -80,7 +79,7 @@ async fn handling_loop<T: FnMut(Message) + Send + 'static>(url: Url, credential:
     loop {
         let callback = Arc::clone(&callback);
         let rx = receiver.clone();
-
+        info!("Connecting to websocket");
         let (ws_stream, _) = match connect_async(url.clone()).await {
             Ok(stream) => stream,
             Err(e) => {
@@ -93,34 +92,38 @@ async fn handling_loop<T: FnMut(Message) + Send + 'static>(url: Url, credential:
 
         let (sink, stream) = ws_stream.split();
         let credential = credential.clone();
-        tokio::spawn(write(rx, sink, credential));
         let read_task = tokio::spawn(read(stream, callback));
+        let write_task = tokio::spawn(write(rx, sink, credential));
 
         if let Err(e) = read_task.await {
             error!("Websocket lost connection: {:?}", e);
         } else {
             warn!("Websocket closed without errors");
         }
+        write_task.abort();
         warn!("Websocket reconnecting ...");
+        tokio::time::sleep(Duration::from_secs(2)).await;
     }
 }
 
 async fn write(receiver: Receiver<WsMessage>, mut sink: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, WsMessage>, credential: Option<Credential>) {
     if let Some(credential) = credential {
         let msg = login_message(credential);
-        trace!("Send login command to websocket");
+        info!("Send login command to websocket");
         let _ = sink.send(WsMessage::Text(msg)).await;
+        tokio::time::sleep(Duration::from_secs(2)).await; // todo remove this hotfix for login response
     }
 
+    let rx = Arc::new(Mutex::new(receiver));
     loop {
-        let mut rx = receiver.new_receiver();
-        let message_received = task::spawn(async move { rx.recv().await });
+        let rx = Arc::clone(&rx);
+        let message_received = task::spawn(async move { rx.lock().await.recv().await });
         let ping_interval_finished = task::spawn(tokio::time::sleep(Duration::from_secs(25)));
 
         select! {
             message = message_received => {
                 if let Ok(Ok(msg)) = message {
-                    trace!("Send to websocket: {}", msg);
+                    info!("Send to websocket: {}", msg);
                     let _ = sink.send(msg).await;
                 }
             }
@@ -135,15 +138,18 @@ async fn write(receiver: Receiver<WsMessage>, mut sink: SplitSink<WebSocketStrea
 async fn read<T: FnMut(Message) + Send + 'static>(stream: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>, callback: Arc<Mutex<T>>) {
     let mut callback = callback.lock().await;
     stream.for_each(|message| {
-        match message.unwrap() {
-            WsMessage::Text(message) => {
-                trace!("Received text: {message:?}");
-                let message = serde_json::from_str(&message).expect("Cannot deserialize message from OKX");
-                callback(message);
+        match message {
+            Ok(message) => match message {
+                WsMessage::Text(message) => {
+                    trace!("Received text: {message:?}");
+                    let message = serde_json::from_str(&message).expect("Cannot deserialize message from OKX");
+                    callback(message);
+                }
+                WsMessage::Pong(_) => { trace!("Received pong massage"); }
+                WsMessage::Close(message) => { warn!("Received close: {message:?}"); }
+                message => { warn!("Received unexpected message: {message:?}"); }
             }
-            WsMessage::Pong(_) => { trace!("Received pong massage"); }
-            WsMessage::Close(message) => { warn!("Received close: {message:?}"); }
-            message => { warn!("Received unexpected message: {message:?}"); }
+            Err(error) => error!("Received error from socket: {error:?}"),
         }
         futures::future::ready(())
     }).await

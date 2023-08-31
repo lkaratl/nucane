@@ -28,7 +28,7 @@ pub struct SimulationE2EStrategy {
 
 impl Default for SimulationE2EStrategy {
     fn default() -> Self {
-        utils::init_logger(LOGGING_LEVEL);
+        utils::init_logger(&format!("{STRATEGY_NAME}-{STRATEGY_VERSION}"),LOGGING_LEVEL);
         Self{
             executed: false,
             order_id: None,

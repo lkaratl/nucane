@@ -34,24 +34,16 @@ impl EngineService {
             .await
     }
 
-    pub async fn add_or_update_deployment(&self, simulation_id: Option<Uuid>, strategy_name: &str, strategy_version: &str, params: &HashMap<String, String>) -> Result<Arc<Mutex<Deployment>>, EngineError> {
+    pub async fn add_deployment(&self, simulation_id: Option<Uuid>, strategy_name: &str, strategy_version: &str, params: &HashMap<String, String>) -> Result<Arc<Mutex<Deployment>>, EngineError> {
         debug!("Create deployment for strategy with name: '{strategy_name}' and version: '{strategy_version}' and params: '{params:?}'");
         let plugin = self.load_plugin(strategy_name, strategy_version, params).await?;
-        let existing_deployment = self.remove_deployment_by_name_and_version(strategy_name, strategy_version).await;
-        let deployment = if let Some(deployment) = existing_deployment {
-            {
-                let mut guard = deployment.lock().await;
-                guard.plugin = plugin;
-            }
-            deployment
-        } else {
-            existing_deployment.unwrap_or(Arc::new(Mutex::new(Deployment {
+        // let existing_deployment = self.remove_deployment_by_name_and_version(strategy_name, strategy_version).await;
+        let deployment = Arc::new(Mutex::new(Deployment {
                 id: Uuid::new_v4(),
                 simulation_id,
                 params: params.clone(),
                 plugin,
-            })))
-        };
+            }));
 
         registry::add_deployment(deployment.clone()).await;
         let event = deployment_to_event(deployment.clone(), DeploymentEvent::Created).await;
@@ -59,12 +51,12 @@ impl EngineService {
         Ok(deployment)
     }
 
-    #[tokio::main] // todo remove this, when synapse will support async
+    // #[tokio::main] // todo remove this, when synapse will support async
     pub async fn update_plugin(&self, strategy_name: &str, strategy_version: &str) -> Result<(), EngineError> {
         let deployments = self.get_deployment_by_name_and_version(strategy_name, strategy_version).await;
         for deployment in deployments {
             let deployment = deployment.lock().await;
-            self.add_or_update_deployment(deployment.simulation_id, strategy_name, strategy_version, &deployment.params).await?;
+            // self.add_or_update_deployment(deployment.simulation_id, strategy_name, strategy_version, &deployment.params).await?; // todo make update method
         }
         Ok(())
     }

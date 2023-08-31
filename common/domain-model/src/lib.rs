@@ -413,6 +413,13 @@ pub enum Currency {
     LINK,
     DOT,
     ETH,
+    XTZ,
+    ATOM,
+    ICP,
+    APT,
+    FLOW,
+    ARB,
+    SUI,
     USDC,
     TUSD,
     USDK,
@@ -423,6 +430,7 @@ pub enum Currency {
     PAX,
     JFI,
     OKB,
+    DOGE,
 }
 
 impl fmt::Display for Currency {
@@ -443,6 +451,13 @@ impl FromStr for Currency {
             "LINK" => Ok(Currency::LINK),
             "DOT" => Ok(Currency::DOT),
             "ETH" => Ok(Currency::ETH),
+            "XTZ" => Ok(Currency::XTZ),
+            "ATOM" => Ok(Currency::ATOM),
+            "ICP" => Ok(Currency::ICP),
+            "APT" => Ok(Currency::APT),
+            "FLOW" => Ok(Currency::FLOW),
+            "ARB" => Ok(Currency::ARB),
+            "SUI" => Ok(Currency::SUI),
             "USDC" => Ok(Currency::USDC),
             "TUSD" => Ok(Currency::TUSD),
             "USDK" => Ok(Currency::USDK),
@@ -453,6 +468,7 @@ impl FromStr for Currency {
             "PAX" => Ok(Currency::PAX),
             "JFI" => Ok(Currency::JFI),
             "OKB" => Ok(Currency::OKB),
+            "DOGE" => Ok(Currency::DOGE),
             input => bail!("Unknown currency: {input}")
         }
     }
@@ -541,6 +557,15 @@ pub enum OrderStatus {
     Failed(String),
     Completed,
     Canceled,
+}
+
+impl OrderStatus {
+    pub fn is_finished(&self) -> bool {
+        match self {
+            OrderStatus::Created | OrderStatus::InProgress => false,
+            OrderStatus::Failed(_) | OrderStatus::Completed | OrderStatus::Canceled => true
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
