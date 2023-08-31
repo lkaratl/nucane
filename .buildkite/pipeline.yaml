@@ -1,6 +1,6 @@
 steps:
   - label: ":hammer: Build"
-    command: "cargo build --release"
+    command: "ls && cargo build --release"
     artifact_paths: "./target/release"
     plugins:
       - docker#v5.8.0:
