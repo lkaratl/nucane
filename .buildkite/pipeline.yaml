@@ -1,0 +1,7 @@
+steps:
+  - label: ":hammer: Build"
+    command: "cargo build --release"
+    artifact_paths: "./target/release"
+    plugins:
+      - docker#v5.8.0:
+          image: "rust:latest"
