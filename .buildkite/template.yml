@@ -1,0 +1,4 @@
+name: "NCN Build"
+steps:
+  - command: "buildkite-agent pipeline upload"
+    label: ":octocat:"
