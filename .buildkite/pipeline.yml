@@ -1,10 +1,9 @@
 steps:
   - label: ":hammer: Build"
     commands:
-      - "apt update && sudo apt upgrade && sudo apt install -y cmake" # requiered by rdkafka crate
       - "cargo build --release"
-      - "sleep 60"
+      - "sleep 120"
     artifact_paths: "./target/release"
     plugins:
       - docker#v5.8.0:
-          image: "rust:latest"
+          image: "rust-image"
