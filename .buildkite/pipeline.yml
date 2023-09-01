@@ -22,7 +22,8 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
           mount-buildkite-agent: true
-          user: root
+          volumes-from:
+            - "buildkite-agent"
   - key: "test"
     depends_on: "build"
     label: ":clipboard: Test"
@@ -35,3 +36,5 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
           mount-buildkite-agent: true
+          volumes-from:
+            - "buildkite-agent"
