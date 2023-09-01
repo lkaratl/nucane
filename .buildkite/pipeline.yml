@@ -14,14 +14,14 @@ steps:
     label: ":hammer: Build"
     commands:
       - "sleep 120"
-      - "buildkite-agent artifact download \"target/**/*\" ."
+      - "/root/.buildkite-agent/bin/buildkite-agent artifact download \"target/**/*\" ."
       - "cargo build --release"
     artifact_paths:
       - "target/**/*"
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
-#          mount-buildkite-agent: true
+          mount-buildkite-agent: true
   - key: "test"
     depends_on: "build"
     label: ":clipboard: Test"
