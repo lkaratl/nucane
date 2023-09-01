@@ -1,12 +1,16 @@
 steps:
+  - label: ":mag: Clippy"
+    commands:
+# fail on warnins "cargo clippy -- -D warnings"
+      - "cargo clippy"
+    plugins:
+      - docker#v5.8.0:
+          image: "rust-image"
   - label: ":hammer: Build"
     commands:
       - "cargo build --release"
-      - "ls"
-#      - "sleep 120"
     artifact_paths:
-      - "target/release/*."
-      - "target/release/*.so"
+      - "target/release/"
     plugins:
       - docker#v5.8.0:
           image: "rust-image"

@@ -1,4 +1,4 @@
 name: "NCN Build"
 steps:
   - command: "buildkite-agent pipeline upload"
-    label: ":github:"
+    label: ":git:"
