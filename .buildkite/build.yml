@@ -9,7 +9,7 @@ steps:
           image: "rust-image"
   - key: "build"
     depends_on: "check"
-    label: ":hammer: Build"
+    label: ":hammer_and_wrench: Build binaries"
     commands:
       - "cargo build --release"
       - "find ./target/release -type f \\( -name '.*' -or -name '*.d' -or -name '*.rlib' \\) -delete"
