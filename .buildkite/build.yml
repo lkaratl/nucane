@@ -32,5 +32,5 @@ steps:
     steps:
       - label: "registry"
         commands:
-          - "buildkite-agent artifact download 'target/release/registry-app'"
+          - "buildkite-agent artifact download 'target/release/registry-app' ."
           - "docker build -t registry:latest --build-arg=\"EXECUTABLE_NAME=registry-app\" ."
