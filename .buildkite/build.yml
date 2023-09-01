@@ -27,3 +27,11 @@ steps:
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
+  - key: "build_images"
+    depends_on: "build"
+    group: ":docker: Build images"
+    steps:
+      - label: "registry"
+        commands:
+          - "buildkite-agent artifact download 'target/release/registry-app' ."
+          - "docker build -t registry:latest --build-arg=\"EXECUTABLE_NAME=registry-app\" ."
