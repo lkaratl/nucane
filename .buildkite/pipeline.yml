@@ -4,7 +4,9 @@ steps:
       - "cargo build --release"
       - "ls"
 #      - "sleep 120"
-    artifact_paths: "target/release"
+    artifact_paths:
+      - "target/release/*."
+      - "target/release/*.so"
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
