@@ -1,9 +1,15 @@
 FROM ubuntu:23.10
 
-ARG EXECUTABLE_NAME=""
+ARG EXECUTABLE_FILE
+ENV EXECUTABLE_FILE=$EXECUTABLE_FILE
 
-COPY /target/release/${EXECUTABLE_NAME} /
+WORKDIR /app
 
-ENTRYPOINT ["./${EXECUTABLE_NAME}"]
+COPY /target/release/$EXECUTABLE_FILE .
+RUN chmod +x ./$EXECUTABLE_FILE
 
-# docker run --rm --network host --name registry registry:latest
+EXPOSE 8085
+
+ENTRYPOINT ./$EXECUTABLE_FILE
+
+# docker run --rm --network="host" --name registry registry:latest
