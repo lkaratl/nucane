@@ -1,7 +1,6 @@
 steps:
   - key: "check"
     label: ":mag: Check"
-    allow_dependency_failure: true #todo remove
     commands:
       - "cargo clippy -- -D warnings"
     plugins:
@@ -9,6 +8,7 @@ steps:
           image: "rust-image"
   - key: "build"
     depends_on: "check"
+    allow_dependency_failure: true #todo remove
     label: ":hammer_and_wrench: Build binaries"
     commands:
       - "cargo build --release"
@@ -20,7 +20,6 @@ steps:
           image: "rust-image"
   - key: "test"
     depends_on: "build"
-    allow_dependency_failure: true #todo remove
     label: ":clipboard: Test"
     commands:
       - "cargo nextest run"
