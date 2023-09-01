@@ -20,13 +20,16 @@ steps:
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
+          mount-buildkite-agent: true
   - key: "test"
     depends_on: "build"
     label: ":clipboard: Test"
     commands:
+      - "buildkite-agent artifact download \"target/*\" ."
       - "cargo nextest run"
     artifact_paths:
       - "target/*"
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
+          mount-buildkite-agent: true
