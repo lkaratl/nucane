@@ -30,7 +30,7 @@ steps:
     depends_on: "build"
     group: ":docker: Build images"
     steps:
-      - label: "registry"
+      - label: ":package: registry"
         commands:
           - "buildkite-agent artifact download 'target/release/registry-app' ."
           - "docker build -t registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=registry-app\" ."

@@ -3,5 +3,5 @@ description: "Nucane default build pipeline"
 emoji: ":relay:"
 color: "#1e1f22"
 steps:
-  - command: "buildkite-agent pipeline upload ./.buildkite/build.yml"
+  - command: "buildkite-agent pipeline upload"
     label: ":git:"
