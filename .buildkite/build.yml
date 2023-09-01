@@ -1,9 +1,9 @@
 steps:
   - key: "check"
     label: ":mag: Check"
+    allow_dependency_failure: true #todo remove
     commands:
-        # todo fail on warnings "cargo clippy -- -D warnings"
-      - "cargo clippy"
+      - "cargo clippy -- -D warnings"
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
@@ -33,5 +33,5 @@ steps:
     steps:
       - label: "registry"
         commands:
-          - "buildkite-agent artifact download 'target/release/registry-app' ./"
+          - "buildkite-agent artifact download 'target/release/registry-app'"
           - "docker build -t registry:latest --build-arg=\"EXECUTABLE_NAME=registry-app\" ."
