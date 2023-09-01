@@ -12,7 +12,7 @@ steps:
     label: ":hammer: Build"
     commands:
       - "cargo build --release"
-      - "find . -type f -name 'target/release/*.d' -delete"
+      - "find .target/release -type f -name '*.d' -delete"
     artifact_paths:
       - "target/release/*"
     plugins:
