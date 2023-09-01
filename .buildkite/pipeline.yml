@@ -1,12 +1,15 @@
 steps:
-  - label: ":mag: Clippy"
+  - key: "check"
+    label: ":mag: Clippy"
     commands:
-# fail on warnins "cargo clippy -- -D warnings"
+        # fail on warnings "cargo clippy -- -D warnings"
       - "cargo clippy"
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
-  - label: ":hammer: Build"
+  - key: "build"
+    depends_on: "check"
+    label: ":hammer: Build"
     commands:
       - "cargo build --release"
     artifact_paths:
