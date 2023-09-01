@@ -2,7 +2,7 @@ steps:
   - key: "check"
     label: ":mag: Check"
     commands:
-        # fail on warnings "cargo clippy -- -D warnings"
+        # todo fail on warnings "cargo clippy -- -D warnings"
       - "cargo clippy"
     plugins:
       - docker#v5.8.0:
@@ -20,6 +20,7 @@ steps:
           image: "rust-image"
   - key: "test"
     depends_on: "build"
+    allow_dependency_failure: true #todo remove
     label: ":clipboard: Test"
     commands:
       - "cargo nextest run"

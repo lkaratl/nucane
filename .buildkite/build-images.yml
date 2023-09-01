@@ -1,0 +1,9 @@
+steps:
+  - key: "check"
+    label: ":mag: Docker build"
+    commands:
+        # todo fail on warnings "cargo clippy -- -D warnings"
+      - "cargo clippy"
+    plugins:
+      - docker#v5.8.0:
+          image: "rust-image"
