@@ -1,4 +1,7 @@
-name: "NCN Build"
+name: "NCN Build binaries"
+description: "Nucane default git pipeline"
+emoji: ":relay:"
+color: "#1e1f22"
 steps:
   - command: "buildkite-agent pipeline upload"
     label: ":git:"

@@ -4,6 +4,8 @@ steps:
     commands:
         # fail on warnings "cargo clippy -- -D warnings"
       - "cargo clippy"
+    artifact_paths:
+      - "target/*"
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
@@ -11,12 +13,10 @@ steps:
     depends_on: "check"
     label: ":hammer: Build"
     commands:
+      - "buildkite-agent artifact download \"target/*\" ."
       - "cargo build --release"
     artifact_paths:
-      - "target/release/*"
-      - "!target/release/.*"
-      - "!target/release/*.d"
-      - "!target/release/*.rlib"
+      - "target/*"
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
@@ -25,6 +25,8 @@ steps:
     label: ":clipboard: Test"
     commands:
       - "cargo nextest run"
+    artifact_paths:
+      - "target/*"
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
