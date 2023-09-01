@@ -2,7 +2,8 @@ steps:
   - label: ":hammer: Build"
     commands:
       - "cargo build --release"
-      - "sleep 120"
+      - "ls"
+#      - "sleep 120"
     artifact_paths: "target/release"
     plugins:
       - docker#v5.8.0:
