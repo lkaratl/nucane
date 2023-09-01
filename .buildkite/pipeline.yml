@@ -12,9 +12,9 @@ steps:
     label: ":hammer: Build"
     commands:
       - "cargo build --release"
-      - "find . -type f -name 'target/*.d' -delete"
+      - "find . -type f -name 'target/release/*.d' -delete"
     artifact_paths:
-      - "target/*"
+      - "target/release/*"
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
