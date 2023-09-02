@@ -23,7 +23,6 @@ pub struct Exchanges {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "kebab-case")]
 pub struct OKX {
     pub http_url: String,
     pub ws_url: String,
@@ -31,7 +30,6 @@ pub struct OKX {
 }
 
 #[derive(Deserialize, Clone)]
-#[serde(rename_all = "kebab-case")]
 pub struct OKXAuth {
     pub api_key: String,
     pub api_secret: String,
