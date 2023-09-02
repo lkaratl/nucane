@@ -1,4 +1,4 @@
-# NAMESPACE=test BRANCH=NCN-112 BUILD=80 DEMO=true OKX_API_KEY= OKX_API_PASSPHRASE= OKX_API_SECRET= docker compose up -d
+# NAMESPACE= BRANCH= BUILD= DEMO=true OKX_API_KEY= OKX_API_PASSPHRASE= OKX_API_SECRET= docker compose up -d
 ---
 version: "3.7"
 name: ncn-${NAMESPACE} # todo per namespace
@@ -11,7 +11,7 @@ volumes:
   redpanda-1: null
 services:
   engine-1:
-    image: ncn-engine:${BRANCH-$BUILD}
+    image: ncn-engine:$BRANCH-$BUILD
     networks:
       - db_network
       - redpanda_network
@@ -21,7 +21,7 @@ services:
       - db-1
       - redpanda-1
   interactor-1:
-    image: ncn-interactor:${BRANCH}-${BUILD}
+    image: ncn-interactor:$BRANCH-$BUILD
     environment:
       INTERACTOR_EAC_DEMO: ${DEMO}
       INTERACTOR_EAC_EXCHANGES_OKX_AUTH_KEY: ${OKX_API_KEY}
@@ -36,7 +36,7 @@ services:
       - db-1
       - redpanda-1
   simulator-1:
-    image: ncn-simulator:${BRANCH}-${BUILD}
+    image: ncn-simulator:$BRANCH-$BUILD
     networks:
       - db_network
       - redpanda_network
@@ -46,7 +46,7 @@ services:
       - db-1
       - redpanda-1
   registry-1:
-    image: ncn-registry:${BRANCH}-${BUILD}
+    image: ncn-registry:$BRANCH-$BUILD
     networks:
       - db_network
       - redpanda_network
@@ -56,7 +56,7 @@ services:
       - db-1
       - redpanda-1
   storage-1:
-    image: ncn-storage:${BRANCH}-${BUILD}
+    image: ncn-storage:$BRANCH-$BUILD
     environment:
       STORAGE_DATABASE_URL: mysql://root:root@db-1:3306/ncn_storage
     networks:
