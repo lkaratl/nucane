@@ -1,16 +1,17 @@
-# NAMESPACE= BRANCH= BUILD= DEMO=true OKX_API_KEY= OKX_API_PASSPHRASE= OKX_API_SECRET= docker compose up -d
+# NAMESPACE= BRANCH= BUILD= TS_AUTHKEY= DEMO=true OKX_API_KEY= OKX_API_PASSPHRASE= OKX_API_SECRET= docker compose up -d
 ---
 version: "3.7"
-name: ncn-${NAMESPACE} # todo per namespace
+name: ncn-$NAMESPACE # todo per namespace
 networks:
   db_network:
     driver: bridge
   redpanda_network:
     driver: bridge
 volumes:
-  redpanda-1: null
+  redpanda: null
 services:
-  engine-1:
+  engine:
+    container_name: engine
     image: ncn-engine:$BRANCH-$BUILD
     networks:
       - db_network
@@ -18,24 +19,28 @@ services:
     ports:
       - "8081:8081"
     depends_on:
-      - db-1
-      - redpanda-1
-  interactor-1:
+      - tailscale
+      - db
+      - redpanda
+  interactor:
+    container_name: interactor
     image: ncn-interactor:$BRANCH-$BUILD
     environment:
-      INTERACTOR_EAC_DEMO: ${DEMO}
-      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_KEY: ${OKX_API_KEY}
-      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_PASSPHRASE: ${OKX_API_PASSPHRASE}
-      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_SECRET: ${OKX_API_SECRET}
+      INTERACTOR_EAC_DEMO: $DEMO
+      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_KEY: $OKX_API_KEY
+      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_PASSPHRASE: $OKX_API_PASSPHRASE
+      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_SECRET: $OKX_API_SECRET
     networks:
       - db_network
       - redpanda_network
     ports:
       - "8083:8083"
     depends_on:
-      - db-1
-      - redpanda-1
-  simulator-1:
+      - tailscale
+      - db
+      - redpanda
+  simulator:
+    container_name: simulator
     image: ncn-simulator:$BRANCH-$BUILD
     networks:
       - db_network
@@ -43,9 +48,11 @@ services:
     ports:
       - "8084:8084"
     depends_on:
-      - db-1
-      - redpanda-1
-  registry-1:
+      - tailscale
+      - db
+      - redpanda
+  registry:
+    container_name: registry
     image: ncn-registry:$BRANCH-$BUILD
     networks:
       - db_network
@@ -53,23 +60,45 @@ services:
     ports:
       - "8085:8085"
     depends_on:
-      - db-1
-      - redpanda-1
-  storage-1:
+      - tailscale
+      - db
+      - redpanda
+  storage:
+    container_name: storage
     image: ncn-storage:$BRANCH-$BUILD
     environment:
-      STORAGE_DATABASE_URL: mysql://root:root@db-1:3306/ncn_storage
+      STORAGE_DATABASE_URL: mysql://root:root@db:3306/ncn_storage
     networks:
       - db_network
       - redpanda_network
     ports:
       - "8082:8082"
     depends_on:
-      - db-1
-      - redpanda-1
+      - tailscale
+      - db
+      - redpanda
 
 # capability providers
-  db-1:
+  tailscale:
+    container_name: tailscale
+    hostname: ncn-$NAMESPACE
+    network_mode: "host"
+    image: tailscale/tailscale:stable
+    environment:
+      TS_AUTHKEY: $TS_AUTHKEY
+#    networks:
+#      - db_network
+#      - redpanda_network
+    volumes:
+      - /var/lib:/var/lib
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    privileged: true
+    restart: unless-stopped
+  db:
+    container_name: db
     image: mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -78,25 +107,25 @@ services:
       - db_network
     ports:
       - "3306:3306" # todo close ports
-  redpanda-1:
+  redpanda:
+    container_name: redpanda
     command:
       - redpanda
       - start
       - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
-      - --advertise-kafka-addr internal://redpanda-1:9092,external://localhost:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
       - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
-      - --advertise-pandaproxy-addr internal://redpanda-1:8082,external://localhost:18082
+      - --advertise-pandaproxy-addr internal://redpanda:8082,external://localhost:18082
       - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
-      - --rpc-addr redpanda-1:33145
-      - --advertise-rpc-addr redpanda-1:33145
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
       - --smp 1
       - --memory 1G
       - --mode dev-container
       - --default-log-level=info
     image: docker.redpanda.com/redpandadata/redpanda:v23.1.8
-    container_name: redpanda-1
     volumes:
-      - redpanda-1:/var/lib/redpanda/data
+      - redpanda:/var/lib/redpanda/data
     networks:
       - redpanda_network
     ports: # todo close ports
@@ -115,15 +144,15 @@ services:
       CONFIG_FILEPATH: /tmp/config.yml
       CONSOLE_CONFIG_FILE: |
         kafka:
-          brokers: ["redpanda-1:9092"]
+          brokers: ["redpanda:9092"]
           schemaRegistry:
             enabled: true
-            urls: ["http://redpanda-1:8081"]
+            urls: ["http://redpanda:8081"]
         redpanda:
           adminApi:
             enabled: true
-            urls: ["http://redpanda-1:9644"]
+            urls: ["http://redpanda:9644"]
     ports: # todo close ports
       - "8080:8080"
     depends_on:
-      - redpanda-1
+      - redpanda
