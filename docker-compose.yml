@@ -1,6 +1,6 @@
 ---
 version: "3.7"
-name: nucane # todo per namespace
+name: ncn # todo per namespace
 networks:
   redpanda_network:
     driver: bridge
@@ -22,6 +22,7 @@ services:
       - db
       - redpanda-0
 
+# capability providers
   db:
     image: mysql
     environment:
@@ -43,7 +44,7 @@ services:
       - --smp 1
       - --memory 1G
       - --mode dev-container
-      - --default-log-level=debug
+      - --default-log-level=info
     image: docker.redpanda.com/redpandadata/redpanda:v23.1.8
     container_name: redpanda-0
     volumes:
