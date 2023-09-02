@@ -1,6 +1,7 @@
+# NAMESPACE= BRANCH= BUILD= docker compose up
 ---
 version: "3.7"
-name: ncn # todo per namespace
+name: ncn-$NAMESPACE # todo per namespace
 networks:
   redpanda_network:
     driver: bridge
@@ -8,14 +9,14 @@ volumes:
   redpanda-0: null
 services:
   ncn-engine:
-    image: ncn-engine:NCN-112-71
+    image: ncn-engine:$BRANCH-$BUILD
     ports:
       - "8081:8081"
     depends_on:
       - db
       - redpanda-0
   ncn-registry:
-    image: ncn-registry:NCN-112-71
+    image: ncn-registry:$BRANCH-$BUILD
     ports:
       - "8085:8085"
     depends_on:

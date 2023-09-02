@@ -1,7 +1,7 @@
 FROM ubuntu:23.10
 
 RUN apt-get update && \
-    apt-get install -y openssl-tool
+    apt-get install -y openssl
 
 ARG EXECUTABLE_FILE
 ENV EXECUTABLE_FILE=$EXECUTABLE_FILE
