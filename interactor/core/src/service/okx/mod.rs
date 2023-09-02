@@ -28,11 +28,11 @@ pub struct OKXService {
 impl OKXService {
     pub fn new() -> Self {
         let is_demo = CONFIG.eac.demo;
-        let http_url = &CONFIG.eac.exchanges.okx.http_url;
-        let ws_url = &CONFIG.eac.exchanges.okx.ws_url;
-        let api_key = &CONFIG.eac.exchanges.okx.auth.api_key;
-        let api_secret = &CONFIG.eac.exchanges.okx.auth.api_secret;
-        let api_passphrase = &CONFIG.eac.exchanges.okx.auth.api_passphrase;
+        let http_url = &CONFIG.eac.exchanges.okx.http.url;
+        let ws_url = &CONFIG.eac.exchanges.okx.ws.url;
+        let api_key = &CONFIG.eac.exchanges.okx.auth.key;
+        let api_secret = &CONFIG.eac.exchanges.okx.auth.secret;
+        let api_passphrase = &CONFIG.eac.exchanges.okx.auth.passphrase;
 
         let rest_client = OkExRest::with_credential(http_url, is_demo, api_key, api_secret, api_passphrase);
         Self {

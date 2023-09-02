@@ -24,16 +24,26 @@ pub struct Exchanges {
 
 #[derive(Deserialize)]
 pub struct OKX {
-    pub http_url: String,
-    pub ws_url: String,
+    pub http: OKXHttp,
+    pub ws: OKXWs,
     pub auth: OKXAuth,
 }
 
 #[derive(Deserialize, Clone)]
+pub struct OKXHttp {
+    pub url: String
+}
+
+#[derive(Deserialize, Clone)]
+pub struct OKXWs {
+    pub url: String
+}
+
+#[derive(Deserialize, Clone)]
 pub struct OKXAuth {
-    pub api_key: String,
-    pub api_secret: String,
-    pub api_passphrase: String,
+    pub key: String,
+    pub secret: String,
+    pub passphrase: String,
 }
 
 #[derive(Deserialize)]
