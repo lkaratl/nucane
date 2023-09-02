@@ -10,8 +10,10 @@ eac:
   demo: true
   exchanges:
     okx:
-      http.url: https://www.okx.com
-      ws.url: wss://ws.okx.com:8443
+      http:
+        url: https://www.okx.com
+      ws:
+        url: wss://ws.okx.com:8443
       auth:
         key: # put value according to eac.demo value
         secret: # put value according to eac.demo value
