@@ -40,9 +40,9 @@ steps:
     label: ":mag: Deploy"
     commands:
       - echo "===== PIPELINE PARAMS ====="
-      - "NAMESPACE=$(buildkite-agent meta-data get namespace) && echo \"NAMESPACE: $$NAMESPACE\""
-      - "FORCE=$(buildkite-agent meta-data get force) && echo \"FORCE: $$FORCE\""
-      - "VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$VERSION\""
+      - "export NAMESPACE=$(buildkite-agent meta-data get namespace) && echo \"NAMESPACE: $$NAMESPACE\""
+      - "export FORCE=$(buildkite-agent meta-data get force) && echo \"FORCE: $$FORCE\""
+      - "export VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$VERSION\""
       - |
         echo "===== CUSTOM PARAMS ====="
         while IFS= read -r line
@@ -50,5 +50,5 @@ steps:
             echo "$$line"
             export $$line
         done <<< "$(buildkite-agent meta-data get params)"
-      - "cat docker-compose.yml"
+      - "envsubst < docker-compose.yml"
       - "docker compose up -d"
