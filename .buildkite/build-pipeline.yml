@@ -33,20 +33,20 @@ steps:
       - label: ":package: engine"
         commands:
           - "buildkite-agent artifact download 'target/release/engine-app' ."
-          - "docker build --no-cache -t ncn-engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=engine-app\" ."
+          - "docker build --no-cache -t ncn-engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-engine:latest --build-arg=\"EXECUTABLE_FILE=engine-app\" ."
       - label: ":package: interactor"
         commands:
           - "buildkite-agent artifact download 'target/release/interactor-app' ."
-          - "docker build --no-cache -t ncn-interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=interactor-app\" ."
+          - "docker build --no-cache -t ncn-interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-interactor:latest --build-arg=\"EXECUTABLE_FILE=interactor-app\" ."
       - label: ":package: registry"
         commands:
           - "buildkite-agent artifact download 'target/release/registry-app' ."
-          - "docker build --no-cache -t ncn-registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=registry-app\" ."
+          - "docker build --no-cache -t ncn-registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-registry:latest --build-arg=\"EXECUTABLE_FILE=registry-app\" ."
       - label: ":package: simulator"
         commands:
           - "buildkite-agent artifact download 'target/release/simulator-app' ."
-          - "docker build --no-cache -t ncn-simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=simulator-app\" ."
+          - "docker build --no-cache -t ncn-simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-simulator:latest --build-arg=\"EXECUTABLE_FILE=simulator-app\" ."
       - label: ":package: storage"
         commands:
           - "buildkite-agent artifact download 'target/release/storage-app' ."
-          - "docker build --no-cache -t ncn-storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=storage-app\" ."
+          - "docker build --no-cache -t ncn-storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-storage:latest --build-arg=\"EXECUTABLE_FILE=storage-app\" ."

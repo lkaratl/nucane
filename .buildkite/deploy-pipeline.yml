@@ -5,8 +5,9 @@ steps:
     fields:
       - key: "version"
         text: "Version"
-#        hint: "Value format '$BRANCH-$BUILD', get exact values from build pipeline"
-#        format: "^[\\d\\w-]+-\\d+$"
+        hint: "Value format '\$BRANCH-\$BUILD', get exact values from build pipeline"
+        format: "^[\\d\\w-]+-\\d+$"
+        default: "latest"
       - key: "namespace"
         select: "Namespace"
         hint: "Namespace for deploy"
@@ -17,6 +18,7 @@ steps:
             value: "staging"
           - label: "prod"
             value: "prod"
+        default: "dev"
       - key: "force"
         select: "Force"
         hint: "Be careful if this option 'true' existing namespace will be force deleted"
@@ -30,7 +32,8 @@ steps:
     depends_on: "input"
     label: "Params"
     commands:
-      - "NAMESPACE=$(buildkite-agent meta-data get namespace) && echo $$NAMESPACE"
+      - "VERSION=$(buildkite-agent meta-data get version) && echo VERSION=$$NAMESPACE"
+      - "NAMESPACE=$(buildkite-agent meta-data get namespace) && echo NAMESPACE=$$NAMESPACE"
   - key: "approve"
     depends_on: "params"
     label: "Approve"
@@ -40,4 +43,4 @@ steps:
     depends_on: "approve"
     label: ":mag: Deploy"
     commands:
-      - "BRANCH=NCN-112 BUILD=87 DEMO=true docker compose up -d"
+      - "docker compose up -d"
