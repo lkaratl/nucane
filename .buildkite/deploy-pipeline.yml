@@ -31,8 +31,8 @@ steps:
     depends_on: "input"
     label: "Params"
     commands:
-      - "VERSION=$(buildkite-agent meta-data get version) && echo 'VERSION: $$NAMESPACE'"
-      - "NAMESPACE=$(buildkite-agent meta-data get namespace) && echo 'NAMESPACE: $$NAMESPACE'"
+      - "VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$NAMESPACE\""
+      - "NAMESPACE=$(buildkite-agent meta-data get namespace) && echo \"NAMESPACE: $$NAMESPACE\""
 #  - key: "approve"
 #    depends_on: "params"
 #    label: "Approve"
