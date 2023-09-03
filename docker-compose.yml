@@ -1,6 +1,6 @@
 ---
 version: "3.7"
-name: ncn-$NAMESPACE # todo per namespace
+name: ncn-${NAMESPACE} # todo per namespace
 networks:
   db_network:
     driver: bridge
@@ -11,7 +11,7 @@ volumes:
 services:
   engine:
     container_name: engine
-    image: ncn-engine:$VERSION
+    image: ncn-engine:${VERSION}
     networks:
       - db_network
       - redpanda_network
@@ -23,12 +23,12 @@ services:
       - redpanda
   interactor:
     container_name: interactor
-    image: ncn-interactor:$$VERSION
+    image: ncn-interactor:$VERSION
     environment:
-      INTERACTOR_EAC_DEMO: $${DEMO:true}
-      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_KEY: $$OKX_API_KEY
-      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_PASSPHRASE: $$OKX_API_PASSPHRASE
-      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_SECRET: $$OKX_API_SECRET
+      INTERACTOR_EAC_DEMO: ${DEMO:true}
+      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_KEY: $OKX_API_KEY
+      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_PASSPHRASE: $OKX_API_PASSPHRASE
+      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_SECRET: $OKX_API_SECRET
     networks:
       - db_network
       - redpanda_network
@@ -40,7 +40,7 @@ services:
       - redpanda
   simulator:
     container_name: simulator
-    image: ncn-simulator:$$VERSION
+    image: ncn-simulator:$VERSION
     networks:
       - db_network
       - redpanda_network
@@ -52,7 +52,7 @@ services:
       - redpanda
   registry:
     container_name: registry
-    image: ncn-registry:$$VERSION
+    image: ncn-registry:$VERSION
     networks:
       - db_network
       - redpanda_network
@@ -64,9 +64,9 @@ services:
       - redpanda
   storage:
     container_name: storage
-    image: ncn-storage:$$VERSION
+    image: ncn-storage:$VERSION
     environment:
-      STORAGE_DATABASE_URL: $${STORAGE_DATABASE_URL:mysql://root:root@db:3306/ncn_storage}
+      STORAGE_DATABASE_URL: ${STORAGE_DATABASE_URL:mysql://root:root@db:3306/ncn_storage}
     networks:
       - db_network
       - redpanda_network
@@ -80,11 +80,11 @@ services:
 # capability providers
   tailscale:
     container_name: tailscale
-    hostname: ncn-$$NAMESPACE
+    hostname: ncn-$NAMESPACE
     network_mode: "host"
     image: tailscale/tailscale:stable
     environment:
-      TS_AUTHKEY: $$TS_AUTHKEY
+      TS_AUTHKEY: $TS_AUTHKEY
 #    networks:
 #      - db_network
 #      - redpanda_network
@@ -138,7 +138,7 @@ services:
     networks:
       - redpanda_network
     entrypoint: /bin/sh
-    command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
+    command: -c 'echo "$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
     environment:
       CONFIG_FILEPATH: /tmp/config.yml
       CONSOLE_CONFIG_FILE: |
