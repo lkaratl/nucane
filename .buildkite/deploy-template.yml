@@ -1,0 +1,7 @@
+name: "NCN Deploy"
+description: "Nucane deploy pipeline"
+emoji: ":rocket:"
+color: "#1e1f22"
+steps:
+  - command: "buildkite-agent pipeline upload ./.buildkite/deploy-pipeline.yml"
+    label: ":git:"

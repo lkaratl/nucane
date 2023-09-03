@@ -1,0 +1,38 @@
+steps:
+  - key: "params"
+    label: "Params"
+    input: "Deploy params"
+    fields:
+      - key: "version"
+        text: "Version"
+        hint: "Value format '$BRANCH-$BUILD', get exact values from build pipeline"
+        format: "^[\d\w-]+-\d+$"
+      - key: "namespace"
+        select: "Namespace"
+        hint: "Namespace for deploy"
+        options:
+          - label: "dev"
+            value: "dev"
+          - label: "staging"
+            value: "staging"
+          - label: "prod"
+            value: "prod"
+      - key: "force"
+        select: "Force"
+        hint: "Be careful if this option 'true' existing namespace will be force deleted"
+        options:
+          - label: "true"
+            value: "true"
+          - label: "false"
+            value: "false"
+        default: "false"
+  - key: "approve"
+    depends_on: "params"
+    label: "Approve"
+    block: "Approve force deploy"
+    if: true
+  - key: "Deploy"
+    depends_on: "approve"
+    label: ":mag: Deploy"
+    commands:
+      - "NAMESPACE=test BRANCH=NCN-112 BUILD=87 DEMO=true docker compose up -d"
