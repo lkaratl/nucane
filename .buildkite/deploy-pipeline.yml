@@ -3,10 +3,6 @@ steps:
     label: "Input"
     input: "Deploy params"
     fields:
-      - key: "version"
-        text: "Version"
-        hint: "Value format '\\$BRANCH-\\$BUILD' or 'latest', get exact values from build pipeline"
-        default: "latest"
       - key: "namespace"
         select: "Namespace"
         hint: "Namespace for deploy"
@@ -27,6 +23,10 @@ steps:
           - label: "false"
             value: "false"
         default: "false"
+      - key: "version"
+        text: "Version"
+        hint: "Value format '\\$BRANCH-\\$BUILD' or 'latest', get exact values from build pipeline"
+        default: "latest"
       - key: "params"
         text: "Custom params"
         hint: "Custom environment parameters"
@@ -39,16 +39,17 @@ steps:
     depends_on: "input"
     label: "Params"
     commands:
+      - "NAMESPACE=$(buildkite-agent meta-data get namespace) && echo \"NAMESPACE: $$NAMESPACE\""
       - "FORCE=$(buildkite-agent meta-data get force) && echo \"FORCE: $$FORCE\""
       - "VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$VERSION\""
-      - "NAMESPACE=$(buildkite-agent meta-data get namespace) && echo \"NAMESPACE: $$NAMESPACE\""
-  - key: "approve"
-    depends_on: "propagate"
-    label: "Approve"
-    block: "Approve force deploy"
-    if: $$FORCE == "true"
+      - |
+        while IFS= read -r line
+        do
+            echo "$line"
+            $line
+        done <<< "$(buildkite-agent meta-data get params)"
   - key: "Deploy"
-    depends_on: "approve"
+    depends_on: "propagate"
     label: ":mag: Deploy"
     commands:
       - "docker compose up -d"
