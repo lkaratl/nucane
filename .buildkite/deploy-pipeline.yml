@@ -36,7 +36,7 @@ steps:
           OKX_API_PASSPHRASE=
           OKX_API_SECRET=
   - key: "Deploy"
-    depends_on: "propagate"
+    depends_on: "input"
     label: ":mag: Deploy"
     commands:
       - echo "===== PIPELINE PARAMS ====="
