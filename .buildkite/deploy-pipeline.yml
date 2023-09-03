@@ -48,7 +48,7 @@ steps:
         while IFS= read -r line
         do
             echo "$$line"
-            export $line
+            export $$line
         done <<< "$(buildkite-agent meta-data get params)"
   - key: "Deploy"
     depends_on: "propagate"
