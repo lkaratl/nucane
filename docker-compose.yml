@@ -1,7 +1,7 @@
 # NAMESPACE= BRANCH= BUILD= TS_AUTHKEY= DEMO=true OKX_API_KEY= OKX_API_PASSPHRASE= OKX_API_SECRET= docker compose up -d
 ---
 version: "3.7"
-name: ncn-$NAMESPACE # todo per namespace
+name: ncn-\$NAMESPACE # todo per namespace
 networks:
   db_network:
     driver: bridge
@@ -12,7 +12,7 @@ volumes:
 services:
   engine:
     container_name: engine
-    image: ncn-engine:$VERSION
+    image: ncn-engine:\$VERSION
     networks:
       - db_network
       - redpanda_network
