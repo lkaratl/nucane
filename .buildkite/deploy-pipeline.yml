@@ -35,9 +35,9 @@ steps:
           OKX_API_KEY=
           OKX_API_PASSPHRASE=
           OKX_API_SECRET=
-  - key: "Deploy"
+  - key: "propagate"
     depends_on: "input"
-    label: ":mag: Deploy"
+    label: "Params"
     commands:
       - echo "===== PIPELINE PARAMS ====="
       - "export NAMESPACE=$(buildkite-agent meta-data get namespace) && echo \"NAMESPACE: $$NAMESPACE\""
@@ -50,5 +50,9 @@ steps:
             echo "$$line"
             export $$line
         done <<< "$(buildkite-agent meta-data get params)"
+  - key: "Deploy"
+    depends_on: "propagate"
+    label: ":mag: Deploy"
+    commands:
       - "envsubst < docker-compose.yml"
       - "docker compose up -d"
