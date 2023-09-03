@@ -39,10 +39,12 @@ steps:
     depends_on: "input"
     label: "Params"
     commands:
+      -  echo "===== PIPELINE PARAMS ====="
       - "NAMESPACE=$(buildkite-agent meta-data get namespace) && echo \"NAMESPACE: $$NAMESPACE\""
       - "FORCE=$(buildkite-agent meta-data get force) && echo \"FORCE: $$FORCE\""
       - "VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$VERSION\""
       - |
+        echo "===== CUSTOM PARAMS ====="
         while IFS= read -r line
         do
             echo "$$line"
