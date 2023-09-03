@@ -25,7 +25,7 @@ services:
     container_name: interactor
     image: ncn-interactor:${VERSION}
     environment:
-      INTERACTOR_EAC_DEMO: ${DEMO:true}
+      INTERACTOR_EAC_DEMO: ${DEMO}
       INTERACTOR_EAC_EXCHANGES_OKX_AUTH_KEY: ${OKX_API_KEY}
       INTERACTOR_EAC_EXCHANGES_OKX_AUTH_PASSPHRASE: ${OKX_API_PASSPHRASE}
       INTERACTOR_EAC_EXCHANGES_OKX_AUTH_SECRET: ${OKX_API_SECRET}
@@ -66,7 +66,7 @@ services:
     container_name: storage
     image: ncn-storage:${VERSION}
     environment:
-      STORAGE_DATABASE_URL: ${STORAGE_DATABASE_URL:mysql://root:root@db:3306/ncn_storage}
+      STORAGE_DATABASE_URL: mysql://root:root@db:3306/ncn_storage
     networks:
       - db_network
       - redpanda_network
