@@ -5,8 +5,7 @@ steps:
     fields:
       - key: "version"
         text: "Version"
-        hint: "Value format '$BRANCH-$BUILD', get exact values from build pipeline"
-        format: "^[\\d\\w-]+-\\d+$"
+        hint: "Value format '\\$BRANCH-\\$BUILD' or 'latest', get exact values from build pipeline"
         default: "latest"
       - key: "namespace"
         select: "Namespace"
