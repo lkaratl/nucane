@@ -27,6 +27,7 @@ steps:
           - label: "false"
             value: "false"
         default: "false"
+    timeout_in_minutes: 5
   - key: "params"
     depends_on: "input"
     label: "Params"
@@ -38,6 +39,7 @@ steps:
     label: "Approve"
     block: "Approve force deploy"
     if: "true"
+    timeout_in_minutes: 1
   - key: "Deploy"
     depends_on: "approve"
     label: ":mag: Deploy"
