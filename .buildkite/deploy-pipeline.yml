@@ -54,5 +54,7 @@ steps:
     depends_on: "propagate"
     label: ":mag: Deploy"
     commands:
+      - "echo \"NAMESPACE: $$NAMESPACE\""
+      - "echo \"NAMESPACE: $NAMESPACE\""
       - "envsubst < docker-compose.yml"
       - "docker compose up -d"
