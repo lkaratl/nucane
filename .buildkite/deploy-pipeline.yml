@@ -30,7 +30,7 @@ steps:
     depends_on: "input"
     label: "Params"
     commands:
-      - "NAMESPACE=$(buildkite-agent meta-data get namespace) && echo $NAMESPACE"
+      - "NAMESPACE=$(buildkite-agent meta-data get namespace) && echo $$NAMESPACE"
   - key: "approve"
     depends_on: "params"
     label: "Approve"
