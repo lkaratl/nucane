@@ -27,17 +27,26 @@ steps:
           - label: "false"
             value: "false"
         default: "false"
-  - key: "params"
+      - key: "params"
+        text: "Custom params"
+        hint: "Custom environment parameters"
+        default: |
+          DEMO=true
+          OKX_API_KEY=
+          OKX_API_PASSPHRASE=
+          OKX_API_SECRET=
+  - key: "propagate"
     depends_on: "input"
     label: "Params"
     commands:
-      - "VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$NAMESPACE\""
+      - "FORCE=$(buildkite-agent meta-data get force) && echo \"FORCE: $$FORCE\""
+      - "VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$VERSION\""
       - "NAMESPACE=$(buildkite-agent meta-data get namespace) && echo \"NAMESPACE: $$NAMESPACE\""
-#  - key: "approve"
-#    depends_on: "params"
-#    label: "Approve"
-#    block: "Approve force deploy"
-#    if: "true"
+  - key: "approve"
+    depends_on: "propagate"
+    label: "Approve"
+    block: "Approve force deploy"
+    if: "$$FORCE"
   - key: "Deploy"
     depends_on: "approve"
     label: ":mag: Deploy"
