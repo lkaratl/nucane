@@ -46,7 +46,7 @@ steps:
     depends_on: "propagate"
     label: "Approve"
     block: "Approve force deploy"
-    if: $$FORCE
+    if: $$FORCE == "true"
   - key: "Deploy"
     depends_on: "approve"
     label: ":mag: Deploy"
