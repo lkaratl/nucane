@@ -1,6 +1,6 @@
 steps:
-  - key: "params"
-    label: "Params"
+  - key: "input"
+    label: "Input"
     input: "Deploy params"
     fields:
       - key: "version"
@@ -26,6 +26,11 @@ steps:
           - label: "false"
             value: "false"
         default: "false"
+  - key: "params"
+    depends_on: "input"
+    label: "Params"
+    commands:
+      - "NAMESPACE=$(buildkite-agent meta-data get namespace) && echo $NAMESPACE"
   - key: "approve"
     depends_on: "params"
     label: "Approve"
@@ -35,4 +40,4 @@ steps:
     depends_on: "approve"
     label: ":mag: Deploy"
     commands:
-      - "NAMESPACE=test BRANCH=NCN-112 BUILD=87 DEMO=true docker compose up -d"
+      - "BRANCH=NCN-112 BUILD=87 DEMO=true docker compose up -d"
