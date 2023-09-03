@@ -6,7 +6,7 @@ steps:
       - key: "version"
         text: "Version"
         hint: "Value format '$BRANCH-$BUILD', get exact values from build pipeline"
-        format: "^[\d\w-]+-\d+$"
+        format: "^[\\d\\w-]+-\\d+$"
       - key: "namespace"
         select: "Namespace"
         hint: "Namespace for deploy"
