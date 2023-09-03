@@ -53,4 +53,4 @@ steps:
                   done <<< "$(buildkite-agent meta-data get params)"
       - "echo \"+++ :round_pushpin: COMPOSE FILE :round_pushpin:\""
       - "envsubst < docker-compose.yml"
-      - "docker compose up -d"
+      - "docker compose up"
