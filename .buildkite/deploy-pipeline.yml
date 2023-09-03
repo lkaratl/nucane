@@ -39,12 +39,12 @@ steps:
     depends_on: "input"
     label: "Params"
     commands:
-      - echo "===== PIPELINE PARAMS ====="
+      - "echo \"+++ :triangular_flag_on_post: ===== PIPELINE PARAMS ===== :triangular_flag_on_post:\""
       - "export NAMESPACE=$(buildkite-agent meta-data get namespace) && echo \"NAMESPACE: $$NAMESPACE\""
       - "export FORCE=$(buildkite-agent meta-data get force) && echo \"FORCE: $$FORCE\""
       - "export VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$VERSION\""
       - |
-        echo "===== CUSTOM PARAMS ====="
+        echo "+++ :triangular_flag_on_post: ===== CUSTOM PARAMS ===== :triangular_flag_on_post:"
         while IFS= read -r line
         do
             echo "$$line"
