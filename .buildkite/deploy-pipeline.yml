@@ -50,4 +50,5 @@ steps:
             echo "$$line"
             export $$line
         done <<< "$(buildkite-agent meta-data get params)"
+      - "cat docker-compose.yml"
       - "docker compose up -d"
