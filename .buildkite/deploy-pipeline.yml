@@ -50,6 +50,8 @@ steps:
             echo "$$line"
             export $$line
         done <<< "$(buildkite-agent meta-data get params)"
+      - "echo \"NAMESPACE: $$NAMESPACE\""
+      - "echo \"NAMESPACE: $NAMESPACE\""
   - key: "Deploy"
     depends_on: "propagate"
     label: ":mag: Deploy"
