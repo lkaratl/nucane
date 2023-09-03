@@ -1,7 +1,7 @@
 # NAMESPACE= BRANCH= BUILD= TS_AUTHKEY= DEMO=true OKX_API_KEY= OKX_API_PASSPHRASE= OKX_API_SECRET= docker compose up -d
 ---
 version: "3.7"
-name: ncn-\$$NAMESPACE # todo per namespace
+name: ncn-$$NAMESPACE # todo per namespace
 networks:
   db_network:
     driver: bridge
@@ -12,7 +12,7 @@ volumes:
 services:
   engine:
     container_name: engine
-    image: ncn-engine:\$VERSION
+    image: ncn-engine:$$VERSION
     networks:
       - db_network
       - redpanda_network
@@ -24,7 +24,7 @@ services:
       - redpanda
   interactor:
     container_name: interactor
-    image: ncn-interactor:$VERSION
+    image: ncn-interactor:$$VERSION
     environment:
       INTERACTOR_EAC_DEMO: $${DEMO:true}
       INTERACTOR_EAC_EXCHANGES_OKX_AUTH_KEY: $$OKX_API_KEY
@@ -41,7 +41,7 @@ services:
       - redpanda
   simulator:
     container_name: simulator
-    image: ncn-simulator:$VERSION
+    image: ncn-simulator:$$VERSION
     networks:
       - db_network
       - redpanda_network
@@ -53,7 +53,7 @@ services:
       - redpanda
   registry:
     container_name: registry
-    image: ncn-registry:$VERSION
+    image: ncn-registry:$$VERSION
     networks:
       - db_network
       - redpanda_network
@@ -65,7 +65,7 @@ services:
       - redpanda
   storage:
     container_name: storage
-    image: ncn-storage:$VERSION
+    image: ncn-storage:$$VERSION
     environment:
       STORAGE_DATABASE_URL: $${STORAGE_DATABASE_URL:mysql://root:root@db:3306/ncn_storage}
     networks:
@@ -81,7 +81,7 @@ services:
 # capability providers
   tailscale:
     container_name: tailscale
-    hostname: ncn-$NAMESPACE
+    hostname: ncn-$$NAMESPACE
     network_mode: "host"
     image: tailscale/tailscale:stable
     environment:
