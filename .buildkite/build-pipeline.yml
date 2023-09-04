@@ -1,17 +1,12 @@
 steps:
-  - key: "prepare"
-    label: ":vertical_traffic_light: Prepare"
-    commands:
-      - "buildkite-agent meta-data set \"build-name\" \"$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER\""
   - key: "check"
-    depends_on: "prepare"
     label: ":mag: Check"
     commands:
       - "cargo clippy -- -D warnings"
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
-  - key: "build"
+  - key: "build_binaries"
     depends_on: "check"
     allow_dependency_failure: true #todo remove
     label: ":hammer_and_wrench: Build binaries"
@@ -24,7 +19,7 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
   - key: "test"
-    depends_on: "build"
+    depends_on: "build_binaries"
     label: ":clipboard: Test"
     commands:
       - "cargo nextest run"
@@ -55,3 +50,10 @@ steps:
         commands:
           - "buildkite-agent artifact download 'target/release/storage-app' ."
           - "docker build -t ncn-storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-storage:latest --build-arg=\"EXECUTABLE_FILE=storage-app\" ."
+  - key: "upload_artifacts"
+    depends_on: "build_images"
+    group: ":file_cabinet: Upload artifacts: '$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER'"
+    steps:
+      - label: "todo change"
+        commands:
+          - "echo todo change"
