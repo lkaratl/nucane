@@ -3,6 +3,7 @@ steps:
     label: ":mag: Check"
     commands:
       - "cargo clippy -- -D warnings"
+      - "rm -rf ./target"
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
@@ -23,6 +24,7 @@ steps:
     label: ":clipboard: Test"
     commands:
       - "cargo nextest run"
+      - "rm -rf ./target"
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
@@ -52,9 +54,9 @@ steps:
           - "docker build -t ncn-storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-storage:latest --build-arg=\"EXECUTABLE_FILE=storage-app\" ."
   - key: "upload_artifacts"
     depends_on: "build_images"
-    group: ":card_file_box: $BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+    group: ":file_cabinet: $BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
     steps:
-      - label: ":file_folder: engine"
+      - label: ":card_index_dividers: engine"
         commands:
           - "buildkite-agent artifact download 'target/release/engine-app' ."
           - "rclone sync ./target/release/engine-app drive:/Managed/Nucane/nucane/build/binary/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
