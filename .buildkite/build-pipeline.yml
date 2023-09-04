@@ -3,7 +3,6 @@ steps:
     label: ":vertical_traffic_light: Prepare"
     commands:
       - "buildkite-agent meta-data set \"build-name\" \"$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER\""
-      - "rm -rf ./target"
   - key: "check"
     depends_on: "prepare"
     label: ":mag: Check"
