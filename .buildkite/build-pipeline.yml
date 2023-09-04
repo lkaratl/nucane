@@ -28,7 +28,7 @@ steps:
           image: "rust-image"
   - key: "build_images"
     depends_on: "build"
-    group: ":docker: $BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+    group: ":docker: Build images"
     steps:
       - label: ":package: engine"
         commands:
@@ -50,3 +50,11 @@ steps:
         commands:
           - "buildkite-agent artifact download 'target/release/storage-app' ."
           - "docker build -t ncn-storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-storage:latest --build-arg=\"EXECUTABLE_FILE=storage-app\" ."
+  - key: "upload_artifacts"
+    depends_on: "build_images"
+    group: ":card_file_box: $BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+    steps:
+      - label: ":file_folder: engine"
+        commands:
+          - "buildkite-agent artifact download 'target/release/engine-app' ."
+          - "rclone sync ./target/release/engine-app drive:/Managed/Nucane/nucane/build/binary/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
