@@ -4,12 +4,12 @@ steps:
     commands:
       - "cargo clippy -- -D warnings"
       - "rm -rf ./target"
-    allow_failure: true #todo remove
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
   - key: "build_binaries"
     depends_on: "check"
+    allow_dependency_failure: true #todo remove
     label: ":hammer_and_wrench: Build binaries"
     commands:
       - "cargo build --release"
