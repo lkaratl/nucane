@@ -78,8 +78,8 @@ steps:
         commands:
           - "buildkite-agent artifact download 'target/release/storage-app' ."
           - "docker build --no-cache -t storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=storage-app\" ."
+  - wait
   - key: "prepare_sync"
-    depends_on: "build_images"
     label: ":vertical_traffic_light: $BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
     commands:
       - "rclone mkdir drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
