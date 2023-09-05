@@ -6,12 +6,16 @@ steps:
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
-      - cache#v0.6.0:
+      - nienbo/cache#v2.4.14:
+          id: rust
+          backend: rsync
+          key: "cache-{{ id }}-{{ checksum 'Cargo.toml' }}"
+          restore-keys:
+            - "cache-{{ id }}-{{ checksum 'Cargo.toml' }}-"
+            - "cache-{{ id }}-"
           paths:
-          - "target"
-          - "/usr/local/cargo"
-          restore: "branch"
-          save: "branch"
+            - 'target'
+          continue_on_error: true
   - key: "build_binaries"
     depends_on: "check"
     allow_dependency_failure: true #todo remove
@@ -24,12 +28,16 @@ steps:
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
-      - cache#v0.6.0:
+      - nienbo/cache#v2.4.14:
+          id: rust
+          backend: rsync
+          key: "cache-{{ id }}-{{ checksum 'Cargo.toml' }}"
+          restore-keys:
+            - "cache-{{ id }}-{{ checksum 'Cargo.toml' }}-"
+            - "cache-{{ id }}-"
           paths:
-            - "target"
-            - "/usr/local/cargo"
-          restore: "branch"
-          save: "branch"
+            - 'target'
+          continue_on_error: true
 #  - key: "test"
 #    depends_on: "build_binaries"
 #    label: ":clipboard: Test"
@@ -38,12 +46,16 @@ steps:
 #    plugins:
 #      - docker#v5.8.0:
 #          image: "rust-image"
-#      - cache#v0.6.0:
+#      - nienbo/cache#v2.4.14:
+#          id: rust
+#          backend: rsync
+#          key: "cache-{{ id }}-{{ checksum 'Cargo.toml' }}"
+#          restore-keys:
+#            - "cache-{{ id }}-{{ checksum 'Cargo.toml' }}-"
+#            - "cache-{{ id }}-"
 #          paths:
-#            - "target"
-#            - "/usr/local/cargo"
-#          restore: "branch"
-#          save: "pipeline"
+#            - 'target'
+#          continue_on_error: true
   - key: "build_images"
     depends_on: "build_binaries"
     group: ":docker: Build images"
