@@ -3,18 +3,15 @@ steps:
     label: ":mag: Check"
     commands:
       - "cargo clippy -- -D warnings"
-#    plugins:
-#      - docker#v5.8.0:
-#          image: "rust-image"
-#      - nienbo/cache#v2.4.14:
-#          backend: rsync
-#          key: "cache"
-#          restore-keys:
-#            - "cache"
-#          paths:
-#            - "target"
-#            - "/usr/local/cargo"
-#          continue_on_error: true
+    plugins:
+      - nienbo/cache#v2.4.14:
+          backend: rsync
+          key: "cache"
+          restore-keys:
+            - "cache"
+          paths:
+            - "target"
+          continue_on_error: true
   - wait: ~
     continue_on_failure: true # todo remove
   - key: "build_binaries"
@@ -27,36 +24,30 @@ steps:
       - "target/release/registry-app"
       - "target/release/simulator-app"
       - "target/release/storage-app"
-#    plugins:
-#      - docker#v5.8.0:
-#          image: "rust-image"
+    plugins:
       - nienbo/cache#v2.4.14:
-#          backend: rsync
-#          key: "cache"
-#          restore-keys:
-#            - "cache"
-#          paths:
-#            - "target"
-#            - "/usr/local/cargo"
-#          continue_on_error: true
+          backend: rsync
+          key: "cache"
+          restore-keys:
+            - "cache"
+          paths:
+            - "target"
+          continue_on_error: true
   - wait: ~
     continue_on_failure: true # todo remove
   - key: "test"
     label: ":clipboard: Test"
     commands:
       - "cargo nextest run --release"
-#    plugins:
-#      - docker#v5.8.0:
-#          image: "rust-image"
-#      - nienbo/cache#v2.4.14:
-#          backend: rsync
-#          key: "cache"
-#          restore-keys:
-#            - "cache"
-#          paths:
-#            - "target"
-#            - "/usr/local/cargo"
-#          continue_on_error: true
+    plugins:
+      - nienbo/cache#v2.4.14:
+          backend: rsync
+          key: "cache"
+          restore-keys:
+            - "cache"
+          paths:
+            - "target"
+          continue_on_error: true
   - key: "build_images"
     depends_on: "build_binaries"
     group: ":docker: Build images"
