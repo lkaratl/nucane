@@ -13,6 +13,7 @@ steps:
             - "cache"
           paths:
             - "target"
+            - "/usr/local/cargo"
           continue_on_error: true
   - wait: ~
     continue_on_failure: true # todo remove
@@ -36,13 +37,14 @@ steps:
             - "cache"
           paths:
             - "target"
+            - "/usr/local/cargo"
           continue_on_error: true
   - wait: ~
     continue_on_failure: true # todo remove
   - key: "test"
     label: ":clipboard: Test"
     commands:
-      - "cargo nextest run --no-capture --release"
+      - "cargo nextest run --release"
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
@@ -53,6 +55,7 @@ steps:
             - "cache"
           paths:
             - "target"
+            - "/usr/local/cargo"
           continue_on_error: true
   - key: "build_images"
     depends_on: "build_binaries"
