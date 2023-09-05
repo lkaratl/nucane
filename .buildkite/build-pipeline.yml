@@ -55,28 +55,29 @@ steps:
       - label: ":package: engine"
         commands:
           - "buildkite-agent artifact download 'target/release/engine-app' ."
-          - "docker build --no-cache -t engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=engine-app\" ."
+          - "docker build -t engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=engine-app\" ."
       - label: ":package: interactor"
         commands:
           - "buildkite-agent artifact download 'target/release/interactor-app' ."
-          - "docker build --no-cache -t interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=interactor-app\" ."
+          - "docker build -t interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=interactor-app\" ."
       - label: ":package: registry"
         commands:
           - "buildkite-agent artifact download 'target/release/registry-app' ."
-          - "docker build --no-cache -t registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=registry-app\" ."
+          - "docker build -t registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=registry-app\" ."
       - label: ":package: simulator"
         commands:
           - "buildkite-agent artifact download 'target/release/simulator-app' ."
-          - "docker build --no-cache -t simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=simulator-app\" ."
+          - "docker build -t simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=simulator-app\" ."
       - label: ":package: storage"
         commands:
           - "buildkite-agent artifact download 'target/release/storage-app' ."
-          - "docker build --no-cache -t storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=storage-app\" ."
+          - "docker build -t storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=storage-app\" ."
   - wait: ~
     continue_on_failure: true # todo remove
   - key: "prepare_sync"
     label: ":vertical_traffic_light: $BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
     commands:
+      - "docker builder prune --all --force"
       - "rclone mkdir drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
   - wait: ~
     continue_on_failure: true # todo remove
