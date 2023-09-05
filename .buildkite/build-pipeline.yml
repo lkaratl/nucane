@@ -64,7 +64,7 @@ steps:
       - label: ":package: engine"
         commands:
           - "buildkite-agent artifact download 'target/release/engine-app' ."
-          - "docker build --no-cache -t engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-engine:latest --build-arg=\"EXECUTABLE_FILE=engine-app\" ."
+          - "docker build --no-cache -t engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=engine-app\" ."
       - label: ":package: interactor"
         commands:
           - "buildkite-agent artifact download 'target/release/interactor-app' ."

@@ -38,7 +38,7 @@ fn init_logger() {
     tracing::subscriber::set_global_default(subscriber)
         .expect("Setting default subscriber failed");
 }
-
+#[ignore = "run db and broker on ci"]
 // clean storage before this test
 #[tokio::test]
 async fn test_e2e_candles_sync() {
@@ -102,6 +102,7 @@ async fn test_e2e_candles_sync() {
     assert_eq!(report.synced, 0);
 }
 
+#[ignore = "run db and broker on ci"]
 #[tokio::test]
 async fn test_e2e_simulation() {
     init().await;
