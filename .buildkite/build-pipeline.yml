@@ -79,12 +79,12 @@ steps:
           - "docker build -t ncn-storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-storage:latest --build-arg=\"EXECUTABLE_FILE=storage-app\" ."
   - key: "prepare_sync"
     depends_on: "build_images"
-    label: ":vertical_traffic_light:"
+    label: ":vertical_traffic_light: $BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
     commands:
       - "rclone mkdir drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
   - key: "upload_artifacts"
     depends_on: "prepare_sync"
-    group: ":file_cabinet: $BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+    group: ":file_cabinet: Upload artifacts"
     steps:
       - label: ":card_index_dividers: engine"
         commands:
