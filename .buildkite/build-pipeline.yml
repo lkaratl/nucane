@@ -14,9 +14,9 @@ steps:
           paths:
             - "target"
           continue_on_error: true
-  - wait
+  - wait: ~
+    continue_on_failure: true # todo remove
   - key: "build_binaries"
-    allow_dependency_failure: true #todo remove
     label: ":hammer_and_wrench: Build binaries"
     commands:
       - "cargo build --release"
@@ -83,8 +83,8 @@ steps:
     label: ":vertical_traffic_light: $BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
     commands:
       - "rclone mkdir drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+  - wait
   - key: "upload_artifacts"
-    depends_on: "prepare_sync"
     group: ":file_cabinet: Upload artifacts"
     steps:
       - label: ":card_index_dividers: engine"
