@@ -7,7 +7,7 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
           volumes:
-            - "/usr/local/cargo:usr/local/cargo"
+            - "/usr/local/cargo:/usr/local/cargo"
       - nienbo/cache#v2.4.14:
           backend: rsync
           key: "cache-{{ checksum 'Cargo.toml' }}"
@@ -34,7 +34,7 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
           volumes:
-            - "/usr/local/cargo:usr/local/cargo"
+            - "/usr/local/cargo:/usr/local/cargo"
       - nienbo/cache#v2.4.14:
           backend: rsync
           key: "cache-{{ checksum 'Cargo.toml' }}"
@@ -54,7 +54,7 @@ steps:
 #      - docker#v5.8.0:
 #          image: "rust-image"
 #          volumes:
-#            - "/usr/local/cargo:usr/local/cargo"
+#            - "/usr/local/cargo:/usr/local/cargo"
 #      - nienbo/cache#v2.4.14:
 #          backend: rsync
 #          key: "cache-{{ checksum 'Cargo.toml' }}"
