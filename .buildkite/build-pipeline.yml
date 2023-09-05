@@ -6,6 +6,8 @@ steps:
     plugins:
       - nienbo/cache#v2.4.14:
           backend: rsync
+          rsync:
+            path: "/tmp/pipeline-caches"
           key: "cache"
           restore-keys:
             - "cache"
@@ -27,6 +29,8 @@ steps:
     plugins:
       - nienbo/cache#v2.4.14:
           backend: rsync
+          rsync:
+            path: "/tmp/pipeline-caches"
           key: "cache"
           restore-keys:
             - "cache"
@@ -42,6 +46,8 @@ steps:
     plugins:
       - nienbo/cache#v2.4.14:
           backend: rsync
+          rsync:
+            path: "/tmp/pipeline-caches"
           key: "cache"
           restore-keys:
             - "cache"
