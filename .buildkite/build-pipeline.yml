@@ -14,8 +14,8 @@ steps:
           paths:
             - "target"
           continue_on_error: true
+  - wait
   - key: "build_binaries"
-    depends_on: "check"
     allow_dependency_failure: true #todo remove
     label: ":hammer_and_wrench: Build binaries"
     commands:
@@ -37,6 +37,7 @@ steps:
           paths:
             - "target"
           continue_on_error: true
+  - wait
 #  - key: "test"
 #    depends_on: "build_binaries"
 #    label: ":clipboard: Test"
@@ -60,23 +61,23 @@ steps:
       - label: ":package: engine"
         commands:
           - "buildkite-agent artifact download 'target/release/engine-app' ."
-          - "docker build --no-cache -t ncn-engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-engine:latest --build-arg=\"EXECUTABLE_FILE=engine-app\" ."
+          - "docker build --no-cache -t engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-engine:latest --build-arg=\"EXECUTABLE_FILE=engine-app\" ."
       - label: ":package: interactor"
         commands:
           - "buildkite-agent artifact download 'target/release/interactor-app' ."
-          - "docker build --no-cache -t ncn-interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-interactor:latest --build-arg=\"EXECUTABLE_FILE=interactor-app\" ."
+          - "docker build --no-cache -t interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=interactor-app\" ."
       - label: ":package: registry"
         commands:
           - "buildkite-agent artifact download 'target/release/registry-app' ."
-          - "docker build --no-cache -t ncn-registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-registry:latest --build-arg=\"EXECUTABLE_FILE=registry-app\" ."
+          - "docker build --no-cache -t registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=registry-app\" ."
       - label: ":package: simulator"
         commands:
           - "buildkite-agent artifact download 'target/release/simulator-app' ."
-          - "docker build --no-cache -t ncn-simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-simulator:latest --build-arg=\"EXECUTABLE_FILE=simulator-app\" ."
+          - "docker build --no-cache -t simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=simulator-app\" ."
       - label: ":package: storage"
         commands:
           - "buildkite-agent artifact download 'target/release/storage-app' ."
-          - "docker build --no-cache -t ncn-storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER -t ncn-storage:latest --build-arg=\"EXECUTABLE_FILE=storage-app\" ."
+          - "docker build --no-cache -t storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=storage-app\" ."
   - key: "prepare_sync"
     depends_on: "build_images"
     label: ":vertical_traffic_light: $BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
@@ -90,34 +91,48 @@ steps:
         commands:
           - "buildkite-agent artifact download 'target/release/engine-app' ."
           - "rclone sync ./target/release/engine-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
-          - "docker save -o ./target/release/engine.tar ncn-engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/engine-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "docker save -o ./target/release/engine.tar engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
           - "rclone sync ./target/release/engine.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/engine.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm ncn-engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+      - wait
       - label: ":card_index_dividers: interactor"
         commands:
           - "buildkite-agent artifact download 'target/release/interactor-app' ."
           - "rclone sync ./target/release/interactor-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
-          - "docker save -o ./target/release/interactor.tar ncn-interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/interactor-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "docker save -o ./target/release/interactor.tar interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
           - "rclone sync ./target/release/interactor.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/interactor.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm ncn-interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+      - wait
       - label: ":card_index_dividers: registry"
         commands:
           - "buildkite-agent artifact download 'target/release/registry-app' ."
           - "rclone sync ./target/release/registry-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
-          - "docker save -o ./target/release/registry.tar ncn-registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/registry-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "docker save -o ./target/release/registry.tar registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
           - "rclone sync ./target/release/registry.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/registry.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm ncn-registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+      - wait
       - label: ":card_index_dividers: simulator"
         commands:
           - "buildkite-agent artifact download 'target/release/simulator-app' ."
           - "rclone sync ./target/release/simulator-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
-          - "docker save -o ./target/release/simulator.tar ncn-simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/simulator-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "docker save -o ./target/release/simulator.tar simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
           - "rclone sync ./target/release/simulator.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/simulator.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm ncn-simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+      - wait
       - label: ":card_index_dividers: storage"
         commands:
           - "buildkite-agent artifact download 'target/release/storage-app' ."
           - "rclone sync ./target/release/storage-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
-          - "docker save -o ./target/release/storage.tar ncn-storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/storage-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "docker save -o ./target/release/storage.tar storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
           - "rclone sync ./target/release/storage.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/storage.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm ncn-storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
