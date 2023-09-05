@@ -6,8 +6,6 @@ steps:
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
-          volumes:
-            - "/usr/local/cargo:/usr/local/cargo"
       - nienbo/cache#v2.4.14:
           backend: rsync
           key: "cache-{{ checksum 'Cargo.toml' }}"
@@ -16,7 +14,6 @@ steps:
             - "cache-"
           paths:
             - "target"
-            - "/usr/local/cargo"
           continue_on_error: true
   - key: "build_binaries"
     depends_on: "check"
@@ -33,8 +30,6 @@ steps:
     plugins:
       - docker#v5.8.0:
           image: "rust-image"
-          volumes:
-            - "/usr/local/cargo:/usr/local/cargo"
       - nienbo/cache#v2.4.14:
           backend: rsync
           key: "cache-{{ checksum 'Cargo.toml' }}"
@@ -43,7 +38,6 @@ steps:
             - "cache-"
           paths:
             - "target"
-            - "/usr/local/cargo"
           continue_on_error: true
 #  - key: "test"
 #    depends_on: "build_binaries"
@@ -53,8 +47,6 @@ steps:
 #    plugins:
 #      - docker#v5.8.0:
 #          image: "rust-image"
-#          volumes:
-#            - "/usr/local/cargo:/usr/local/cargo"
 #      - nienbo/cache#v2.4.14:
 #          backend: rsync
 #          key: "cache-{{ checksum 'Cargo.toml' }}"
@@ -63,7 +55,6 @@ steps:
 #            - "cache-"
 #          paths:
 #            - "target"
-#            - "/usr/local/cargo"
 #          continue_on_error: true
   - key: "build_images"
     depends_on: "build_binaries"
