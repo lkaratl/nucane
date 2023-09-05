@@ -8,10 +8,9 @@ steps:
           image: "rust-image"
       - nienbo/cache#v2.4.14:
           backend: rsync
-          key: "cache-{{ checksum 'Cargo.toml' }}"
+          key: "cache"
           restore-keys:
-            - "cache-{{ checksum 'Cargo.toml' }}"
-            - "cache-"
+            - "cache"
           paths:
             - "target"
           continue_on_error: true
@@ -32,10 +31,9 @@ steps:
           image: "rust-image"
       - nienbo/cache#v2.4.14:
           backend: rsync
-          key: "cache-{{ checksum 'Cargo.toml' }}"
+          key: "cache"
           restore-keys:
-            - "cache-{{ checksum 'Cargo.toml' }}"
-            - "cache-"
+            - "cache"
           paths:
             - "target"
           continue_on_error: true
@@ -49,10 +47,9 @@ steps:
 #          image: "rust-image"
 #      - nienbo/cache#v2.4.14:
 #          backend: rsync
-#          key: "cache-{{ checksum 'Cargo.toml' }}"
-#          restore-keys:
-#            - "cache-{{ checksum 'Cargo.toml' }}"
-#            - "cache-"
+#          key: "cache"
+          #          restore-keys:
+          #            - "cache"
 #          paths:
 #            - "target"
 #          continue_on_error: true
