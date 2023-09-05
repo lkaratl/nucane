@@ -7,10 +7,9 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
       - cache#v0.6.0:
-          manifest: "Cargo.lock"
           path: "target"
-          restore: "pipeline"
-          save: "file"
+          restore: "branch"
+          save: "branch"
   - key: "build_binaries"
     depends_on: "check"
     allow_dependency_failure: true #todo remove
@@ -24,10 +23,9 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
       - cache#v0.6.0:
-          manifest: "Cargo.lock"
           path: "target"
-          restore: "file"
-          save: "file"
+          restore: "branch"
+          save: "branch"
   - key: "test"
     depends_on: "build_binaries"
     label: ":clipboard: Test"
@@ -37,9 +35,8 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
       - cache#v0.6.0:
-          manifest: "Cargo.lock"
           path: "target"
-          restore: "file"
+          restore: "branch"
           save: "pipeline"
   - key: "build_images"
     depends_on: "build_binaries"
