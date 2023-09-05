@@ -7,7 +7,9 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
       - cache#v0.6.0:
-          path: "target"
+          paths:
+          - "target"
+          - "/usr/local/cargo"
           restore: "branch"
           save: "branch"
   - key: "build_binaries"
@@ -23,7 +25,9 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
       - cache#v0.6.0:
-          path: "target"
+          paths:
+            - "target"
+            - "/usr/local/cargo"
           restore: "branch"
           save: "branch"
   - key: "test"
@@ -35,7 +39,9 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
       - cache#v0.6.0:
-          path: "target"
+          paths:
+            - "target"
+            - "/usr/local/cargo"
           restore: "branch"
           save: "pipeline"
   - key: "build_images"
