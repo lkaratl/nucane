@@ -100,19 +100,19 @@ steps:
           - "buildkite-agent artifact download 'target/release/interactor-app' ."
           - "rclone sync ./target/release/interactor-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
           - "docker save -o ./target/release/interactor.tar ncn-interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
-          - "rclone sync ./target/release/interactorc.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rclone sync ./target/release/interactor.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
       - label: ":card_index_dividers: registry"
         commands:
           - "buildkite-agent artifact download 'target/release/registry-app' ."
           - "rclone sync ./target/release/registry-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
           - "docker save -o ./target/release/registry.tar ncn-registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
-          - "rclone sync ./target/release/registryc.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rclone sync ./target/release/registry.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
       - label: ":card_index_dividers: simulator"
         commands:
           - "buildkite-agent artifact download 'target/release/simulator-app' ."
           - "rclone sync ./target/release/simulator-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
           - "docker save -o ./target/release/simulator.tar ncn-simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
-          - "rclone sync ./target/release/simulatorc.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rclone sync ./target/release/simulator.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
       - label: ":card_index_dividers: storage"
         commands:
           - "buildkite-agent artifact download 'target/release/storage-app' ."
