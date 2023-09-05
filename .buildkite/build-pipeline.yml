@@ -37,7 +37,8 @@ steps:
           paths:
             - "target"
           continue_on_error: true
-  - wait
+  - wait: ~
+    continue_on_failure: true # todo remove
 #  - key: "test"
 #    depends_on: "build_binaries"
 #    label: ":clipboard: Test"
@@ -78,12 +79,14 @@ steps:
         commands:
           - "buildkite-agent artifact download 'target/release/storage-app' ."
           - "docker build --no-cache -t storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=storage-app\" ."
-  - wait
+  - wait: ~
+    continue_on_failure: true # todo remove
   - key: "prepare_sync"
     label: ":vertical_traffic_light: $BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
     commands:
       - "rclone mkdir drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
-  - wait
+  - wait: ~
+    continue_on_failure: true # todo remove
   - key: "upload_artifacts"
     group: ":file_cabinet: Upload artifacts"
     steps:
@@ -96,7 +99,8 @@ steps:
           - "rclone sync ./target/release/engine.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
           - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/engine.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm ncn-engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
-      - wait
+      - wait: ~
+        continue_on_failure: true # todo remove
       - label: ":card_index_dividers: interactor"
         commands:
           - "buildkite-agent artifact download 'target/release/interactor-app' ."
@@ -106,7 +110,8 @@ steps:
           - "rclone sync ./target/release/interactor.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
           - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/interactor.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm ncn-interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
-      - wait
+      - wait: ~
+        continue_on_failure: true # todo remove
       - label: ":card_index_dividers: registry"
         commands:
           - "buildkite-agent artifact download 'target/release/registry-app' ."
@@ -116,7 +121,8 @@ steps:
           - "rclone sync ./target/release/registry.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
           - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/registry.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm ncn-registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
-      - wait
+      - wait: ~
+        continue_on_failure: true # todo remove
       - label: ":card_index_dividers: simulator"
         commands:
           - "buildkite-agent artifact download 'target/release/simulator-app' ."
@@ -126,7 +132,8 @@ steps:
           - "rclone sync ./target/release/simulator.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
           - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/simulator.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm ncn-simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
-      - wait
+      - wait: ~
+        continue_on_failure: true # todo remove
       - label: ":card_index_dividers: storage"
         commands:
           - "buildkite-agent artifact download 'target/release/storage-app' ."
