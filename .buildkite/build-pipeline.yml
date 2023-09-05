@@ -9,7 +9,7 @@ steps:
       - cache#v0.6.0:
           manifest: "Cargo.lock"
           path: "target"
-          restore: "branch"
+          restore: "pipeline"
           save: "file"
   - key: "build_binaries"
     depends_on: "check"
@@ -40,7 +40,7 @@ steps:
           manifest: "Cargo.lock"
           path: "target"
           restore: "file"
-          save: "branch"
+          save: "pipeline"
   - key: "build_images"
     depends_on: "build_binaries"
     group: ":docker: Build images"
