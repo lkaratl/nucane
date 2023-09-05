@@ -7,14 +7,14 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
       - nienbo/cache#v2.4.14:
-          id: rust
           backend: rsync
-          key: "cache-{{ id }}-{{ checksum 'Cargo.toml' }}"
+          key: "cache-{{ checksum 'Cargo.toml' }}"
           restore-keys:
-            - "cache-{{ id }}-{{ checksum 'Cargo.toml' }}-"
-            - "cache-{{ id }}-"
+            - "cache-{{ checksum 'Cargo.toml' }}"
+            - "cache-"
           paths:
-            - 'target'
+            - "target"
+            - "/usr/local/cargo"
           continue_on_error: true
   - key: "build_binaries"
     depends_on: "check"
@@ -29,14 +29,14 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
       - nienbo/cache#v2.4.14:
-          id: rust
           backend: rsync
-          key: "cache-{{ id }}-{{ checksum 'Cargo.toml' }}"
+          key: "cache-{{ checksum 'Cargo.toml' }}"
           restore-keys:
-            - "cache-{{ id }}-{{ checksum 'Cargo.toml' }}-"
-            - "cache-{{ id }}-"
+            - "cache-{{ checksum 'Cargo.toml' }}"
+            - "cache-"
           paths:
-            - 'target'
+            - "target"
+            - "/usr/local/cargo"
           continue_on_error: true
 #  - key: "test"
 #    depends_on: "build_binaries"
@@ -47,14 +47,14 @@ steps:
 #      - docker#v5.8.0:
 #          image: "rust-image"
 #      - nienbo/cache#v2.4.14:
-#          id: rust
 #          backend: rsync
-#          key: "cache-{{ id }}-{{ checksum 'Cargo.toml' }}"
+#          key: "cache-{{ checksum 'Cargo.toml' }}"
 #          restore-keys:
-#            - "cache-{{ id }}-{{ checksum 'Cargo.toml' }}-"
-#            - "cache-{{ id }}-"
+#            - "cache-{{ checksum 'Cargo.toml' }}"
+#            - "cache-"
 #          paths:
-#            - 'target'
+#            - "target"
+#            - "/usr/local/cargo"
 #          continue_on_error: true
   - key: "build_images"
     depends_on: "build_binaries"
