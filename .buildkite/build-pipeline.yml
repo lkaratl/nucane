@@ -7,9 +7,9 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
       - cache#v0.6.0:
-          manifest: "Cargo.json"
+          manifest: "Cargo.lock"
           path: "target"
-          restore: "file"
+          restore: "branch"
           save: "file"
   - key: "build_binaries"
     depends_on: "check"
@@ -24,7 +24,7 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
       - cache#v0.6.0:
-          manifest: "Cargo.json"
+          manifest: "Cargo.lock"
           path: "target"
           restore: "file"
           save: "file"
@@ -37,10 +37,10 @@ steps:
       - docker#v5.8.0:
           image: "rust-image"
       - cache#v0.6.0:
-          manifest: "Cargo.json"
+          manifest: "Cargo.lock"
           path: "target"
           restore: "file"
-          save: "file"
+          save: "branch"
   - key: "build_images"
     depends_on: "build_binaries"
     group: ":docker: Build images"
