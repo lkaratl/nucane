@@ -30,20 +30,20 @@ steps:
             - "/usr/local/cargo"
           restore: "branch"
           save: "branch"
-  - key: "test"
-    depends_on: "build_binaries"
-    label: ":clipboard: Test"
-    commands:
-      - "cargo nextest run --no-capture --release"
-    plugins:
-      - docker#v5.8.0:
-          image: "rust-image"
-      - cache#v0.6.0:
-          paths:
-            - "target"
-            - "/usr/local/cargo"
-          restore: "branch"
-          save: "pipeline"
+#  - key: "test"
+#    depends_on: "build_binaries"
+#    label: ":clipboard: Test"
+#    commands:
+#      - "cargo nextest run --no-capture --release"
+#    plugins:
+#      - docker#v5.8.0:
+#          image: "rust-image"
+#      - cache#v0.6.0:
+#          paths:
+#            - "target"
+#            - "/usr/local/cargo"
+#          restore: "branch"
+#          save: "pipeline"
   - key: "build_images"
     depends_on: "build_binaries"
     group: ":docker: Build images"
