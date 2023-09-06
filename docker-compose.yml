@@ -95,7 +95,8 @@ services:
     image: tailscale/tailscale:stable
     environment:
       TS_AUTHKEY: ${TS_AUTHKEY}
-      TS_EXTRA_ARGS: "--advertise-routes=172.${SUBNET_ID}.0.0/16"
+      # don't forget approve subnet in admin console
+      TS_EXTRA_ARGS: "--advertise-routes=172.${SUBNET_ID}.0.0/16 --hostname=ncn-${NAMESPACE}"
     networks:
       - tailscale_network
     volumes:
