@@ -73,7 +73,7 @@ steps:
                       echo "$$line"
                       export $$line
                   done <<< "$(buildkite-agent meta-data get params)"
-      - "echo \":rotating_light: Run deploy, namespace: \"$$NAMESPACE\", tag: \"$$TAG\" :rotating_light:"
-      - "echo '+++ :round_pushpin: COMPOSE FILE :round_pushpin:'"
+      - "echo \"+++ :rotating_light: Run deploy, namespace: \"$$NAMESPACE\", tag: \"$$TAG\" :rotating_light:"
+      - "echo '--- :round_pushpin: COMPOSE FILE :round_pushpin:'"
       - "envsubst < docker-compose.yml"
       - "docker compose up -d"
