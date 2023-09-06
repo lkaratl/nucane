@@ -9,6 +9,10 @@ steps:
         options:
           - label: "dev"
             value: "dev.env"
+          - label: "staging"
+            value: "staging.env"
+          - label: "prod"
+            value: "prod.env"
         default: "dev.env"
       - key: "version"
         text: "Version"
