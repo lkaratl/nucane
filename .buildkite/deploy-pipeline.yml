@@ -33,11 +33,9 @@ steps:
   - wait: ~
   - key: "install"
     label: ":package: Install"
-    env:
-      VERSION: "$(buildkite-agent meta-data get version)"
     commands:
       - "echo '+++ Download images'"
-      - "echo \"VERSION: $$VERSION\""
+      - "export VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$VERSION\""
       - "rclone copy drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr ':' '/')/engine.tar ./target/deploy"
       - "rclone copy drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr ':' '/')/interactor.tar ./target/deploy"
       - "rclone copy drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr ':' '/')/registry.tar ./target/deploy"
@@ -54,16 +52,12 @@ steps:
   - wait: ~
   - key: "run"
     label: ":rocket: Run"
-    env:
-      NAMESPACE: "$(buildkite-agent meta-data get namespace)"
-      TAG: "$(buildkite-agent meta-data get tag)"
-      PROFILE: "$(buildkite-agent meta-data get profile)"
     commands:
       - "echo '+++ :triangular_flag_on_post: PIPELINE PARAMS :triangular_flag_on_post:'"
-      - "echo \"NAMESPACE: $$NAMESPACE\""
-      - "echo \"TAG: $$TAG\""
+      - "export NAMESPACE=$(buildkite-agent meta-data get namespace) && echo \"NAMESPACE: $$NAMESPACE\""
+      - "export TAG=$(buildkite-agent meta-data get tag) && echo \"TAG: $$TAG\""
       - "echo '+++ :triangular_flag_on_post: PROFILE PARAMS :triangular_flag_on_post:'"
-      - "echo \"PROFILE: $$PROFILE\""
+      - "export PROFILE=$(buildkite-agent meta-data get profile) && echo \"PROFILE: $$PROFILE\""
       - "rclone copy drive:/Managed/Nucane/deploy/$$PROFILE ./target/deploy"
       - "echo '' >> ./target/deploy/$$PROFILE"
       - |
@@ -79,6 +73,7 @@ steps:
                       echo "$$line"
                       export $$line
                   done <<< "$(buildkite-agent meta-data get params)"
+      - "echo \":rotating_light: Run deploy, namespace: \"$$NAMESPACE\", tag: \"$$TAG\" :rotating_light:"
       - "echo '+++ :round_pushpin: COMPOSE FILE :round_pushpin:'"
       - "envsubst < docker-compose.yml"
       - "docker compose up -d"
