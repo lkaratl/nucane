@@ -28,7 +28,7 @@ steps:
       - key: "params"
         text: "Custom params"
         hint: "Custom environment parameters. Each record from new line: KEY=VALUE"
-        default: ""
+        default: "demo.config"
     plugins:
       - "uber-workflow/run-without-clone": ~
   - wait: ~
