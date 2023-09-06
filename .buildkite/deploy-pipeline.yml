@@ -29,8 +29,6 @@ steps:
         text: "Custom params"
         hint: "Custom environment parameters. Each record from new line: KEY=VALUE"
         default: ""
-    plugins:
-      - "uber-workflow/run-without-clone": ~
   - wait: ~
   - key: "install"
     label: ":package: Install dependencies"
