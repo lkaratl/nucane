@@ -43,11 +43,11 @@ steps:
       - "rclone copy drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr ':' '/')/storage.tar ./target/deploy"
       - "echo '+++ Load images'"
       - "export TAG=$(echo \"$(buildkite-agent meta-data get version)\" | tr ':' '-') && echo \"TAG: $$TAG\""
-      - "docker import ./target/deploy/engine.tar engine:$$TAG"
-      - "docker import ./target/deploy/interactor.tar interactor:$$TAG"
-      - "docker import ./target/deploy/registry.tar registry:$$TAG"
-      - "docker import ./target/deploy/simulator.tar simulator:$$TAG"
-      - "docker import ./target/deploy/storage.tar storage:$$TAG"
+      - "docker load -i ./target/deploy/engine.tar"
+      - "docker load -i ./target/deploy/interactor.tar"
+      - "docker load -i ./target/deploy/registry.tar"
+      - "docker load -i ./target/deploy/simulator.tar"
+      - "docker load -i ./target/deploy/storage.tar"
     plugins:
       - "uber-workflow/run-without-clone": ~
   - wait: ~
