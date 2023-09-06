@@ -17,7 +17,7 @@ steps:
       - key: "version"
         text: "Version"
         hint: "Value format '\\$BRANCH:\\$BUILD', get exact values from build pipeline"
-        default: "main#latest"
+        default: "main:latest"
       - key: "profile"
         select: "Profile"
         hint: "Profile with default parameters"
@@ -55,7 +55,7 @@ steps:
     commands:
       - "echo '+++ :triangular_flag_on_post: PIPELINE PARAMS :triangular_flag_on_post:'"
       - "export NAMESPACE=$(buildkite-agent meta-data get namespace) && echo \"NAMESPACE: $$NAMESPACE\""
-      - "export VERSION=$(echo \"$(buildkite-agent meta-data get version)\" | tr ':' '-') && echo \"VERSION: $$VERSION\""
+      - "export TAG=$(echo \"$(buildkite-agent meta-data get version)\" | tr ':' '-') && echo \"TAG: $$TAG\""
       - "echo '+++ :triangular_flag_on_post: PROFILE PARAMS :triangular_flag_on_post:'"
       - "export PROFILE=$(buildkite-agent meta-data get profile) && echo \"PROFILE: $$PROFILE\""
       - "rclone copy drive:/Managed/Nucane/deploy/$$PROFILE ./target/deploy"
