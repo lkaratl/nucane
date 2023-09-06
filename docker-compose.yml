@@ -136,7 +136,6 @@ services:
       redpanda_network:
     restart: unless-stopped
   console:
-    container_name: redpanda-console
     image: docker.redpanda.com/vectorized/console:v2.2.4
     networks:
       tailscale_network:
