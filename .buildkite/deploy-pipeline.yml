@@ -52,7 +52,7 @@ steps:
       - "echo '+++ :triangular_flag_on_post: PIPELINE PARAMS :triangular_flag_on_post:'"
       - "export TAG=$(buildkite-agent meta-data get tag) && echo \"TAG: $$TAG\""
       - "echo '+++ :triangular_flag_on_post: ENVIRONMENT PARAMS :triangular_flag_on_post:'"
-      - "export ENV=$(buildkite-agent meta-data get env) && echo \"ENV: ENV\""
+      - "export ENV=$(buildkite-agent meta-data get env) && echo \"ENV: $$ENV\""
       - "rclone copy drive:/Managed/Nucane/nucane/deploy/env/$$ENV ./target/deploy"
       - "echo '' >> ./target/deploy/$$ENV"
       - |

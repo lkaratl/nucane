@@ -21,7 +21,7 @@ services:
     image: engine:${TAG}
     networks:
       tailscale_network:
-        ipv4_address: 172.${SUBNET_ID}.0.1
+        ipv4_address: 172.${SUBNET_ID}.0.2
       redpanda_network:
       db_network:
     depends_on:
@@ -39,7 +39,7 @@ services:
       INTERACTOR_EAC_EXCHANGES_OKX_AUTH_SECRET: ${OKX_API_SECRET}
     networks:
       tailscale_network:
-        ipv4_address: 172.${SUBNET_ID}.0.2
+        ipv4_address: 172.${SUBNET_ID}.0.3
       redpanda_network:
       db_network:
     depends_on:
@@ -52,7 +52,7 @@ services:
     image: registry:${TAG}
     networks:
       tailscale_network:
-        ipv4_address: 172.${SUBNET_ID}.0.3
+        ipv4_address: 172.${SUBNET_ID}.0.4
       redpanda_network:
       db_network:
     depends_on:
@@ -65,7 +65,7 @@ services:
     image: simulator:${TAG}
     networks:
       tailscale_network:
-        ipv4_address: 172.${SUBNET_ID}.0.4
+        ipv4_address: 172.${SUBNET_ID}.0.5
       redpanda_network:
       db_network:
     depends_on:
@@ -80,7 +80,7 @@ services:
       STORAGE_DATABASE_URL: mysql://root:root@db:3306/storage
     networks:
       tailscale_network:
-        ipv4_address: 172.${SUBNET_ID}.0.5
+        ipv4_address: 172.${SUBNET_ID}.0.6
       redpanda_network:
       db_network:
     depends_on:
