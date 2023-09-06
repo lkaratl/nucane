@@ -24,11 +24,11 @@ steps:
         options:
           - label: "demo"
             value: "demo.config"
-        default: "demo"
+        default: "demo.config"
       - key: "params"
         text: "Custom params"
         hint: "Custom environment parameters. Each record from new line: KEY=VALUE"
-        default: "demo.config"
+        default: ""
     plugins:
       - "uber-workflow/run-without-clone": ~
   - wait: ~
