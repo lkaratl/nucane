@@ -7,7 +7,8 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: "172.21.0.0/16"
+        - subnet: 172.${SUBNET_ID}.0.0/16
+          gateway: 172.${SUBNET_ID}.0.10
   db_network:
     driver: bridge
   redpanda_network:
@@ -19,10 +20,10 @@ services:
     container_name: engine
     image: engine:${TAG}
     networks:
-      - db_network
-      - redpanda_network
-    ports:
-      - "8081:8081"
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.1
+      redpanda_network:
+      db_network:
     depends_on:
       - tailscale
       - db
@@ -37,23 +38,10 @@ services:
       INTERACTOR_EAC_EXCHANGES_OKX_AUTH_PASSPHRASE: ${OKX_API_PASSPHRASE}
       INTERACTOR_EAC_EXCHANGES_OKX_AUTH_SECRET: ${OKX_API_SECRET}
     networks:
-      - db_network
-      - redpanda_network
-    ports:
-      - "8083:8083"
-    depends_on:
-      - tailscale
-      - db
-      - redpanda
-    restart: unless-stopped
-  simulator:
-    container_name: simulator
-    image: simulator:${TAG}
-    networks:
-      - db_network
-      - redpanda_network
-    ports:
-      - "8084:8084"
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.2
+      redpanda_network:
+      db_network:
     depends_on:
       - tailscale
       - db
@@ -63,11 +51,23 @@ services:
     container_name: registry
     image: registry:${TAG}
     networks:
-      - db_network
-      - redpanda_network
-      - tailscale_network
-    ports:
-      - "8085:8085"
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.3
+      redpanda_network:
+      db_network:
+    depends_on:
+      - tailscale
+      - db
+      - redpanda
+    restart: unless-stopped
+  simulator:
+    container_name: simulator
+    image: simulator:${TAG}
+    networks:
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.4
+      redpanda_network:
+      db_network:
     depends_on:
       - tailscale
       - db
@@ -79,10 +79,10 @@ services:
     environment:
       STORAGE_DATABASE_URL: mysql://root:root@db:3306/storage
     networks:
-      - db_network
-      - redpanda_network
-    ports:
-      - "8082:8082"
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.5
+      redpanda_network:
+      db_network:
     depends_on:
       - tailscale
       - db
@@ -95,7 +95,7 @@ services:
     image: tailscale/tailscale:stable
     environment:
       TS_AUTHKEY: ${TS_AUTHKEY}
-      TS_EXTRA_ARGS: "--advertise-routes=172.21.0.0/16"
+      TS_EXTRA_ARGS: "--advertise-routes=172.${SUBNET_ID}.0.0/16"
     networks:
       - tailscale_network
     volumes:
@@ -113,9 +113,9 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: storage
     networks:
-      - db_network
-    ports:
-      - "3306:3306" # todo close ports
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.11
+      db_network:
     restart: unless-stopped
   redpanda:
     container_name: redpanda
@@ -137,19 +137,17 @@ services:
     volumes:
       - redpanda:/var/lib/redpanda/data
     networks:
-      - redpanda_network
-    ports: # todo close ports
-      - "18081:18081"
-      - "18082:18082"
-      - "19092:19092"
-      - "19644:9644"
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.12
+      redpanda_network:
     restart: unless-stopped
   console:
     container_name: redpanda-console
     image: docker.redpanda.com/vectorized/console:v2.2.4
     networks:
-      - redpanda_network
-      - tailscale_network
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.13
+      redpanda_network:
     entrypoint: /bin/sh
     command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
     environment:
