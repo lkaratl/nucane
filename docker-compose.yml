@@ -12,10 +12,8 @@ networks:
     driver: bridge
   redpanda_network:
     driver: bridge
-
 volumes:
   redpanda: null
-
 services:
   engine:
     container_name: engine
@@ -91,13 +89,10 @@ services:
       - redpanda
     restart: unless-stopped
 
-# capability providers
+  # capability providers
   tailscale:
     container_name: tailscale
-    hostname: ncn-${NAMESPACE}
-#    network_mode: "host"
     image: tailscale/tailscale:stable
-    entrypoint: /bin/sh
     environment:
       TS_AUTHKEY: ${TS_AUTHKEY}
       TS_EXTRA_ARGS: "--advertise-routes=172.21.0.0/16"
@@ -169,8 +164,6 @@ services:
           adminApi:
             enabled: true
             urls: ["http://redpanda:9644"]
-    ports: # todo close ports
-      - "8080:8080"
     depends_on:
       - redpanda
     restart: unless-stopped
