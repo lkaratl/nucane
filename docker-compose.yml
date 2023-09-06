@@ -79,7 +79,7 @@ services:
     container_name: storage
     image: storage:${TAG}
     environment:
-      STORAGE_DATABASE_URL: mysql://root:root@db:3306/ncn_storage
+      STORAGE_DATABASE_URL: mysql://root:root@db:3306/storage
     networks:
       - db_network
       - redpanda_network
@@ -116,7 +116,7 @@ services:
     image: mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ncn_storage
+      MYSQL_DATABASE: storage
     networks:
       - db_network
     ports:
