@@ -24,7 +24,7 @@ steps:
         options:
           - label: "demo"
             value: "demo.config"
-        default: "dev"
+        default: "demo"
       - key: "params"
         text: "Custom params"
         hint: "Custom environment parameters. Each record from new line: KEY=VALUE"
