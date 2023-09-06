@@ -32,7 +32,7 @@ steps:
         default: ""
   - wait: ~
   - key: "install"
-    label: ":package: Install"
+    label: ":parcel: Install"
     commands:
       - "echo '+++ Download images'"
       - "export VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$VERSION\""
