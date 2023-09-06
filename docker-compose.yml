@@ -1,13 +1,16 @@
 ---
 version: "3.7"
-name: ncn-${NAMESPACE} # todo per namespace
+name: ncn-${NAMESPACE}
+
 networks:
   db_network:
     driver: bridge
   redpanda_network:
     driver: bridge
+
 volumes:
   redpanda: null
+
 services:
   engine:
     container_name: engine
