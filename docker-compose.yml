@@ -17,7 +17,6 @@ volumes:
   redpanda: null
 services:
   engine:
-    container_name: engine
     image: engine:${TAG}
     networks:
       tailscale_network:
@@ -30,7 +29,6 @@ services:
       - redpanda
     restart: unless-stopped
   interactor:
-    container_name: interactor
     image: interactor:${TAG}
     environment:
       INTERACTOR_EAC_DEMO: ${DEMO}
@@ -48,7 +46,6 @@ services:
       - redpanda
     restart: unless-stopped
   registry:
-    container_name: registry
     image: registry:${TAG}
     networks:
       tailscale_network:
@@ -61,7 +58,6 @@ services:
       - redpanda
     restart: unless-stopped
   simulator:
-    container_name: simulator
     image: simulator:${TAG}
     networks:
       tailscale_network:
@@ -74,7 +70,6 @@ services:
       - redpanda
     restart: unless-stopped
   storage:
-    container_name: storage
     image: storage:${TAG}
     environment:
       STORAGE_DATABASE_URL: mysql://root:root@db:3306/storage
@@ -91,7 +86,6 @@ services:
 
   # capability providers
   tailscale:
-    container_name: tailscale
     image: tailscale/tailscale:stable
     hostname: ncn-${NAMESPACE}
     environment:
@@ -109,7 +103,6 @@ services:
     privileged: true
     restart: unless-stopped
   db:
-    container_name: db
     image: mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -120,7 +113,6 @@ services:
       db_network:
     restart: unless-stopped
   redpanda:
-    container_name: redpanda
     command:
       - redpanda
       - start
