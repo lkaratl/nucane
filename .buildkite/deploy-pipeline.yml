@@ -14,43 +14,64 @@ steps:
           - label: "prod"
             value: "prod"
         default: "dev"
-#      - key: "force"
-#        select: "Force"
-#        hint: "Be careful if this option 'true' existing namespace will be force deleted"
-#        options:
-#          - label: "true"
-#            value: "true"
-#          - label: "false"
-#            value: "false"
-#        default: "false"
       - key: "version"
         text: "Version"
         hint: "Value format '\\$BRANCH-\\$BUILD' or 'latest', get exact values from build pipeline"
         default: "latest"
+      - key: "profile"
+        select: "Profile"
+        hint: "Profile with default parameters"
+        options:
+          - label: "demo"
+            value: "demo.config"
+        default: "dev"
       - key: "params"
         text: "Custom params"
-        hint: "Custom environment parameters"
-        default: |
-          TS_AUTHKEY=
-          DEMO=true
-          OKX_API_KEY=
-          OKX_API_PASSPHRASE=
-          OKX_API_SECRET=
-  - key: "Deploy"
-    depends_on: "input"
+        hint: "Custom environment parameters. Each record from new line: KEY=VALUE"
+    plugins:
+      - "uber-workflow/run-without-clone": ~
+  - wait: ~
+  - key: "install"
+    label: ":package: Install dependencies"
+    commands:
+      - "echo '+++ Download images'"
+      - "export VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$VERSION\""
+      - "rclone copy drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr '-' '/')/engine.tar ./target/deploy"
+      - "rclone copy drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr '-' '/')/interactor.tar ./target/deploy"
+      - "rclone copy drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr '-' '/')/registry.tar ./target/deploy"
+      - "rclone copy drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr '-' '/')/simulator.tar ./target/deploy"
+      - "rclone copy drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr '-' '/')/storage.tar ./target/deploy"
+      - "echo '+++ Load images'"
+      - "docker load -i ./target/deploy/engine.tar"
+      - "docker load -i ./target/deploy/interactor.tar"
+      - "docker load -i ./target/deploy/registry.tar"
+      - "docker load -i ./target/deploy/simulator.tar"
+      - "docker load -i ./target/deploy/storage.tar"
+    plugins:
+      - "uber-workflow/run-without-clone": ~
+  - wait: ~
+  - key: "run"
     label: ":rocket: Deploy"
     commands:
-      - "echo \"+++ :triangular_flag_on_post: PIPELINE PARAMS :triangular_flag_on_post:\""
+      - "echo '+++ :triangular_flag_on_post: PIPELINE PARAMS :triangular_flag_on_post:'"
       - "export NAMESPACE=$(buildkite-agent meta-data get namespace) && echo \"NAMESPACE: $$NAMESPACE\""
-#      - "export FORCE=$(buildkite-agent meta-data get force) && echo \"FORCE: $$FORCE\""
       - "export VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$VERSION\""
-      - "echo \"+++ :triangular_flag_on_post: CUSTOM PARAMS :triangular_flag_on_post:\""
+      - "echo '+++ :triangular_flag_on_post: PROFILE PARAMS :triangular_flag_on_post:'"
+      - "export PROFILE=$(buildkite-agent meta-data get profile) && echo \"PROFILE: $$PROFILE\""
+      - "rclone copy drive:/Managed/Nucane/deploy/$$PROFILE ./target/deploy"
+      - |
+        while IFS= read -r line
+                  do
+                      echo "$$line"
+                      export $$line
+                  done < "./target/deploy/$$PROFILE"
+      - "echo '+++ :triangular_flag_on_post: CUSTOM PARAMS :triangular_flag_on_post:'"
       - |
         while IFS= read -r line
                   do
                       echo "$$line"
                       export $$line
                   done <<< "$(buildkite-agent meta-data get params)"
-      - "echo \"+++ :round_pushpin: COMPOSE FILE :round_pushpin:\""
+      - "echo '+++ :round_pushpin: COMPOSE FILE :round_pushpin:'"
       - "envsubst < docker-compose.yml"
       - "docker compose up -d"

@@ -86,7 +86,7 @@ steps:
       - "docker builder prune --all --force"
       - "rclone mkdir drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
     plugins:
-      - 'uber-workflow/run-without-clone': ~
+      - "uber-workflow/run-without-clone": ~
   - wait: ~
     continue_on_failure: true # todo remove
   - key: "upload_artifacts"
@@ -106,7 +106,7 @@ steps:
           - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/engine.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
         plugins:
-          - 'uber-workflow/run-without-clone': ~
+          - "uber-workflow/run-without-clone": ~
       - label: ":card_index_dividers: interactor"
         commands:
           - "sleep 2"
@@ -121,7 +121,7 @@ steps:
           - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/interactor.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
         plugins:
-          - 'uber-workflow/run-without-clone': ~
+          - "uber-workflow/run-without-clone": ~
       - label: ":card_index_dividers: registry"
         commands:
           - "sleep 3"
@@ -136,7 +136,7 @@ steps:
           - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/registry.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
         plugins:
-          - 'uber-workflow/run-without-clone': ~
+          - "uber-workflow/run-without-clone": ~
       - label: ":card_index_dividers: simulator"
         commands:
           - "sleep 4"
@@ -151,7 +151,7 @@ steps:
           - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/simulator.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
         plugins:
-          - 'uber-workflow/run-without-clone': ~
+          - "uber-workflow/run-without-clone": ~
       - label: ":card_index_dividers: storage"
         commands:
           - "sleep 5"
@@ -166,4 +166,4 @@ steps:
           - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/storage.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
         plugins:
-          - 'uber-workflow/run-without-clone': ~
+          - "uber-workflow/run-without-clone": ~
