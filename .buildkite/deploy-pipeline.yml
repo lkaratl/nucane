@@ -55,7 +55,7 @@ steps:
     commands:
       - "echo '+++ :triangular_flag_on_post: PIPELINE PARAMS :triangular_flag_on_post:'"
       - "export NAMESPACE=$(buildkite-agent meta-data get namespace) && echo \"NAMESPACE: $$NAMESPACE\""
-      - "export VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$VERSION\""
+      - "export VERSION=$(echo \"$(buildkite-agent meta-data get version)\" | tr ':' '-') && echo \"VERSION: $$VERSION\""
       - "echo '+++ :triangular_flag_on_post: PROFILE PARAMS :triangular_flag_on_post:'"
       - "export PROFILE=$(buildkite-agent meta-data get profile) && echo \"PROFILE: $$PROFILE\""
       - "rclone copy drive:/Managed/Nucane/deploy/$$PROFILE ./target/deploy"
