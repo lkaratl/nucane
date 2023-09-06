@@ -3,6 +3,11 @@ version: "3.7"
 name: ncn-${NAMESPACE}
 
 networks:
+  tailscale_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "172.21.0.0/16"
   db_network:
     driver: bridge
   redpanda_network:
@@ -62,6 +67,7 @@ services:
     networks:
       - db_network
       - redpanda_network
+      - tailscale_network
     ports:
       - "8085:8085"
     depends_on:
@@ -91,11 +97,12 @@ services:
     hostname: ncn-${NAMESPACE}
 #    network_mode: "host"
     image: tailscale/tailscale:stable
+    entrypoint: /bin/sh
     environment:
       TS_AUTHKEY: ${TS_AUTHKEY}
+      TS_EXTRA_ARGS: "--advertise-routes=172.21.0.0/16"
     networks:
-      - db_network
-      - redpanda_network
+      - tailscale_network
     volumes:
       - /dev/net/tun:/dev/net/tun
       - /var/lib/tailscale:/var/lib/tailscale
@@ -147,6 +154,7 @@ services:
     image: docker.redpanda.com/vectorized/console:v2.2.4
     networks:
       - redpanda_network
+      - tailscale_network
     entrypoint: /bin/sh
     command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
     environment:
