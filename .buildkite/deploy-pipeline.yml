@@ -36,11 +36,7 @@ steps:
     commands:
       - "echo '+++ Download images'"
       - "export VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$VERSION\""
-      - "rclone copy drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr ':' '/')/engine.tar ./target/deploy"
-      - "rclone copy drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr ':' '/')/interactor.tar ./target/deploy"
-      - "rclone copy drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr ':' '/')/registry.tar ./target/deploy"
-      - "rclone copy drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr ':' '/')/simulator.tar ./target/deploy"
-      - "rclone copy drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr ':' '/')/storage.tar ./target/deploy"
+      - "rclone copy --include '*.tar' drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr ':' '/') ./target/deploy"
       - "echo '+++ Load images'"
       - "docker load -i ./target/deploy/engine.tar"
       - "docker load -i ./target/deploy/interactor.tar"

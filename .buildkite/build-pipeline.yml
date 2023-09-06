@@ -8,9 +8,9 @@ steps:
           backend: rsync
           rsync:
             path: "/tmp/pipeline-caches"
-          key: "cache"
+          key: "$BUILDKITE_REPO"
           restore-keys:
-            - "cache"
+            - "$BUILDKITE_REPO"
           paths:
             - "target"
           continue_on_error: true
@@ -31,9 +31,9 @@ steps:
           backend: rsync
           rsync:
             path: "/tmp/pipeline-caches"
-          key: "cache"
+          key: "$BUILDKITE_REPO"
           restore-keys:
-            - "cache"
+            - "$BUILDKITE_REPO"
           paths:
             - "target"
           continue_on_error: true
@@ -48,9 +48,9 @@ steps:
           backend: rsync
           rsync:
             path: "/tmp/pipeline-caches"
-          key: "cache"
+          key: "$BUILDKITE_REPO"
           restore-keys:
-            - "cache"
+            - "$BUILDKITE_REPO"
           paths:
             - "target"
           continue_on_error: true
