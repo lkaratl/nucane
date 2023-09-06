@@ -81,7 +81,7 @@ steps:
   - wait: ~
     continue_on_failure: true # todo remove
   - key: "prepare_sync"
-    label: ":vertical_traffic_light: $BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+    label: ":vertical_traffic_light: $BUILDKITE_BRANCH#$BUILDKITE_BUILD_NUMBER"
     commands:
       - "docker builder prune --all --force"
       - "rclone mkdir drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"

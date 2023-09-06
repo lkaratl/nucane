@@ -28,6 +28,7 @@ steps:
       - key: "params"
         text: "Custom params"
         hint: "Custom environment parameters. Each record from new line: KEY=VALUE"
+        required: false
         default: ""
   - wait: ~
   - key: "install"
