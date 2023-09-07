@@ -90,7 +90,7 @@ services:
     hostname: ncn-${NAMESPACE}
     environment:
       TS_AUTHKEY: ${TS_AUTHKEY}
-      # don't forget approve subnet in admin console
+      # in case of external access, don't forget to approve subnet in tailscale admin console
       TS_EXTRA_ARGS: "--advertise-routes=172.${SUBNET_ID}.0.0/16"
     networks:
       - tailscale_network

@@ -4,9 +4,10 @@ use async_trait::async_trait;
 use tracing::{error, info};
 
 use domain_model::{Action, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction, OrderActionType, OrderMarketType, Side, OrderStatus, OrderType, Tick, Trigger};
-use domain_model::Size::{Source, Target};
+use domain_model::Size::{Source};
 use strategy_api::{Strategy, StrategyApi, utils};
 
+#[allow(improper_ctypes_definitions)]
 #[no_mangle]
 pub extern fn load() -> Box<dyn Strategy> {
     Box::<TestStrategy>::default()
