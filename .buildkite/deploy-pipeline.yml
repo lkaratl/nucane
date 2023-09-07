@@ -25,7 +25,7 @@ steps:
           - label: "demo"
             value: "demo.profile"
         default: "demo.profile"
-      - key: "params"
+      - key: "custom_params"
         text: "Custom params"
         hint: "Custom environment parameters. Each record from new line: KEY=VALUE"
         required: false
@@ -77,7 +77,7 @@ steps:
                   do
                       echo "$$line"
                       export $$line
-                  done <<< "$(buildkite-agent meta-data get params)"
+                  done <<< "$(buildkite-agent meta-data get custom_params)"
       - "echo \"+++ :rotating_light: Run deploy - NAMESPACE: \"$$NAMESPACE\", TAG: \"$$TAG\" :rotating_light:\""
       - "echo '--- :round_pushpin: COMPOSE FILE :round_pushpin:'"
       - "envsubst < docker-compose.yml"
