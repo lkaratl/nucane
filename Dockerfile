@@ -13,5 +13,3 @@ COPY /target/release/$EXECUTABLE_FILE .
 RUN chmod +x ./$EXECUTABLE_FILE
 
 ENTRYPOINT ./$EXECUTABLE_FILE
-
-# docker run --rm --network="host" --name registry registry:latest
