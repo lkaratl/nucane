@@ -57,7 +57,7 @@ impl Config {
             .add_source(Environment::with_prefix("APP")
                 .try_parsing(true)
                 .separator("_"))
-            .add_source(Environment::with_prefix("STRATEGY_ENGINE")
+            .add_source(Environment::with_prefix("ENGINE")
                 .try_parsing(true)
                 .separator("_"))
             .build()
