@@ -25,6 +25,7 @@ steps:
       - "target/release/registry-app"
       - "target/release/simulator-app"
       - "target/release/storage-app"
+      - "target/release/*.so"
     plugins:
       - nienbo/cache#v2.4.14:
           backend: rsync
