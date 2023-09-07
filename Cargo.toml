@@ -67,6 +67,7 @@ simulator-rest-api = { path = "simulator/rest-api" }
 simulator-rest-client = { path = "simulator/rest-client" }
 
 storage-app = { path = "storage/app" }
+storage-migration = { path = "storage/migration"}
 storage-core = { path = "storage/core" }
 storage-rest-api = { path = "storage/rest-api" }
 storage-rest-client = { path = "storage/rest-client" }

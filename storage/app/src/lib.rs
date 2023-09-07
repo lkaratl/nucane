@@ -1,6 +1,7 @@
 pub mod config;
 
 use std::net::{IpAddr, SocketAddr};
+use std::ops::Deref;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -19,6 +20,7 @@ use storage_core::candle::CandleService;
 use storage_core::candle_sync::{CandleSyncService};
 use storage_core::order::OrderService;
 use storage_core::position::PositionService;
+use storage_migration::{Migrator, MigratorTrait};
 use storage_rest_api::dto::SyncReportDto;
 use storage_rest_api::endpoints::{GET_AUDIT, POST_CANDLES_SYNC, GET_CANDLES, GET_ORDERS, GET_POSITIONS};
 use storage_rest_api::path_query::{AuditQuery, CandlesQuery, CandleSyncQuery, OrdersQuery, PositionsQuery};
@@ -27,8 +29,10 @@ use crate::config::CONFIG;
 
 pub async fn run() {
     info!("+ storage running...");
+
     let db = Arc::new(Database::connect(&CONFIG.database.url).await
-        .expect("Error during connecting to database"));
+        .expect("storage: Error during connecting to database"));
+    Migrator::up(db.deref(), None).await.expect("storage: Failed apply db migrations");
 
     let order_service = Arc::new(OrderService::new(Arc::clone(&db)));
     let position_service = Arc::new(PositionService::new(Arc::clone(&db)));

@@ -1,12 +1,20 @@
----
-version: "3.7"
-name: redpanda
+version: '3.7'
+name: ncn-localdev
+
 networks:
   redpanda_network:
     driver: bridge
 volumes:
   redpanda-0: null
+  
 services:
+  db:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: storage
+    ports:
+      - "3306:3306"
   redpanda-0:
     command:
       - redpanda
@@ -21,7 +29,7 @@ services:
       - --smp 1
       - --memory 1G
       - --mode dev-container
-      - --default-log-level=debug
+      - --default-log-level=info
     image: docker.redpanda.com/redpandadata/redpanda:v23.1.8
     container_name: redpanda-0
     volumes:
