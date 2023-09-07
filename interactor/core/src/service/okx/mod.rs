@@ -58,7 +58,7 @@ impl Service for OKXService {
         let id: &str = &format!("mark-price-{}", &inst_id);
         let already_exists = self.sockets.contains_key(id);
         if !already_exists {
-            let client = OkxWsClient::public(false, &self.ws_url, handlers::on_tick(callback, currency_pair.clone(), market_type.clone())).await;
+            let client = OkxWsClient::public(false, &self.ws_url, handlers::on_tick(callback, *currency_pair, *market_type)).await;
             client.send(Command::subscribe(vec![Channel::MarkPrice {
                 inst_id,
             }])).await;
@@ -86,7 +86,7 @@ impl Service for OKXService {
             let client = OkxWsClient::business(
                 self.is_demo,
                 &self.ws_url,
-                handlers::on_candles(callback, currency_pair.clone(), market_type.clone())).await;
+                handlers::on_candles(callback, *currency_pair, *market_type)).await;
             let subscribe_command = Command::subscribe(vec![
                 Channel::candle_1m(&inst_id),
                 Channel::candle_5m(&inst_id),

@@ -25,6 +25,7 @@ impl<T: ConnectionTrait> OrderService<T> {
             .expect("Error during order saving");
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn get(&self,
                      id: Option<String>,
                      exchange: Option<Exchange>,
@@ -85,6 +86,7 @@ impl<T: ConnectionTrait> OrderRepository<T> {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn find_by(&self,
                      id: Option<String>,
                      exchange: Option<Exchange>,

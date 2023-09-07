@@ -1,4 +1,5 @@
-use std::io;
+use std::{io, thread};
+use std::time::Duration;
 
 use tracing_subscriber::{EnvFilter, fmt, Layer};
 use tracing_subscriber::layer::SubscriberExt;
@@ -10,7 +11,7 @@ mod config;
 fn main() {
     init_logger();
     standalone::run();
-    loop {}
+    thread::sleep(Duration::from_secs(u64::MAX))
 }
 
 fn init_logger() {

@@ -50,7 +50,7 @@ impl CandleSyncService {
                             from: DateTime<Utc>,
                             to: DateTime<Utc>) -> Result<SyncReport> {
         info!("Start sync for timeframe: {timeframe}");
-        let duration: Duration = timeframe.clone().into();
+        let duration: Duration = (*timeframe).into();
         let from = from.duration_round(duration)?;
         let to = to.duration_round(duration)?;
         let mut handles = Vec::new();
@@ -67,7 +67,7 @@ impl CandleSyncService {
                     candle_service,
                     interactor_client,
                     instrument_id.clone(),
-                    timeframe.clone(),
+                    *timeframe,
                     batch_start,
                     batch_end)
             });
@@ -88,7 +88,7 @@ impl CandleSyncService {
         }
 
         let mut result = SyncReport {
-            timeframe: timeframe.clone(),
+            timeframe: *timeframe,
             total: 0,
             exists: 0,
             synced: 0,
@@ -207,7 +207,7 @@ impl ActualCandlesLazyVec {
 
         self.candles = self.interactor_client.get_candles_history(
             &self.instrument_id,
-            self.timeframe.clone(),
+            self.timeframe,
             Some(timestamp),
             Some(to),
             Some(self.max_size))

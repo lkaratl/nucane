@@ -76,7 +76,7 @@ impl<T: ConnectionTrait> PositionRepository<T> {
             condition = condition.add(position::Column::Exchange.eq(exchange.to_string()));
         }
         if let Some(currency) = currency {
-            condition = condition.add(position::Column::Currency.eq(&currency.to_string()));
+            condition = condition.add(position::Column::Currency.eq(currency.to_string()));
         }
         if let Some(side) = side {
             condition = condition.add(position::Column::Side.eq(side.to_string()));

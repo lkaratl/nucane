@@ -24,7 +24,7 @@ impl Executor {
             let mut deployment = deployment.lock().await;
             let is_simulation = deployment.simulation_id == tick.simulation_id;
             let strategy = &mut deployment.plugin.strategy;
-            if is_subscribed(strategy, tick) && is_simulation {
+            if is_subscribed(strategy.as_ref(), tick) && is_simulation {
                 debug!("Processing tick: '{} {}-{}={}' for strategy: '{}:{}'",
                     tick.instrument_id.exchange, tick.instrument_id.pair.target, tick.instrument_id.pair.source, tick.price,
                     strategy.name(), strategy.version());
@@ -39,7 +39,7 @@ impl Executor {
     }
 }
 
-fn is_subscribed(strategy: &Box<dyn Strategy + Send>, tick: &Tick) -> bool {
+fn is_subscribed(strategy: &(dyn Strategy + Send), tick: &Tick) -> bool {
     let instrument_id = &tick.instrument_id;
     strategy.subscriptions()
         .iter()

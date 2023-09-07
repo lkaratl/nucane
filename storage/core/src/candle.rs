@@ -123,6 +123,7 @@ impl<T: ConnectionTrait> CandleRepository<T> {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn find_by(&self,
                    exchange: Exchange,
                    market_type: MarketType,
