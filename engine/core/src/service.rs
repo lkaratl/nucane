@@ -9,6 +9,7 @@ use thiserror::Error;
 use tokio::sync::Mutex;
 use tracing::{debug, error};
 use domain_model::DeploymentEvent;
+use engine_config::CONFIG;
 use plugin_loader::Plugin;
 use synapse::SynapseSend;
 use crate::service::EngineError::{PluginLoadingError, PluginNotFound};
@@ -47,7 +48,7 @@ impl EngineService {
 
         registry::add_deployment(deployment.clone()).await;
         let event = deployment_to_event(deployment.clone(), DeploymentEvent::Created).await;
-        synapse::writer().send(&event);
+        synapse::writer(&CONFIG.broker.url,).send(&event);
         Ok(deployment)
     }
 
@@ -83,7 +84,7 @@ impl EngineService {
             .cloned();
         if let Some(deployment) = deployment.clone() {
             let event = &deployment_to_event(deployment, DeploymentEvent::Deleted).await;
-            synapse::writer().send(event);
+            synapse::writer(&CONFIG.broker.url,).send(event);
         }
         deployment
     }
@@ -94,7 +95,7 @@ impl EngineService {
             .cloned();
         if let Some(deployment) = deployment.clone() {
             let event = &deployment_to_event(deployment, DeploymentEvent::Deleted).await;
-            synapse::writer().send(event);
+            synapse::writer(&CONFIG.broker.url,).send(event);
         }
         deployment
     }

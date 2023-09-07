@@ -41,7 +41,7 @@ pub async fn run() {
 
 async fn listen_deployment_events(service_facade: Arc<Mutex<ServiceFacade>>) {
     let subscription_manager = Arc::new(Mutex::new(SubscriptionManager::new(service_facade)));
-    synapse::reader(&CONFIG.application.name).on(Topic::Deployment, move |deployment: Deployment| {
+    synapse::reader(&CONFIG.broker.url, &CONFIG.application.name).on(Topic::Deployment, move |deployment: Deployment| {
         let subscription_manager = Arc::clone(&subscription_manager);
         async move {
             if deployment.simulation_id.is_none() {
@@ -70,26 +70,26 @@ async fn listen_deployment_events(service_facade: Arc<Mutex<ServiceFacade>>) {
 }
 
 async fn listen_actions(service_facade: Arc<Mutex<ServiceFacade>>) {
-    synapse::reader(&CONFIG.application.name).on(Topic::Action,
-                                                 move |action: Action| {
-                                                     let service_facade = Arc::clone(&service_facade);
-                                                     async move {
-                                                         let simulation_id = match &action { Action::OrderAction(order_action) => order_action.simulation_id };
-                                                         if simulation_id.is_none() {
-                                                             debug!("Retrieved new action event");
-                                                             trace!("Action event: {action:?}");
-                                                             match action {
-                                                                 Action::OrderAction(OrderAction { order: OrderActionType::CreateOrder(create_order), exchange, .. }) =>
-                                                                     service_facade
-                                                                         .lock()
-                                                                         .await
-                                                                         .place_order(exchange, create_order)
-                                                                         .await,
-                                                                 action => warn!("Temporary unsupported action: {action:?}")
-                                                             }
-                                                         }
-                                                     }
-                                                 }).await;
+    synapse::reader(&CONFIG.broker.url, &CONFIG.application.name).on(Topic::Action,
+                                                                     move |action: Action| {
+                                                                         let service_facade = Arc::clone(&service_facade);
+                                                                         async move {
+                                                                             let simulation_id = match &action { Action::OrderAction(order_action) => order_action.simulation_id };
+                                                                             if simulation_id.is_none() {
+                                                                                 debug!("Retrieved new action event");
+                                                                                 trace!("Action event: {action:?}");
+                                                                                 match action {
+                                                                                     Action::OrderAction(OrderAction { order: OrderActionType::CreateOrder(create_order), exchange, .. }) =>
+                                                                                         service_facade
+                                                                                             .lock()
+                                                                                             .await
+                                                                                             .place_order(exchange, create_order)
+                                                                                             .await,
+                                                                                     action => warn!("Temporary unsupported action: {action:?}")
+                                                                                 }
+                                                                             }
+                                                                         }
+                                                                     }).await;
 }
 
 async fn get_candles_history(Query(query_params): Query<CandlesQuery>,

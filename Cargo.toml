@@ -45,27 +45,31 @@ plugin-loader = { path = "common/plugin-loader" }
 strategy-api = { path = "common/strategy-api" }
 synapse = { path = "common/synapse" }
 
+engine-config = { path = "engine/config" }
 engine-app = { path = "engine/app" }
 engine-core = { path = "engine/core" }
 engine-rest-api = { path = "engine/rest-api" }
 engine-rest-client = { path = "engine/rest-client" }
 
-interactor-app = { path = "interactor/app" }
 interactor-config = { path = "interactor/config" }
+interactor-app = { path = "interactor/app" }
 interactor-core = { path = "interactor/core" }
 interactor-rest-api = { path = "interactor/rest-api" }
 interactor-rest-client = { path = "interactor/rest-client" }
 
+registry-config = { path = "registry/config" }
 registry-app = { path = "registry/app" }
 registry-core = { path = "registry/core" }
 registry-rest-api = { path = "registry/rest-api" }
 registry-rest-client = { path = "registry/rest-client" }
 
+simulator-config = { path = "simulator/config" }
 simulator-app = { path = "simulator/app" }
 simulator-core = { path = "simulator/core" }
 simulator-rest-api = { path = "simulator/rest-api" }
 simulator-rest-client = { path = "simulator/rest-client" }
 
+storage-config = { path = "storage/config" }
 storage-app = { path = "storage/app" }
 storage-migration = { path = "storage/migration"}
 storage-core = { path = "storage/core" }

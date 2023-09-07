@@ -5,3 +5,4 @@ logging:
 application:
   name: registry
   port: 8085
+broker.url: localhost:19092

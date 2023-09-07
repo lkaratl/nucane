@@ -7,12 +7,9 @@ use serde::Deserialize;
 pub struct Config {
     pub logging: Logging,
     pub application: Application,
-    pub database: Database,
-}
-
-#[derive(Deserialize)]
-pub struct Database {
-    pub url: String
+    pub registry: Registry,
+    pub storage: Storage,
+    pub broker: Broker
 }
 
 #[derive(Deserialize)]
@@ -25,6 +22,21 @@ pub struct Application {
 pub struct Logging {
     level: String,
     crates: HashMap<String, String>,
+}
+
+#[derive(Deserialize)]
+pub struct Registry {
+    pub url: String
+}
+
+#[derive(Deserialize)]
+pub struct Storage {
+    pub url: String
+}
+
+#[derive(Deserialize)]
+pub struct Broker {
+    pub url: String
 }
 
 impl Logging {
@@ -45,7 +57,7 @@ impl Config {
             .add_source(Environment::with_prefix("APP")
                 .try_parsing(true)
                 .separator("_"))
-            .add_source(Environment::with_prefix("STORAGE")
+            .add_source(Environment::with_prefix("STRATEGY_ENGINE")
                 .try_parsing(true)
                 .separator("_"))
             .build()

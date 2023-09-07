@@ -9,6 +9,7 @@ pub struct Config {
     pub logging: Logging,
     pub application: Application,
     pub eac: EAC,
+    pub broker: Broker
 }
 
 #[derive(Deserialize)]
@@ -56,6 +57,11 @@ pub struct Application {
 pub struct Logging {
     level: String,
     crates: HashMap<String, String>,
+}
+
+#[derive(Deserialize)]
+pub struct Broker {
+    pub url: String
 }
 
 impl Logging {

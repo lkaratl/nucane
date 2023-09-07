@@ -1,0 +1,11 @@
+logging:
+  level: INFO
+  crates:
+    simulator: DEBUG
+application:
+  name: simulator
+  port: 8084
+engine.url: localhost:8081
+storage.url: localhost:8082
+interactor.url: localhost:8083
+broker.url: localhost:19092

@@ -16,17 +16,21 @@ pub struct StorageClient {
 
 impl StorageClient {
     pub fn new(url: &str) -> Self {
+        let mut url = String::from(url);
+        if !url.starts_with("http") {
+            url = format!("http://{}", url);
+        }
         Self {
-            url: url.to_string(),
+            url,
             client: Client::new(),
         }
     }
 
     pub async fn sync_candles(&self,
-                             instrument_id: &InstrumentId,
-                             timeframes: &[Timeframe],
-                             from: DateTime<Utc>,
-                             to: Option<DateTime<Utc>>) -> Result<Vec<SyncReportDto>, Error> {
+                              instrument_id: &InstrumentId,
+                              timeframes: &[Timeframe],
+                              from: DateTime<Utc>,
+                              to: Option<DateTime<Utc>>) -> Result<Vec<SyncReportDto>, Error> {
         let timeframes = timeframes.iter()
             .map(|timeframe| timeframe.to_string())
             .collect::<Vec<_>>()
@@ -34,7 +38,7 @@ impl StorageClient {
         let query = CandleSyncQuery {
             timeframes,
             from: from.timestamp_millis(),
-            to: to.map(|timestamp| timestamp.timestamp_millis())
+            to: to.map(|timestamp| timestamp.timestamp_millis()),
         };
 
         let endpoint = format!("{}{}", self.url, POST_CANDLES_SYNC);

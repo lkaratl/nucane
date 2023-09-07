@@ -1,15 +1,21 @@
 use tracing::debug;
 use domain_model::{Action, Tick};
+use engine_config::CONFIG;
 use strategy_api::{Strategy, StrategyApi};
 use synapse::SynapseSend;
 use crate::registry;
 
-#[derive(Default)]
 pub struct Executor {
     api: StrategyApi,
 }
 
 impl Executor {
+    pub fn new(storage_url: &str) -> Self {
+        Self {
+            api: StrategyApi::new(storage_url)
+        }
+    }
+
     pub async fn handle(&self, tick: &Tick) {
         self.get_actions(tick).await
             .into_iter()
@@ -52,5 +58,5 @@ fn is_subscribed(strategy: &(dyn Strategy + Send), tick: &Tick) -> bool {
 }
 
 fn produce_action(action: &Action) {
-    synapse::writer().send(action)
+    synapse::writer(&CONFIG.broker.url,).send(action)
 }

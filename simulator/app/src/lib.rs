@@ -1,5 +1,3 @@
-pub mod config;
-
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 
@@ -13,18 +11,18 @@ use uuid::Uuid;
 use domain_model::Simulation;
 use engine_rest_client::EngineClient;
 use interactor_rest_client::InteractorClient;
+use simulator_config::CONFIG;
 use storage_rest_client::StorageClient;
 
 use simulator_core::{SimulationReport, SimulationService};
 use simulator_rest_api::dto::{convert, convert_to_simulation_deployment, CreateSimulationDto};
 use simulator_rest_api::endpoints::POST_SIMULATION;
-use crate::config::CONFIG;
 
 pub async fn run() {
     info!("+ simulator running...");
-    let strategy_engine_client = EngineClient::new("http://localhost:8081");
-    let storage_client = StorageClient::new("http://localhost:8082");
-    let interactor_client = InteractorClient::new("http://localhost:8083");
+    let strategy_engine_client = EngineClient::new(&CONFIG.engine.url);
+    let storage_client = StorageClient::new(&CONFIG.storage.url);
+    let interactor_client = InteractorClient::new(&CONFIG.interactor.url);
     let simulation_service = Arc::new(SimulationService::new(strategy_engine_client, storage_client, interactor_client));
 
     let router = Router::new()

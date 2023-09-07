@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+engine-config = { workspace = true }
 synapse = { workspace = true }
 domain-model = { workspace = true }
 storage-rest-client = { workspace = true }

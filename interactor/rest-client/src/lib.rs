@@ -15,8 +15,12 @@ pub struct InteractorClient {
 
 impl InteractorClient {
     pub fn new(url: &str) -> Self {
+        let mut url = String::from(url);
+        if !url.starts_with("http") {
+            url = format!("http://{url}");
+        }
         Self {
-            url: url.to_string(),
+            url,
             client: Client::new(),
         }
     }
@@ -58,7 +62,7 @@ impl InteractorClient {
             market_type: instrument_id.market_type,
             target: instrument_id.pair.target,
             source: instrument_id.pair.source,
-            timestamp: timestamp.map(|timestamp| timestamp.timestamp_millis())
+            timestamp: timestamp.map(|timestamp| timestamp.timestamp_millis()),
         };
 
         let endpoint = format!("{}{}", self.url, GET_PRICE);

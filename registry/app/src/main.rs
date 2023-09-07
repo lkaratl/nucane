@@ -1,7 +1,7 @@
 
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::SubscriberBuilder;
-use registry_app::config::CONFIG;
+use registry_config::CONFIG;
 
 #[tokio::main]
 async fn main() {

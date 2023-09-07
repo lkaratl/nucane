@@ -4,6 +4,7 @@ use tracing::{debug, info};
 use tracing::trace;
 
 use domain_model::{Candle, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarketType, Order, Position, Tick, Timeframe};
+use interactor_config::CONFIG;
 use synapse::SynapseSend;
 
 use crate::service::okx::OKXService;
@@ -41,7 +42,7 @@ impl ServiceFacade {
                 tick.instrument_id.pair.target,
                 tick.instrument_id.pair.source,
                 tick.price);
-            synapse::writer().send(&tick);
+            synapse::writer(&CONFIG.broker.url).send(&tick);
         }).await;
     }
 
@@ -63,7 +64,7 @@ impl ServiceFacade {
         };
         service.subscribe_candles(&instrument_id.pair, &instrument_id.market_type, |candle| {
             trace!("Send candle to synapse: {candle:?}");
-            synapse::writer().send(&candle);
+            synapse::writer(&CONFIG.broker.url).send(&candle);
         }).await;
     }
 
@@ -85,7 +86,7 @@ impl ServiceFacade {
             debug!("Retrieved new order with id: '{}' from exchange: '{}', market type: '{:?}', pair: '{}-{}', order type: '{:?}', stop-loss: '{:?}', take-profit: '{:?}'",
             order.id, order.exchange, order.market_type, order.pair.target, order.pair.source, order.order_type, order.stop_loss, order.take_profit);
             trace!("Send order to synapse: {order:?}");
-            synapse::writer().send(&order);
+            synapse::writer(&CONFIG.broker.url).send(&order);
         }).await;
     }
 
@@ -98,7 +99,7 @@ impl ServiceFacade {
             debug!("Retrieved account position update from exchange: '{}', currency: '{}', size: '{}'",
                   position.exchange, position.currency, position.size);
             trace!("Send position to synapse: {position:?}");
-            synapse::writer().send(&position);
+            synapse::writer(&CONFIG.broker.url).send(&position);
         }).await;
     }
 
@@ -109,7 +110,7 @@ impl ServiceFacade {
             Exchange::OKX => &mut self.okx_service,
         };
         let order = service.place_order(&create_order).await;
-        synapse::writer().send(&order);
+        synapse::writer(&CONFIG.broker.url).send(&order);
     }
 
     pub async fn candles_history(&mut self,
