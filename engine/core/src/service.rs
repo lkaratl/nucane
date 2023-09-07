@@ -7,7 +7,7 @@ use crate::registry::Deployment;
 use anyhow::{Result};
 use thiserror::Error;
 use tokio::sync::Mutex;
-use tracing::{debug, error, trace};
+use tracing::{debug, error};
 use domain_model::DeploymentEvent;
 use plugin_loader::Plugin;
 use synapse::SynapseSend;
@@ -55,7 +55,7 @@ impl EngineService {
     pub async fn update_plugin(&self, strategy_name: &str, strategy_version: &str) -> Result<(), EngineError> {
         let deployments = self.get_deployment_by_name_and_version(strategy_name, strategy_version).await;
         for deployment in deployments {
-            let deployment = deployment.lock().await;
+            let _deployment = deployment.lock().await;
             // self.add_or_update_deployment(deployment.simulation_id, strategy_name, strategy_version, &deployment.params).await?; // todo make update method
         }
         Ok(())

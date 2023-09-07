@@ -8,6 +8,7 @@ use libloading::Library;
 
 use strategy_api::Strategy;
 
+#[allow(improper_ctypes_definitions)]
 type StrategyLoader = extern fn() -> Box<dyn Strategy + Send>;
 
 pub fn load(binary: &[u8]) -> Result<Plugin> {

@@ -15,7 +15,6 @@ steps:
             - "target"
           continue_on_error: true
   - wait: ~
-    continue_on_failure: true # todo remove
   - key: "build_binaries"
     label: ":hammer_and_wrench: Build binaries"
     commands:
@@ -38,7 +37,6 @@ steps:
             - "target"
           continue_on_error: true
   - wait: ~
-    continue_on_failure: true # todo remove
   - key: "test"
     label: ":clipboard: Test"
     commands:
@@ -79,7 +77,6 @@ steps:
           - "buildkite-agent artifact download 'target/release/storage-app' ."
           - "docker build -t storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=storage-app\" ."
   - wait: ~
-    continue_on_failure: true # todo remove
   - key: "prepare_sync"
     label: ":vertical_traffic_light: $BUILDKITE_BRANCH#$BUILDKITE_BUILD_NUMBER"
     commands:
@@ -88,7 +85,6 @@ steps:
     plugins:
       - "uber-workflow/run-without-clone": ~
   - wait: ~
-    continue_on_failure: true # todo remove
   - key: "upload_artifacts"
     group: ":file_cabinet: Upload artifacts"
     steps:

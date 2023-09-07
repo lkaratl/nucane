@@ -15,7 +15,7 @@ impl BalanceRequest {
         Self {
             ccy: Some(
                 currencies
-                    .into_iter()
+                    .iter()
                     .map(|s| s.as_ref())
                     .collect::<Vec<_>>()
                     .join(","),

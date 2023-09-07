@@ -29,7 +29,7 @@ where
     if s.is_empty() {
         Ok(None)
     } else {
-        Ok(Some(s.parse().map_err(|e| D::Error::custom(e))?))
+        Ok(Some(s.parse().map_err(D::Error::custom)?))
     }
 }
 
@@ -40,7 +40,7 @@ where
     T::Err: Display,
 {
     let s = String::deserialize(deserializer)?;
-    s.parse().map_err(|e| D::Error::custom(e))
+    s.parse().map_err(D::Error::custom)
 }
 
 pub fn ts_milliseconds<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
@@ -48,6 +48,6 @@ where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    let u: u64 = s.parse().map_err(|e| D::Error::custom(e))?;
+    let u: u64 = s.parse().map_err(D::Error::custom)?;
     chrono_serde::ts_milliseconds::deserialize(u.into_deserializer())
 }

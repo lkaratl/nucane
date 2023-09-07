@@ -6,7 +6,7 @@ use reqwest::{Client, Response};
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::{from_str, to_string as to_jstring};
 use serde_urlencoded::to_string as to_ustring;
-use tracing::{debug, error, trace};
+use tracing::{error, trace};
 use url::Url;
 use crate::okx::error::OkExError;
 

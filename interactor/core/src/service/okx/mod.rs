@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error};
 
 use domain_model::{Candle, CandleStatus, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Size, Tick, Timeframe};
 use eac::{enums, rest};
@@ -25,8 +25,8 @@ pub struct OKXService {
     rest_client: RateLimitedRestClient,
 }
 
-impl OKXService {
-    pub fn new() -> Self {
+impl Default for OKXService {
+    fn default() -> Self {
         let is_demo = CONFIG.eac.demo;
         let http_url = &CONFIG.eac.exchanges.okx.http.url;
         let ws_url = &CONFIG.eac.exchanges.okx.ws.url;

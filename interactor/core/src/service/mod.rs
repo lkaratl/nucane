@@ -22,17 +22,12 @@ pub trait Service {
     async fn candles_history(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType, timeframe: Timeframe, before: Option<DateTime<Utc>>, after: Option<DateTime<Utc>>, limit: Option<u8>) -> Vec<Candle>;
 }
 
+#[derive(Default)]
 pub struct ServiceFacade {
     okx_service: OKXService,
 }
 
 impl ServiceFacade {
-    pub fn new() -> Self {
-        Self {
-            okx_service: OKXService::new()
-        }
-    }
-
     pub async fn subscribe_ticks(&mut self, instrument_id: &InstrumentId) {
         debug!("Subscribe ticks for instrument: '{}-{}-{}', exchange: '{}'",
             instrument_id.pair.target, instrument_id.pair.source, instrument_id.market_type, instrument_id.exchange);

@@ -22,7 +22,7 @@ pub async fn run() {
     } else {
         info!("+ interactor running in LIVE mode...");
     }
-    let service_facade = Arc::new(Mutex::new(ServiceFacade::new()));
+    let service_facade = Arc::new(Mutex::new(Default::default()));
 
     listen_deployment_events(Arc::clone(&service_facade)).await;
     listen_actions(Arc::clone(&service_facade)).await;

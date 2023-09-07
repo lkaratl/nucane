@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 use uuid::Uuid;
 
-use domain_model::{Action, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderActionType, OrderMarketType, OrderStatus, OrderType, Position, Side, Simulation, SimulationDeployment, SimulationPosition, Size, Tick, Timeframe};
+use domain_model::{Action, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderActionType, OrderMarketType, OrderStatus, OrderType, Position, Side, Simulation, SimulationDeployment, SimulationPosition, Size, Tick};
 use engine_rest_api::dto::{CreateDeploymentDto};
 use engine_rest_client::EngineClient;
 use interactor_rest_client::InteractorClient;
@@ -78,7 +78,7 @@ impl SimulationService {
         report
     }
 
-    async fn run_simulation_batch(&self, logger: &mut Logger, mut simulation: &mut Simulation, batch_start: DateTime<Utc>, batch_end: DateTime<Utc>) {
+    async fn run_simulation_batch(&self, logger: &mut Logger, simulation: &mut Simulation, batch_start: DateTime<Utc>, batch_end: DateTime<Utc>) {
         debug!("Batch processing from start: {batch_start} to end: {batch_end}");
         let ticks = self.get_ticks(logger, simulation, batch_start, batch_end).await;
         let positions = &mut simulation.positions;
@@ -515,6 +515,7 @@ fn convert_to_create_deployment_dto(value: SimulationDeployment, simulation_id: 
     }
 }
 
+#[allow(unused)]
 enum CurrencyConversion {
     ToTarget,
     ToSource,

@@ -16,7 +16,7 @@ use domain_model::{AuditEvent, Candle, CurrencyPair, Deployment, DeploymentEvent
 use interactor_rest_client::InteractorClient;
 use storage_core::audit::AuditService;
 use storage_core::candle::CandleService;
-use storage_core::candle_sync::{CandleSyncService, SyncReport};
+use storage_core::candle_sync::{CandleSyncService};
 use storage_core::order::OrderService;
 use storage_core::position::PositionService;
 use storage_rest_api::dto::SyncReportDto;
@@ -106,7 +106,7 @@ async fn listen_deployment_events(candle_sync_service: Arc<CandleSyncService>, a
                         let from = Utc::now() - Duration::days(30);
                         let timeframes = [Timeframe::FifteenM, Timeframe::ThirtyM, Timeframe::OneH, Timeframe::FourH, Timeframe::OneD];
                         for instrument_id in &deployment.subscriptions {
-                            candle_sync_service.sync(instrument_id, &timeframes, from, None).await;
+                            let _ = candle_sync_service.sync(instrument_id, &timeframes, from, None).await;
                         }
                     }
                     DeploymentEvent::Deleted => {}
