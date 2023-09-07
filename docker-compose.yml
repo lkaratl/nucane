@@ -22,7 +22,7 @@ services:
     environment:
       ENGINE_REGISTRY_URL: registry:8085
       ENGINE_STORAGE_URL: storage:8082
-      ENGINE_BROKER_URL: redpanda:19092
+      ENGINE_BROKER_URL: redpanda:9092
     networks:
       tailscale_network:
         ipv4_address: 172.${SUBNET_ID}.0.2
@@ -36,7 +36,7 @@ services:
   interactor:
     image: interactor:${TAG}
     environment:
-      INTERACTOR_BROKER_URL: redpanda:19092
+      INTERACTOR_BROKER_URL: redpanda:9092
       INTERACTOR_EAC_DEMO: ${DEMO}
       INTERACTOR_EAC_EXCHANGES_OKX_AUTH_KEY: ${OKX_API_KEY}
       INTERACTOR_EAC_EXCHANGES_OKX_AUTH_PASSPHRASE: ${OKX_API_PASSPHRASE}
@@ -54,7 +54,7 @@ services:
   registry:
     image: registry:${TAG}
     environment:
-      REGISTRY_BROKER_URL: redpanda:19092
+      REGISTRY_BROKER_URL: redpanda:9092
     networks:
       tailscale_network:
         ipv4_address: 172.${SUBNET_ID}.0.4
@@ -71,7 +71,7 @@ services:
       SIMULATOR_ENGINE_URL: engine:8081
       SIMULATOR_STORAGE_URL: storage:8082
       SIMULATOR_INTERACTOR_URL: interactor:8083
-      SIMULATOR_BROKER_URL: redpanda:19092
+      SIMULATOR_BROKER_URL: redpanda:9092
     networks:
       tailscale_network:
         ipv4_address: 172.${SUBNET_ID}.0.5
@@ -87,7 +87,7 @@ services:
     environment:
       STORAGE_DATABASE_URL: mysql://root:root@db:3306/storage
       STORAGE_INTERACTOR_URL: interactor:8083
-      STORAGE_BROKER_URL: redpanda:19092
+      STORAGE_BROKER_URL: redpanda:9092
     networks:
       tailscale_network:
         ipv4_address: 172.${SUBNET_ID}.0.6

@@ -187,7 +187,7 @@ impl SimulationService {
                             stop_loss: create_order.stop_loss.clone(),
                             take_profit: create_order.take_profit.clone(),
                         };
-                        synapse::writer(&CONFIG.broker.url,).send(&order);
+                        synapse::writer(&CONFIG.broker.url).send(&order);
                         logger.log(format!("|-> Place Order: {} {:?} {:?} '{}-{}' {} '{:?}', stop-loss: {:?}, take-profit: {:?}, id: '{}'",
                                            order.exchange, order.market_type, order.order_type, order.pair.target, order.pair.source, order.side, order.size, order.stop_loss, order.take_profit, order.id));
                         active_orders.push(order);
@@ -203,7 +203,7 @@ impl SimulationService {
         simulation.positions.clone()
             .iter()
             .for_each(|position| {
-                synapse::writer(&CONFIG.broker.url,).send(&Position::from(position.clone()));
+                synapse::writer(&CONFIG.broker.url).send(&Position::from(position.clone()));
             });
     }
 
@@ -395,7 +395,7 @@ impl SimulationService {
         };
         order.avg_price = quote;
         order.status = OrderStatus::Completed;
-        synapse::writer(&CONFIG.broker.url,).send(order);
+        synapse::writer(&CONFIG.broker.url).send(order);
     }
 
     async fn get_ticks(&self, logger: &mut Logger, simulation: &Simulation, from: DateTime<Utc>, to: DateTime<Utc>) -> Vec<Tick> {
@@ -436,14 +436,14 @@ impl SimulationService {
 fn update_positions(target_size: f64, source_size: f64, fee_percent: f64, target_position: Option<&mut SimulationPosition>, source_position: Option<&mut SimulationPosition>, logger: &mut Logger) {
     let source_position = source_position.expect("No source asset to execute order");
     source_position.end -= source_size;
-    synapse::writer(&CONFIG.broker.url,).send(&Position::from(source_position.clone()));
+    synapse::writer(&CONFIG.broker.url).send(&Position::from(source_position.clone()));
     logger.log(format!("|--> Update position: {} {} '{} | -{}'", source_position.exchange, source_position.currency, source_position.end, source_size));
 
     let target_position = target_position.expect("No target asset to execute order");
     let fee = calculate_fee_size(target_size, fee_percent);
     target_position.end += target_size - fee;
     target_position.fees += fee;
-    synapse::writer(&CONFIG.broker.url,).send(&Position::from(target_position.clone()));
+    synapse::writer(&CONFIG.broker.url).send(&Position::from(target_position.clone()));
     logger.log(format!("|--> Update position: {} {} '{} | +{} | -{}'", target_position.exchange, target_position.currency, target_position.end, target_size, fee));
 }
 

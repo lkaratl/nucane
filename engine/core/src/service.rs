@@ -48,7 +48,7 @@ impl EngineService {
 
         registry::add_deployment(deployment.clone()).await;
         let event = deployment_to_event(deployment.clone(), DeploymentEvent::Created).await;
-        synapse::writer(&CONFIG.broker.url,).send(&event);
+        synapse::writer(&CONFIG.broker.url).send(&event);
         Ok(deployment)
     }
 
@@ -84,7 +84,7 @@ impl EngineService {
             .cloned();
         if let Some(deployment) = deployment.clone() {
             let event = &deployment_to_event(deployment, DeploymentEvent::Deleted).await;
-            synapse::writer(&CONFIG.broker.url,).send(event);
+            synapse::writer(&CONFIG.broker.url).send(event);
         }
         deployment
     }
@@ -95,7 +95,7 @@ impl EngineService {
             .cloned();
         if let Some(deployment) = deployment.clone() {
             let event = &deployment_to_event(deployment, DeploymentEvent::Deleted).await;
-            synapse::writer(&CONFIG.broker.url,).send(event);
+            synapse::writer(&CONFIG.broker.url).send(event);
         }
         deployment
     }

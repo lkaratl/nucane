@@ -58,5 +58,5 @@ fn is_subscribed(strategy: &(dyn Strategy + Send), tick: &Tick) -> bool {
 }
 
 fn produce_action(action: &Action) {
-    synapse::writer(&CONFIG.broker.url,).send(action)
+    synapse::writer(&CONFIG.broker.url).send(action)
 }
