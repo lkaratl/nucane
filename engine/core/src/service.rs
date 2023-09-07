@@ -51,7 +51,6 @@ impl EngineService {
         Ok(deployment)
     }
 
-    // #[tokio::main] // todo remove this, when synapse will support async
     pub async fn update_plugin(&self, strategy_name: &str, strategy_version: &str) -> Result<(), EngineError> {
         let deployments = self.get_deployment_by_name_and_version(strategy_name, strategy_version).await;
         for deployment in deployments {

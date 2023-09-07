@@ -105,7 +105,7 @@ async fn create_plugins(State(registry_service): State<Arc<RegistryService>>, mu
 }
 
 fn is_lib_name_valid(name: &str) -> bool {
-    cfg!(target_os = "windows") && name.ends_with(".dll")
+    cfg!(target_os = "windows") && name.ends_with(".dll") || cfg!(target_os = "linux") && name.ends_with(".so")
 }
 
 async fn delete_plugins_by_name_or_version(State(registry_service): State<Arc<RegistryService>>, Query(query): Query<PluginQuery>) -> Result<Json<Vec<PluginInfo>>, StatusCode> {
