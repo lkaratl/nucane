@@ -8,11 +8,13 @@ use libloading::Library;
 
 use strategy_api::Strategy;
 
+#[allow(improper_ctypes_definitions)]
 type StrategyLoader = extern fn() -> Box<dyn Strategy + Send>;
 
 pub fn load(binary: &[u8]) -> Result<Plugin> {
+    let file_name = if cfg!(target_os = "windows") { "plugin.dll" } else { "plugin.so" };
     let temp_dir = tempfile::tempdir()?;
-    let file_path = temp_dir.path().join("plugin.dll");
+    let file_path = temp_dir.path().join(file_name);
     {
         let mut file = File::create(&file_path)?;
         file.write_all(binary)?;
@@ -28,6 +30,7 @@ pub fn load(binary: &[u8]) -> Result<Plugin> {
     };
     Ok(plugin)
 }
+
 pub struct Plugin {
     // don't change order, strategy should drop before library
     pub strategy: Box<dyn Strategy + Send>,

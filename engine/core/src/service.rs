@@ -7,8 +7,9 @@ use crate::registry::Deployment;
 use anyhow::{Result};
 use thiserror::Error;
 use tokio::sync::Mutex;
-use tracing::{debug, error, trace};
+use tracing::{debug, error};
 use domain_model::DeploymentEvent;
+use engine_config::CONFIG;
 use plugin_loader::Plugin;
 use synapse::SynapseSend;
 use crate::service::EngineError::{PluginLoadingError, PluginNotFound};
@@ -47,15 +48,14 @@ impl EngineService {
 
         registry::add_deployment(deployment.clone()).await;
         let event = deployment_to_event(deployment.clone(), DeploymentEvent::Created).await;
-        synapse::writer().send(&event);
+        synapse::writer(&CONFIG.broker.url).send(&event);
         Ok(deployment)
     }
 
-    // #[tokio::main] // todo remove this, when synapse will support async
     pub async fn update_plugin(&self, strategy_name: &str, strategy_version: &str) -> Result<(), EngineError> {
         let deployments = self.get_deployment_by_name_and_version(strategy_name, strategy_version).await;
         for deployment in deployments {
-            let deployment = deployment.lock().await;
+            let _deployment = deployment.lock().await;
             // self.add_or_update_deployment(deployment.simulation_id, strategy_name, strategy_version, &deployment.params).await?; // todo make update method
         }
         Ok(())
@@ -84,7 +84,7 @@ impl EngineService {
             .cloned();
         if let Some(deployment) = deployment.clone() {
             let event = &deployment_to_event(deployment, DeploymentEvent::Deleted).await;
-            synapse::writer().send(event);
+            synapse::writer(&CONFIG.broker.url).send(event);
         }
         deployment
     }
@@ -95,7 +95,7 @@ impl EngineService {
             .cloned();
         if let Some(deployment) = deployment.clone() {
             let event = &deployment_to_event(deployment, DeploymentEvent::Deleted).await;
-            synapse::writer().send(event);
+            synapse::writer(&CONFIG.broker.url).send(event);
         }
         deployment
     }

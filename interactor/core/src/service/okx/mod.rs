@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error};
 
 use domain_model::{Candle, CandleStatus, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Size, Tick, Timeframe};
 use eac::{enums, rest};
@@ -25,14 +25,14 @@ pub struct OKXService {
     rest_client: RateLimitedRestClient,
 }
 
-impl OKXService {
-    pub fn new() -> Self {
+impl Default for OKXService {
+    fn default() -> Self {
         let is_demo = CONFIG.eac.demo;
-        let http_url = &CONFIG.eac.exchanges.okx.http_url;
-        let ws_url = &CONFIG.eac.exchanges.okx.ws_url;
-        let api_key = &CONFIG.eac.exchanges.okx.auth.api_key;
-        let api_secret = &CONFIG.eac.exchanges.okx.auth.api_secret;
-        let api_passphrase = &CONFIG.eac.exchanges.okx.auth.api_passphrase;
+        let http_url = &CONFIG.eac.exchanges.okx.http.url;
+        let ws_url = &CONFIG.eac.exchanges.okx.ws.url;
+        let api_key = &CONFIG.eac.exchanges.okx.auth.key;
+        let api_secret = &CONFIG.eac.exchanges.okx.auth.secret;
+        let api_passphrase = &CONFIG.eac.exchanges.okx.auth.passphrase;
 
         let rest_client = OkExRest::with_credential(http_url, is_demo, api_key, api_secret, api_passphrase);
         Self {
@@ -58,7 +58,7 @@ impl Service for OKXService {
         let id: &str = &format!("mark-price-{}", &inst_id);
         let already_exists = self.sockets.contains_key(id);
         if !already_exists {
-            let client = OkxWsClient::public(false, &self.ws_url, handlers::on_tick(callback, currency_pair.clone(), market_type.clone())).await;
+            let client = OkxWsClient::public(false, &self.ws_url, handlers::on_tick(callback, *currency_pair, *market_type)).await;
             client.send(Command::subscribe(vec![Channel::MarkPrice {
                 inst_id,
             }])).await;
@@ -86,7 +86,7 @@ impl Service for OKXService {
             let client = OkxWsClient::business(
                 self.is_demo,
                 &self.ws_url,
-                handlers::on_candles(callback, currency_pair.clone(), market_type.clone())).await;
+                handlers::on_candles(callback, *currency_pair, *market_type)).await;
             let subscribe_command = Command::subscribe(vec![
                 Channel::candle_1m(&inst_id),
                 Channel::candle_5m(&inst_id),

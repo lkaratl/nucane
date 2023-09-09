@@ -9,6 +9,7 @@ pub struct Config {
     pub logging: Logging,
     pub application: Application,
     pub eac: EAC,
+    pub broker: Broker
 }
 
 #[derive(Deserialize)]
@@ -23,19 +24,27 @@ pub struct Exchanges {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "kebab-case")]
 pub struct OKX {
-    pub http_url: String,
-    pub ws_url: String,
+    pub http: OKXHttp,
+    pub ws: OKXWs,
     pub auth: OKXAuth,
 }
 
 #[derive(Deserialize, Clone)]
-#[serde(rename_all = "kebab-case")]
+pub struct OKXHttp {
+    pub url: String
+}
+
+#[derive(Deserialize, Clone)]
+pub struct OKXWs {
+    pub url: String
+}
+
+#[derive(Deserialize, Clone)]
 pub struct OKXAuth {
-    pub api_key: String,
-    pub api_secret: String,
-    pub api_passphrase: String,
+    pub key: String,
+    pub secret: String,
+    pub passphrase: String,
 }
 
 #[derive(Deserialize)]
@@ -48,6 +57,11 @@ pub struct Application {
 pub struct Logging {
     level: String,
     crates: HashMap<String, String>,
+}
+
+#[derive(Deserialize)]
+pub struct Broker {
+    pub url: String
 }
 
 impl Logging {

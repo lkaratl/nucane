@@ -6,12 +6,13 @@ use axum::{Json, Router};
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::routing::{delete, get, post};
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error, info};
 use uuid::Uuid;
 
 use anyhow::Result;
 use tokio::sync::MutexGuard;
 use domain_model::{Action, PluginEvent, PluginEventType, Tick};
+use engine_config::CONFIG;
 use engine_core::executor::Executor;
 use engine_core::registry::Deployment;
 use engine_core::service::{EngineError, EngineService};
@@ -20,14 +21,10 @@ use engine_rest_api::endpoints::{POST_CREATE_ACTIONS, GET_POST_DEPLOYMENTS, DELE
 use registry_rest_client::RegistryClient;
 use synapse::{SynapseListen, Topic};
 
-use crate::config::CONFIG;
-
-pub mod config;
-
 pub async fn run() {
     info!("+ engine running...");
-    let executor = Arc::new(Executor::default());
-    let registry_client = Arc::new(RegistryClient::new("http://localhost:8085"));
+    let executor = Arc::new(Executor::new(&CONFIG.storage.url));
+    let registry_client = Arc::new(RegistryClient::new(&CONFIG.registry.url));
     let engine_service = Arc::new(EngineService::new(Arc::clone(&registry_client)));
     listen_ticks(Arc::clone(&executor)).await;
     // listen_plugins(Arc::clone(&engine_service)); // todo fix problem with tokio async runtime
@@ -48,7 +45,7 @@ pub async fn run() {
 }
 
 async fn listen_ticks(executor: Arc<Executor>) {
-    synapse::reader(&CONFIG.application.name)
+    synapse::reader(&CONFIG.broker.url, &CONFIG.application.name)
         .on(Topic::Tick, move |tick: Tick| {
             let executor = Arc::clone(&executor);
             async move {
@@ -57,8 +54,9 @@ async fn listen_ticks(executor: Arc<Executor>) {
         }).await;
 }
 
+#[allow(unused)]
 async fn listen_plugins(engine_service: Arc<EngineService>) {
-    synapse::reader(&CONFIG.application.name)
+    synapse::reader(&CONFIG.broker.url, &CONFIG.application.name)
         .on(Topic::Plugin, move |plugin_event: PluginEvent| {
             let engine_service = Arc::clone(&engine_service);
             async move {

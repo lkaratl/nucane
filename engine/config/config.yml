@@ -5,3 +5,6 @@ logging:
 application:
   name: engine
   port: 8081
+registry.url: localhost:8085
+storage.url: localhost:8082
+broker.url: localhost:19092

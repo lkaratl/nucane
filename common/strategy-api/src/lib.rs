@@ -46,11 +46,11 @@ pub struct StrategyApi {
     pub indicators: Indicators,
 }
 
-impl Default for StrategyApi {
-    fn default() -> Self {
+impl StrategyApi {
+    pub fn new(storage_url: &str) -> Self {
         Self {
-            storage: StorageClient::new("http://localhost:8082"),
-            indicators: Indicators::new(StorageClient::new("http://localhost:8082")),
+            storage: StorageClient::new(storage_url),
+            indicators: Indicators::new(StorageClient::new(storage_url)),
         }
     }
 }

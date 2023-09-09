@@ -1,0 +1,175 @@
+---
+version: "3.7"
+name: ncn-${NAMESPACE}
+
+networks:
+  tailscale_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.${SUBNET_ID}.0.0/16
+          gateway: 172.${SUBNET_ID}.0.10
+  db_network:
+    driver: bridge
+  redpanda_network:
+    driver: bridge
+volumes:
+  redpanda: null
+
+services:
+  engine:
+    image: engine:${TAG}
+    environment:
+      ENGINE_REGISTRY_URL: registry:8085
+      ENGINE_STORAGE_URL: storage:8082
+      ENGINE_BROKER_URL: redpanda:9092
+    networks:
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.2
+      redpanda_network:
+      db_network:
+    depends_on:
+      - tailscale
+      - db
+      - redpanda
+    restart: unless-stopped
+  interactor:
+    image: interactor:${TAG}
+    environment:
+      INTERACTOR_BROKER_URL: redpanda:9092
+      INTERACTOR_EAC_DEMO: ${DEMO}
+      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_KEY: ${OKX_API_KEY}
+      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_PASSPHRASE: ${OKX_API_PASSPHRASE}
+      INTERACTOR_EAC_EXCHANGES_OKX_AUTH_SECRET: ${OKX_API_SECRET}
+    networks:
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.3
+      redpanda_network:
+      db_network:
+    depends_on:
+      - tailscale
+      - db
+      - redpanda
+    restart: unless-stopped
+  registry:
+    image: registry:${TAG}
+    environment:
+      REGISTRY_BROKER_URL: redpanda:9092
+    networks:
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.4
+      redpanda_network:
+      db_network:
+    depends_on:
+      - tailscale
+      - db
+      - redpanda
+    restart: unless-stopped
+  simulator:
+    image: simulator:${TAG}
+    environment:
+      SIMULATOR_ENGINE_URL: engine:8081
+      SIMULATOR_STORAGE_URL: storage:8082
+      SIMULATOR_INTERACTOR_URL: interactor:8083
+      SIMULATOR_BROKER_URL: redpanda:9092
+    networks:
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.5
+      redpanda_network:
+      db_network:
+    depends_on:
+      - tailscale
+      - db
+      - redpanda
+    restart: unless-stopped
+  storage:
+    image: storage:${TAG}
+    environment:
+      STORAGE_DATABASE_URL: mysql://root:root@db:3306/storage
+      STORAGE_INTERACTOR_URL: interactor:8083
+      STORAGE_BROKER_URL: redpanda:9092
+    networks:
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.6
+      redpanda_network:
+      db_network:
+    depends_on:
+      - tailscale
+      - db
+      - redpanda
+    restart: unless-stopped
+
+  # capability providers
+  tailscale:
+    image: tailscale/tailscale:stable
+    hostname: ncn-${NAMESPACE}
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY}
+      # in case of external access, don't forget to approve subnet in tailscale admin console
+      TS_EXTRA_ARGS: "--advertise-routes=172.${SUBNET_ID}.0.0/16"
+    networks:
+      - tailscale_network
+    volumes:
+      - /dev/net/tun:/dev/net/tun
+      - /var/lib/tailscale:/var/lib/tailscale
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    privileged: true
+    restart: unless-stopped
+  db:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: storage
+    networks:
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.11
+      db_network:
+    restart: unless-stopped
+  redpanda:
+    command:
+      - redpanda
+      - start
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://redpanda:8082,external://localhost:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
+      - --smp 1
+      - --memory 1G
+      - --mode dev-container
+      - --default-log-level=info
+    image: docker.redpanda.com/redpandadata/redpanda:v23.1.8
+    volumes:
+      - redpanda:/var/lib/redpanda/data
+    networks:
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.12
+      redpanda_network:
+    restart: unless-stopped
+  console:
+    image: docker.redpanda.com/vectorized/console:v2.2.4
+    networks:
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.13
+      redpanda_network:
+    entrypoint: /bin/sh
+    command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["redpanda:9092"]
+          schemaRegistry:
+            enabled: true
+            urls: ["http://redpanda:8081"]
+        redpanda:
+          adminApi:
+            enabled: true
+            urls: ["http://redpanda:9644"]
+    depends_on:
+      - redpanda
+    restart: unless-stopped

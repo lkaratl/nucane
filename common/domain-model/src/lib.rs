@@ -189,9 +189,9 @@ impl FromStr for Timeframe {
     }
 }
 
-impl Into<Duration> for Timeframe {
-    fn into(self) -> Duration {
-        match self {
+impl From<Timeframe> for Duration {
+    fn from(value: Timeframe) -> Self {
+        match value {
             Timeframe::OneS => Duration::seconds(1),
             Timeframe::OneM => Duration::minutes(1),
             Timeframe::FiveM => Duration::minutes(5),

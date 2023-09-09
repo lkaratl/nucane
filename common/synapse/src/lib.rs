@@ -75,10 +75,10 @@ pub struct Reader {
 }
 
 impl Reader {
-    fn new(group_id: &str) -> Self {
+    fn new(bootstrap_server: &str, group_id: &str) -> Self {
         let consumer: StreamConsumer<_> = ClientConfig::new()
             .set("group.id", group_id)
-            .set("bootstrap.servers", "localhost:19092")
+            .set("bootstrap.servers", bootstrap_server)
             .set("enable.partition.eof", "false")
             .set("session.timeout.ms", "6000")
             .set("enable.auto.commit", "true")
@@ -122,8 +122,8 @@ impl<T: Synapse + Send> SynapseListen<T> for Reader {
     }
 }
 
-pub fn reader(group_id: &str) -> Reader {
-    Reader::new(group_id)
+pub fn reader(bootstrap_server: &str, group_id: &str) -> Reader {
+    Reader::new(bootstrap_server, group_id)
 }
 
 pub struct Writer {
@@ -131,9 +131,9 @@ pub struct Writer {
 }
 
 impl Writer {
-    fn new() -> Self {
+    fn new(bootstrap_server: &str,) -> Self {
         let producer: FutureProducer = ClientConfig::new()
-            .set("bootstrap.servers", "localhost:19092")
+            .set("bootstrap.servers", bootstrap_server)
             .set("message.timeout.ms", "5000")
             .create()
             .expect("Producer creation error");
@@ -147,6 +147,6 @@ impl<T: Synapse> SynapseSend<T> for Writer {
     }
 }
 
-pub fn writer() -> Writer {
-    Writer::new()
+pub fn writer(bootstrap_server: &str,) -> Writer {
+    Writer::new(bootstrap_server)
 }

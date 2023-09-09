@@ -5,10 +5,11 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 use uuid::Uuid;
 
-use domain_model::{Action, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderActionType, OrderMarketType, OrderStatus, OrderType, Position, Side, Simulation, SimulationDeployment, SimulationPosition, Size, Tick, Timeframe};
+use domain_model::{Action, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderActionType, OrderMarketType, OrderStatus, OrderType, Position, Side, Simulation, SimulationDeployment, SimulationPosition, Size, Tick};
 use engine_rest_api::dto::{CreateDeploymentDto};
 use engine_rest_client::EngineClient;
 use interactor_rest_client::InteractorClient;
+use simulator_config::CONFIG;
 use storage_rest_client::StorageClient;
 use synapse::SynapseSend;
 
@@ -78,7 +79,7 @@ impl SimulationService {
         report
     }
 
-    async fn run_simulation_batch(&self, logger: &mut Logger, mut simulation: &mut Simulation, batch_start: DateTime<Utc>, batch_end: DateTime<Utc>) {
+    async fn run_simulation_batch(&self, logger: &mut Logger, simulation: &mut Simulation, batch_start: DateTime<Utc>, batch_end: DateTime<Utc>) {
         debug!("Batch processing from start: {batch_start} to end: {batch_end}");
         let ticks = self.get_ticks(logger, simulation, batch_start, batch_end).await;
         let positions = &mut simulation.positions;
@@ -186,7 +187,7 @@ impl SimulationService {
                             stop_loss: create_order.stop_loss.clone(),
                             take_profit: create_order.take_profit.clone(),
                         };
-                        synapse::writer().send(&order);
+                        synapse::writer(&CONFIG.broker.url).send(&order);
                         logger.log(format!("|-> Place Order: {} {:?} {:?} '{}-{}' {} '{:?}', stop-loss: {:?}, take-profit: {:?}, id: '{}'",
                                            order.exchange, order.market_type, order.order_type, order.pair.target, order.pair.source, order.side, order.size, order.stop_loss, order.take_profit, order.id));
                         active_orders.push(order);
@@ -202,7 +203,7 @@ impl SimulationService {
         simulation.positions.clone()
             .iter()
             .for_each(|position| {
-                synapse::writer().send(&Position::from(position.clone()));
+                synapse::writer(&CONFIG.broker.url).send(&Position::from(position.clone()));
             });
     }
 
@@ -394,7 +395,7 @@ impl SimulationService {
         };
         order.avg_price = quote;
         order.status = OrderStatus::Completed;
-        synapse::writer().send(order);
+        synapse::writer(&CONFIG.broker.url).send(order);
     }
 
     async fn get_ticks(&self, logger: &mut Logger, simulation: &Simulation, from: DateTime<Utc>, to: DateTime<Utc>) -> Vec<Tick> {
@@ -435,14 +436,14 @@ impl SimulationService {
 fn update_positions(target_size: f64, source_size: f64, fee_percent: f64, target_position: Option<&mut SimulationPosition>, source_position: Option<&mut SimulationPosition>, logger: &mut Logger) {
     let source_position = source_position.expect("No source asset to execute order");
     source_position.end -= source_size;
-    synapse::writer().send(&Position::from(source_position.clone()));
+    synapse::writer(&CONFIG.broker.url).send(&Position::from(source_position.clone()));
     logger.log(format!("|--> Update position: {} {} '{} | -{}'", source_position.exchange, source_position.currency, source_position.end, source_size));
 
     let target_position = target_position.expect("No target asset to execute order");
     let fee = calculate_fee_size(target_size, fee_percent);
     target_position.end += target_size - fee;
     target_position.fees += fee;
-    synapse::writer().send(&Position::from(target_position.clone()));
+    synapse::writer(&CONFIG.broker.url).send(&Position::from(target_position.clone()));
     logger.log(format!("|--> Update position: {} {} '{} | +{} | -{}'", target_position.exchange, target_position.currency, target_position.end, target_size, fee));
 }
 
@@ -515,6 +516,7 @@ fn convert_to_create_deployment_dto(value: SimulationDeployment, simulation_id: 
     }
 }
 
+#[allow(unused)]
 enum CurrencyConversion {
     ToTarget,
     ToSource,

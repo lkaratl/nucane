@@ -1,6 +1,5 @@
-pub mod config;
-
 use std::net::{IpAddr, SocketAddr};
+use std::ops::Deref;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -14,21 +13,24 @@ use tracing::{error, info};
 
 use domain_model::{AuditEvent, Candle, CurrencyPair, Deployment, DeploymentEvent, InstrumentId, Order, Position, Simulation, Timeframe};
 use interactor_rest_client::InteractorClient;
+use storage_config::CONFIG;
 use storage_core::audit::AuditService;
 use storage_core::candle::CandleService;
-use storage_core::candle_sync::{CandleSyncService, SyncReport};
+use storage_core::candle_sync::{CandleSyncService};
 use storage_core::order::OrderService;
 use storage_core::position::PositionService;
+use storage_migration::{Migrator, MigratorTrait};
 use storage_rest_api::dto::SyncReportDto;
 use storage_rest_api::endpoints::{GET_AUDIT, POST_CANDLES_SYNC, GET_CANDLES, GET_ORDERS, GET_POSITIONS};
 use storage_rest_api::path_query::{AuditQuery, CandlesQuery, CandleSyncQuery, OrdersQuery, PositionsQuery};
 use synapse::{SynapseListen, Topic};
-use crate::config::CONFIG;
 
 pub async fn run() {
     info!("+ storage running...");
+
     let db = Arc::new(Database::connect(&CONFIG.database.url).await
-        .expect("Error during connecting to database"));
+        .expect("storage: Error during connecting to database"));
+    Migrator::up(db.deref(), None).await.expect("storage: Failed apply db migrations");
 
     let order_service = Arc::new(OrderService::new(Arc::clone(&db)));
     let position_service = Arc::new(PositionService::new(Arc::clone(&db)));
@@ -39,7 +41,7 @@ pub async fn run() {
                          Arc::clone(&candle_service),
                          Arc::clone(&audit_service)).await;
 
-    let interactor_client = Arc::new(InteractorClient::new("http://localhost:8083")); // todo unhardcode
+    let interactor_client = Arc::new(InteractorClient::new(&CONFIG.interactor.url)); // todo unhardcode
     let candle_sync_service = Arc::new(CandleSyncService::new(Arc::clone(&candle_service), Arc::clone(&interactor_client)));
     listen_deployment_events(Arc::clone(&candle_sync_service), Arc::clone(&audit_service)).await;
     listen_auditable_events(Arc::clone(&audit_service)).await;
@@ -67,19 +69,19 @@ async fn listen_entity_events(order_service: Arc<OrderService<DatabaseConnection
                               position_service: Arc<PositionService<DatabaseConnection>>,
                               candle_service: Arc<CandleService<DatabaseConnection>>,
                               audit_service: Arc<AuditService<DatabaseConnection>>) {
-    synapse::reader(&CONFIG.application.name).on(Topic::Order,
-                                                 {
-                                                     let audit_service = Arc::clone(&audit_service);
-                                                     move |order: Order| {
-                                                         let order_service = Arc::clone(&order_service);
-                                                         let audit_service = Arc::clone(&audit_service);
-                                                         async move {
-                                                             order_service.save(order.clone()).await;
-                                                             audit_service.log_order(order).await;
-                                                         }
-                                                     }
-                                                 }).await;
-    synapse::reader(&CONFIG.application.name).on(Topic::Position, move |position: Position| {
+    synapse::reader(&CONFIG.broker.url, &CONFIG.application.name).on(Topic::Order,
+                                                                     {
+                                                                         let audit_service = Arc::clone(&audit_service);
+                                                                         move |order: Order| {
+                                                                             let order_service = Arc::clone(&order_service);
+                                                                             let audit_service = Arc::clone(&audit_service);
+                                                                             async move {
+                                                                                 order_service.save(order.clone()).await;
+                                                                                 audit_service.log_order(order).await;
+                                                                             }
+                                                                         }
+                                                                     }).await;
+    synapse::reader(&CONFIG.broker.url, &CONFIG.application.name).on(Topic::Position, move |position: Position| {
         let position_service = Arc::clone(&position_service);
         let audit_service = Arc::clone(&audit_service);
         async move {
@@ -87,7 +89,7 @@ async fn listen_entity_events(order_service: Arc<OrderService<DatabaseConnection
             audit_service.log_position(position).await;
         }
     }).await;
-    synapse::reader(&CONFIG.application.name).on(Topic::Candle, move |candle: Candle| {
+    synapse::reader(&CONFIG.broker.url, &CONFIG.application.name).on(Topic::Candle, move |candle: Candle| {
         let candle_service = Arc::clone(&candle_service);
         async move {
             candle_service.save(candle).await;
@@ -96,7 +98,7 @@ async fn listen_entity_events(order_service: Arc<OrderService<DatabaseConnection
 }
 
 async fn listen_deployment_events(candle_sync_service: Arc<CandleSyncService>, audit_service: Arc<AuditService<DatabaseConnection>>) {
-    synapse::reader(&CONFIG.application.name).on(Topic::Deployment, move |deployment: Deployment| {
+    synapse::reader(&CONFIG.broker.url, &CONFIG.application.name).on(Topic::Deployment, move |deployment: Deployment| {
         let audit_service = Arc::clone(&audit_service);
         let candle_sync_service = Arc::clone(&candle_sync_service);
         async move {
@@ -106,7 +108,7 @@ async fn listen_deployment_events(candle_sync_service: Arc<CandleSyncService>, a
                         let from = Utc::now() - Duration::days(30);
                         let timeframes = [Timeframe::FifteenM, Timeframe::ThirtyM, Timeframe::OneH, Timeframe::FourH, Timeframe::OneD];
                         for instrument_id in &deployment.subscriptions {
-                            candle_sync_service.sync(instrument_id, &timeframes, from, None).await;
+                            let _ = candle_sync_service.sync(instrument_id, &timeframes, from, None).await;
                         }
                     }
                     DeploymentEvent::Deleted => {}
@@ -118,7 +120,7 @@ async fn listen_deployment_events(candle_sync_service: Arc<CandleSyncService>, a
 }
 
 async fn listen_auditable_events(audit_service: Arc<AuditService<DatabaseConnection>>) {
-    synapse::reader(&CONFIG.application.name).on(Topic::Simulation, move |simulation: Simulation| {
+    synapse::reader(&CONFIG.broker.url, &CONFIG.application.name).on(Topic::Simulation, move |simulation: Simulation| {
         let audit_service = Arc::clone(&audit_service);
         async move {
             audit_service.log_simulation(simulation).await;

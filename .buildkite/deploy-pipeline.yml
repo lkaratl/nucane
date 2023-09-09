@@ -1,0 +1,84 @@
+steps:
+  - key: "input"
+    label: ":lower_left_crayon: Input"
+    input: "Deploy params"
+    fields:
+      - key: "env"
+        select: "Environment config"
+        hint: "Config with environment params"
+        options:
+          - label: "dev"
+            value: "dev.env"
+          - label: "staging"
+            value: "staging.env"
+          - label: "prod"
+            value: "prod.env"
+        default: "dev.env"
+      - key: "version"
+        text: "Version"
+        hint: "Value format '\\$BRANCH#\\$BUILD', get exact values from build pipeline"
+        default: "$BUILDKITE_BRANCH#latest"
+      - key: "profile"
+        select: "Profile"
+        hint: "Config with profile params"
+        options:
+          - label: "demo"
+            value: "demo.profile"
+        default: "demo.profile"
+      - key: "custom_params"
+        text: "Custom params"
+        hint: "Custom environment parameters. Each record from new line: KEY=VALUE"
+        required: false
+        default: ""
+  - wait: ~
+  - key: "install"
+    label: ":parcel: Install"
+    commands:
+      - "echo '+++ Download images'"
+      - "export VERSION=$(buildkite-agent meta-data get version) && echo \"VERSION: $$VERSION\""
+      - "rclone copy --include '*.tar' drive:/Managed/Nucane/nucane/build/$(echo \"$$VERSION\" | tr '#' '/') ./target/deploy"
+      - "echo '+++ Load images'"
+      - "docker load -i ./target/deploy/engine.tar"
+      - "docker load -i ./target/deploy/interactor.tar"
+      - "docker load -i ./target/deploy/registry.tar"
+      - "docker load -i ./target/deploy/simulator.tar"
+      - "buildkite-agent meta-data set 'tag' \"$(docker load -i ./target/deploy/storage.tar | awk -F':' '{print $$NF}')\""
+    plugins:
+      - "uber-workflow/run-without-clone": ~
+  - wait: ~
+  - key: "run"
+    label: ":rocket: Run"
+    commands:
+      - "echo '+++ :triangular_flag_on_post: PIPELINE PARAMS :triangular_flag_on_post:'"
+      - "export TAG=$(buildkite-agent meta-data get tag) && echo \"TAG: $$TAG\""
+      - "echo '+++ :triangular_flag_on_post: ENVIRONMENT PARAMS :triangular_flag_on_post:'"
+      - "export ENV=$(buildkite-agent meta-data get env) && echo \"ENV: $$ENV\""
+      - "rclone copy drive:/Managed/Nucane/nucane/deploy/env/$$ENV ./target/deploy"
+      - "echo '' >> ./target/deploy/$$ENV"
+      - |
+        while IFS= read -r line
+                  do
+                      echo "$$line"
+                      export $$line
+                  done < "./target/deploy/$$ENV"
+      - "echo '+++ :triangular_flag_on_post: PROFILE PARAMS :triangular_flag_on_post:'"
+      - "export PROFILE=$(buildkite-agent meta-data get profile) && echo \"PROFILE: $$PROFILE\""
+      - "rclone copy drive:/Managed/Nucane/nucane/deploy/profile/$$PROFILE ./target/deploy"
+      - "echo '' >> ./target/deploy/$$PROFILE"
+      - |
+        while IFS= read -r line
+                  do
+                      echo "$$line"
+                      export $$line
+                  done < "./target/deploy/$$PROFILE"
+      - "echo '+++ :triangular_flag_on_post: CUSTOM PARAMS :triangular_flag_on_post:'"
+      - |
+        while IFS= read -r line
+                  do
+                      echo "$$line"
+                      export $$line
+                  done <<< "$(buildkite-agent meta-data get custom_params)"
+      - "echo \"+++ :rotating_light: Run deploy - NAMESPACE: \"$$NAMESPACE\", TAG: \"$$TAG\" :rotating_light:\""
+      - "echo '--- :round_pushpin: COMPOSE FILE :round_pushpin:'"
+      - "envsubst < docker-compose.yml"
+      - "docker compose up -d"

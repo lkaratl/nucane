@@ -1,5 +1,3 @@
-pub mod config;
-
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 use axum::{Json, Router};
@@ -7,9 +5,9 @@ use axum::extract::{DefaultBodyLimit, Multipart, Query, State};
 use axum::http::StatusCode;
 use axum::routing::{delete, get, post};
 use tracing::{error, info};
+use registry_config::CONFIG;
 use registry_core::service::RegistryService;
 use registry_rest_api::dto::{PluginBinary, PluginInfo};
-use crate::config::CONFIG;
 use registry_rest_api::endpoints::*;
 use registry_rest_api::path_query::PluginQuery;
 
@@ -105,7 +103,7 @@ async fn create_plugins(State(registry_service): State<Arc<RegistryService>>, mu
 }
 
 fn is_lib_name_valid(name: &str) -> bool {
-    cfg!(target_os = "windows") && name.ends_with(".dll")
+    cfg!(target_os = "windows") && name.ends_with(".dll") || cfg!(target_os = "linux") && name.ends_with(".so")
 }
 
 async fn delete_plugins_by_name_or_version(State(registry_service): State<Arc<RegistryService>>, Query(query): Query<PluginQuery>) -> Result<Json<Vec<PluginInfo>>, StatusCode> {

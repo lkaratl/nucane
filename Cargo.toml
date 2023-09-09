@@ -45,33 +45,38 @@ plugin-loader = { path = "common/plugin-loader" }
 strategy-api = { path = "common/strategy-api" }
 synapse = { path = "common/synapse" }
 
+engine-config = { path = "engine/config" }
 engine-app = { path = "engine/app" }
 engine-core = { path = "engine/core" }
 engine-rest-api = { path = "engine/rest-api" }
 engine-rest-client = { path = "engine/rest-client" }
 
-interactor-app = { path = "interactor/app" }
 interactor-config = { path = "interactor/config" }
+interactor-app = { path = "interactor/app" }
 interactor-core = { path = "interactor/core" }
 interactor-rest-api = { path = "interactor/rest-api" }
 interactor-rest-client = { path = "interactor/rest-client" }
 
+registry-config = { path = "registry/config" }
 registry-app = { path = "registry/app" }
 registry-core = { path = "registry/core" }
 registry-rest-api = { path = "registry/rest-api" }
 registry-rest-client = { path = "registry/rest-client" }
 
+simulator-config = { path = "simulator/config" }
 simulator-app = { path = "simulator/app" }
 simulator-core = { path = "simulator/core" }
 simulator-rest-api = { path = "simulator/rest-api" }
 simulator-rest-client = { path = "simulator/rest-client" }
 
+storage-config = { path = "storage/config" }
 storage-app = { path = "storage/app" }
+storage-migration = { path = "storage/migration"}
 storage-core = { path = "storage/core" }
 storage-rest-api = { path = "storage/rest-api" }
 storage-rest-client = { path = "storage/rest-client" }
 
-rdkafka = { version = "0.31.0", features = ["cmake-build"] }
+rdkafka = { version = "0.33.2", features = ["cmake-build"] }
 tokio = { version = "1.28", features = ["full"] }
 futures = "0.3.28"
 uuid = { version = "1.3.2", features = ["v4", "serde"] }

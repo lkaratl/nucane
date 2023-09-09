@@ -3,12 +3,13 @@ use std::process::Command;
 
 use tracing::info;
 
+const LOCAL_DEV_COMPOSE_FILE_NAME: &str = "docker-compose.localdev.yml";
+
 pub fn run() {
     info!("===============================");
     info!("NUCANE services running locally");
     info!("===============================");
-    run_database();
-    run_massage_broker();
+    run_capability_providers();
     thread::spawn(|| { run_registry() });
     thread::spawn(|| { run_engine() });
     thread::spawn(|| { run_storage() });
@@ -16,28 +17,18 @@ pub fn run() {
     thread::spawn(|| { run_interactor() });
 }
 
-fn run_database() {
-    fs::write("./docker-compose.yml", include_str!("../mysql/docker-compose.yml"))
+fn run_capability_providers() {
+    fs::write(format!("./{LOCAL_DEV_COMPOSE_FILE_NAME}"), include_str!("../docker-compose.localdev.yml"))
         .expect("Error during docker compose file creation");
     Command::new("docker")
-        .args(["compose", "up", "-d"])
+        .args(["compose", "-f", LOCAL_DEV_COMPOSE_FILE_NAME, "up", "-d"])
         .output()
         .expect("Error during database running");
-    fs::remove_file("./docker-compose.yml")
+    fs::remove_file(format!("./{LOCAL_DEV_COMPOSE_FILE_NAME}"))
         .expect("Error during docker compose file removing");
-    info!("+ database running...");
-}
-
-fn run_massage_broker() {
-    fs::write("./docker-compose.yml", include_str!("../redpanda/docker-compose.yml"))
-        .expect("Error during docker compose file creation");
-    Command::new("docker")
-        .args(["compose", "up", "-d"])
-        .output()
-        .expect("Error during message broker running");
-    fs::remove_file("./docker-compose.yml")
-        .expect("Error during docker compose file removing");
-    info!("+ massage-broker running...");
+    info!("+ capability providers running...");
+    info!("  |- database running...");
+    info!("  L massage-broker running...");
 }
 
 #[tokio::main]

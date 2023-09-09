@@ -1,0 +1,166 @@
+steps:
+  - key: "check"
+    label: ":mag: Check"
+    commands:
+      - "cargo clippy --tests -- -D warnings"
+    plugins:
+      - nienbo/cache#v2.4.14:
+          backend: rsync
+          rsync:
+            path: "/tmp/pipeline-caches"
+          key: "$BUILDKITE_REPO"
+          restore-keys:
+            - "$BUILDKITE_REPO"
+          paths:
+            - "target"
+          continue_on_error: true
+  - wait: ~
+  - key: "build_binaries"
+    label: ":hammer_and_wrench: Build binaries"
+    commands:
+      - "cargo build --release"
+    artifact_paths:
+      - "target/release/engine-app"
+      - "target/release/interactor-app"
+      - "target/release/registry-app"
+      - "target/release/simulator-app"
+      - "target/release/storage-app"
+      - "target/release/*.so"
+    plugins:
+      - nienbo/cache#v2.4.14:
+          backend: rsync
+          rsync:
+            path: "/tmp/pipeline-caches"
+          key: "$BUILDKITE_REPO"
+          restore-keys:
+            - "$BUILDKITE_REPO"
+          paths:
+            - "target"
+          continue_on_error: true
+  - wait: ~
+  - key: "test"
+    label: ":clipboard: Test"
+    commands:
+      - "cargo nextest run --release"
+    plugins:
+      - nienbo/cache#v2.4.14:
+          backend: rsync
+          rsync:
+            path: "/tmp/pipeline-caches"
+          key: "$BUILDKITE_REPO"
+          restore-keys:
+            - "$BUILDKITE_REPO"
+          paths:
+            - "target"
+          continue_on_error: true
+  - key: "build_images"
+    depends_on: "build_binaries"
+    group: ":docker: Build images"
+    steps:
+      - label: ":package: engine"
+        commands:
+          - "buildkite-agent artifact download 'target/release/engine-app' ."
+          - "docker build -t engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=engine-app\" ."
+      - label: ":package: interactor"
+        commands:
+          - "buildkite-agent artifact download 'target/release/interactor-app' ."
+          - "docker build -t interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=interactor-app\" ."
+      - label: ":package: registry"
+        commands:
+          - "buildkite-agent artifact download 'target/release/registry-app' ."
+          - "docker build -t registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=registry-app\" ."
+      - label: ":package: simulator"
+        commands:
+          - "buildkite-agent artifact download 'target/release/simulator-app' ."
+          - "docker build -t simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=simulator-app\" ."
+      - label: ":package: storage"
+        commands:
+          - "buildkite-agent artifact download 'target/release/storage-app' ."
+          - "docker build -t storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=storage-app\" ."
+  - wait: ~
+  - key: "prepare_sync"
+    label: ":vertical_traffic_light: $BUILDKITE_BRANCH#$BUILDKITE_BUILD_NUMBER"
+    commands:
+      - "docker builder prune --all --force"
+      - "rclone mkdir drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+    plugins:
+      - "uber-workflow/run-without-clone": ~
+  - wait: ~
+  - key: "upload_artifacts"
+    group: ":file_cabinet: Upload artifacts"
+    steps:
+      - label: ":card_index_dividers: engine"
+        commands:
+          - "sleep 1"
+          - "echo 'Upload binary'"
+          - "buildkite-agent artifact download 'target/release/engine-app' ."
+          - "rclone sync ./target/release/engine-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/engine-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "echo 'Upload image'"
+          - "docker save -o ./target/release/engine.tar engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+          - "rclone sync ./target/release/engine.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rm ./target/release/engine.tar"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/engine.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "docker image rm engine:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+        plugins:
+          - "uber-workflow/run-without-clone": ~
+      - label: ":card_index_dividers: interactor"
+        commands:
+          - "sleep 2"
+          - "echo 'Upload binary'"
+          - "buildkite-agent artifact download 'target/release/interactor-app' ."
+          - "rclone sync ./target/release/interactor-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/interactor-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "echo 'Upload image'"
+          - "docker save -o ./target/release/interactor.tar interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+          - "rclone sync ./target/release/interactor.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rm ./target/release/interactor.tar"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/interactor.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "docker image rm interactor:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+        plugins:
+          - "uber-workflow/run-without-clone": ~
+      - label: ":card_index_dividers: registry"
+        commands:
+          - "sleep 3"
+          - "echo 'Upload binary'"
+          - "buildkite-agent artifact download 'target/release/registry-app' ."
+          - "rclone sync ./target/release/registry-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/registry-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "echo 'Upload image'"
+          - "docker save -o ./target/release/registry.tar registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+          - "rclone sync ./target/release/registry.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rm ./target/release/registry.tar"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/registry.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "docker image rm registry:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+        plugins:
+          - "uber-workflow/run-without-clone": ~
+      - label: ":card_index_dividers: simulator"
+        commands:
+          - "sleep 4"
+          - "echo 'Upload binary'"
+          - "buildkite-agent artifact download 'target/release/simulator-app' ."
+          - "rclone sync ./target/release/simulator-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/simulator-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "echo 'Upload image'"
+          - "docker save -o ./target/release/simulator.tar simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+          - "rclone sync ./target/release/simulator.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rm ./target/release/simulator.tar"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/simulator.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "docker image rm simulator:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+        plugins:
+          - "uber-workflow/run-without-clone": ~
+      - label: ":card_index_dividers: storage"
+        commands:
+          - "sleep 5"
+          - "echo 'Upload binary'"
+          - "buildkite-agent artifact download 'target/release/storage-app' ."
+          - "rclone sync ./target/release/storage-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/storage-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "echo 'Upload image'"
+          - "docker save -o ./target/release/storage.tar storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+          - "rclone sync ./target/release/storage.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rm ./target/release/storage.tar"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/storage.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "docker image rm storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+        plugins:
+          - "uber-workflow/run-without-clone": ~

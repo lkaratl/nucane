@@ -1,6 +1,6 @@
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::SubscriberBuilder;
-use simulator_app::config::CONFIG;
+use simulator_config::CONFIG;
 
 #[tokio::main]
 async fn main() {

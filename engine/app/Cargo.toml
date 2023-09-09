@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+engine-config = { workspace = true }
 engine-core = { workspace = true }
 engine-rest-api = { workspace = true }
 synapse = { workspace = true }

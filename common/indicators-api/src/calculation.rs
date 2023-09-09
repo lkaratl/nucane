@@ -31,7 +31,7 @@ mod tests {
         let result = moving_average(&values, 7)
             .expect("Error during moving average calculation");
         assert_eq!(result.len(), 5);
-        assert_eq!(result.get(0).unwrap(), &3.0);
+        assert_eq!(result.first().unwrap(), &3.0);
         assert_eq!(result.get(1).unwrap(), &4.0);
         assert_eq!(result.get(2).unwrap(), &5.0);
         assert_eq!(result.get(3).unwrap(), &6.0);

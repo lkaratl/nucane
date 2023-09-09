@@ -14,8 +14,12 @@ pub struct RegistryClient {
 
 impl RegistryClient {
     pub fn new(url: &str) -> Self {
+        let mut url = String::from(url);
+        if !url.starts_with("http") {
+            url = format!("http://{}", url);
+        }
         Self {
-            url: url.to_string(),
+            url,
             client: Client::new(),
         }
     }
