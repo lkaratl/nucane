@@ -55,8 +55,8 @@ async fn run_db() -> PgEmbed {
         timeout: Some(Duration::from_secs(15)),
         migration_dir: None,
     };
-    let fetch_settings = PgFetchSettings{
-        version: PostgresVersion("13.2.0"),
+    let fetch_settings = PgFetchSettings {
+        version: PostgresVersion(&CONFIG.db.version),
         ..Default::default()
     };
     let mut pg = PgEmbed::new(pg_settings, fetch_settings)
@@ -83,9 +83,6 @@ async fn run_engine() {
 
 #[tokio::main]
 async fn run_storage(_db: Arc<PgEmbed>) {
-    // if !db.database_exists("storage").await.expect("Error during db check"){
-    //     db.create_database("storage").await.expect("Error during 'storage' db creation");
-    // }
     storage_app::run().await;
 }
 

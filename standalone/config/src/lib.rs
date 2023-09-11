@@ -17,6 +17,7 @@ pub struct Logging {
 
 #[derive(Deserialize)]
 pub struct Db {
+    pub version: String,
     pub port: i16,
     pub user: String,
     pub password: String,

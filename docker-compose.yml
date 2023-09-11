@@ -85,7 +85,7 @@ services:
   storage:
     image: storage:${TAG}
     environment:
-      STORAGE_DATABASE_URL: postgres://postgres:root@db:3306
+      STORAGE_DATABASE_URL: postgres://postgres:root@db:5432
       STORAGE_INTERACTOR_URL: interactor:8083
       STORAGE_BROKER_URL: redpanda:9092
     networks:
