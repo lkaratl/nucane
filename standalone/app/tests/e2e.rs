@@ -21,7 +21,7 @@ async fn init() {
     unsafe {
         if !INITED {
             init_logger();
-            standalone::run();
+            standalone_app::run();
         }
         INIT.call_once(|| INITED = true);
     }

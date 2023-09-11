@@ -8,9 +8,7 @@ use pg_embed::pg_fetch::{PgFetchSettings, PostgresVersion};
 use pg_embed::postgres::{PgEmbed, PgSettings};
 
 use tracing::info;
-use crate::config::CONFIG;
-
-mod config;
+use standalone_config::CONFIG;
 
 const LOCAL_DEV_COMPOSE_FILE_NAME: &str = "docker-compose.localdev.yml";
 
@@ -31,7 +29,7 @@ pub fn run() {
 }
 
 fn run_capability_providers() {
-    fs::write(format!("./{LOCAL_DEV_COMPOSE_FILE_NAME}"), include_str!("../docker-compose.localdev.yml"))
+    fs::write(format!("./{LOCAL_DEV_COMPOSE_FILE_NAME}"), include_str!("../../docker-compose.localdev.yml"))
         .expect("Error during docker compose file creation");
     Command::new("docker")
         .args(["compose", "-f", LOCAL_DEV_COMPOSE_FILE_NAME, "up", "-d"])

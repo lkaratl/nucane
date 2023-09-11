@@ -1,9 +1,10 @@
 [package]
-name = "standalone"
+name = "standalone-app"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
+standalone-config = { workspace = true }
 registry-app = { workspace = true }
 interactor-app = { workspace = true }
 engine-app = { workspace = true }

@@ -6,35 +6,47 @@ members = [
     "common/strategy-api",
     "common/plugin-loader",
     "common/indicators-api",
-    "standalone",
+
+    "engine/config",
+    "engine/app",
+    "engine/core",
+    "engine/rest-api",
+    "engine/rest-client",
+
+    "interactor/config",
     "interactor/app",
     "interactor/core",
-    "interactor/config",
     "interactor/rest-api",
     "interactor/rest-client",
+
+    "plugins/test",
+    "plugins/simulation-e2e",
+
+    "registry/config",
+    "registry/app",
+    "registry/core",
+    "registry/rest-api",
+    "registry/rest-client",
+
+    "simulator/config",
+    "simulator/app",
+    "simulator/core",
+    "simulator/rest-api",
+    "simulator/rest-client",
+
+    "standalone/config",
+    "standalone/app",
+
+    "storage/config",
     "storage/app",
     "storage/core",
     "storage/migration",
     "storage/rest-api",
     "storage/rest-client",
-    "engine/app",
-    "engine/core",
-    "engine/rest-api",
-    "engine/rest-client",
-    "simulator/app",
-    "simulator/core",
-    "simulator/rest-api",
-    "simulator/rest-client",
-    "registry/app",
-    "registry/core",
-    "registry/rest-api",
-    "registry/rest-client",
-    "plugins/test",
-    "plugins/simulation-e2e",
 ]
 
 [workspace.package]
-version = "0.1.5"
+version = "0.1.7"
 edition = "2021"
 
 [workspace.dependencies]
@@ -68,6 +80,8 @@ simulator-app = { path = "simulator/app" }
 simulator-core = { path = "simulator/core" }
 simulator-rest-api = { path = "simulator/rest-api" }
 simulator-rest-client = { path = "simulator/rest-client" }
+
+standalone-config = { path = "standalone/config"}
 
 storage-config = { path = "storage/config" }
 storage-app = { path = "storage/app" }

@@ -3,14 +3,11 @@ use std::time::Duration;
 
 use tracing_subscriber::{EnvFilter, fmt, Layer};
 use tracing_subscriber::layer::SubscriberExt;
-
-use crate::config::CONFIG;
-
-mod config;
+use standalone_config::CONFIG;
 
 fn main() {
     init_logger();
-    standalone::run();
+    standalone_app::run();
     thread::sleep(Duration::from_secs(u64::MAX))
 }
 
