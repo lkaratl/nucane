@@ -8,13 +8,6 @@ volumes:
   redpanda-0: null
   
 services:
-  db:
-    image: mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: storage
-    ports:
-      - "3306:3306"
   redpanda-0:
     command:
       - redpanda

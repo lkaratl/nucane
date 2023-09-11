@@ -6,12 +6,21 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct Config {
     pub logging: Logging,
+    pub db: Db
 }
 
 #[derive(Deserialize)]
 pub struct Logging {
     level: String,
     crates: HashMap<String, String>,
+}
+
+#[derive(Deserialize)]
+pub struct Db {
+    pub port: i16,
+    pub user: String,
+    pub password: String,
+    pub persistent: bool
 }
 
 impl Logging {

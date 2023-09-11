@@ -5,6 +5,6 @@ logging:
 application:
   name: storage
   port: 8082
-database.url: mysql://root:root@localhost:3306/storage
+database.url: postgresql://postgres:root@localhost:5432
 interactor.url: localhost:8083
 broker.url: localhost:19092

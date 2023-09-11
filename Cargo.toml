@@ -88,7 +88,8 @@ serde_urlencoded = "0.7.1"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 tracing-appender = "0.2.2"
-sea-orm = { version = "0.11.3", features = ["sqlx-mysql", "runtime-async-std-native-tls", "macros"] }
+sea-orm = { version = "0.11.3", features = ["sqlx-postgres", "runtime-async-std-native-tls", "macros"] }
+sea-orm-migration = { version = "0.11.0", features = ["sqlx-postgres", "runtime-async-std-native-tls"] }
 config = { verion = "0.13.3", features = ["yaml"] }
 once_cell = "1.17.1"
 axum = { version = "0.6.18", features = ["macros", "multipart"] }
@@ -112,7 +113,7 @@ base64 = "0.21.0"
 sha2 = "0.10.6"
 hmac = "0.12.1"
 async-std = { version = "1", features = ["attributes", "tokio1"] }
-sea-orm-migration = { version = "0.11.0", features = ["sqlx-mysql", "runtime-async-std-native-tls"] }
 tokio-tungstenite = { version = "0.19.0", features = ["native-tls"] }
 tokio-native-tls = "0.3"
 async-broadcast = "0.5.1"
+pg-embed = "0.6" # newer versions don't support db creation yet

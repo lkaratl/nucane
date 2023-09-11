@@ -6,4 +6,8 @@ logging:
     storage: DEBUG
     interactor: DEBUG
     simulator: DEBUG
-
+db:
+  port: 5432
+  user: postgres
+  password: root
+  persistent: false

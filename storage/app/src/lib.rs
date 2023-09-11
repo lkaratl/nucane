@@ -8,8 +8,8 @@ use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::routing::{get, post};
 use chrono::{Duration, TimeZone, Utc};
-use sea_orm::{Database, DatabaseConnection};
-use tracing::{error, info};
+use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbErr};
+use tracing::{error, info, warn};
 
 use domain_model::{AuditEvent, Candle, CurrencyPair, Deployment, DeploymentEvent, InstrumentId, Order, Position, Simulation, Timeframe};
 use interactor_rest_client::InteractorClient;
@@ -27,10 +27,7 @@ use synapse::{SynapseListen, Topic};
 
 pub async fn run() {
     info!("+ storage running...");
-
-    let db = Arc::new(Database::connect(&CONFIG.database.url).await
-        .expect("storage: Error during connecting to database"));
-    Migrator::up(db.deref(), None).await.expect("storage: Failed apply db migrations");
+    let db = init_db().await;
 
     let order_service = Arc::new(OrderService::new(Arc::clone(&db)));
     let position_service = Arc::new(PositionService::new(Arc::clone(&db)));
@@ -63,6 +60,22 @@ pub async fn run() {
         .serve(router.into_make_service())
         .await
         .unwrap();
+}
+
+async fn init_db() -> Arc<DatabaseConnection> {
+    let db = Database::connect(format!("{}/postgres", &CONFIG.database.url)).await
+        .expect("storage: Error during connecting to database");
+    let _ = db.execute_unprepared(&format!("CREATE DATABASE {};", &CONFIG.application.name))
+        .await.map_err(|err|
+        match err {
+            DbErr::Exec(err) => warn!("{}", err),
+            err => error!("{}", err)
+        });
+
+    let db = Arc::new(Database::connect(format!("{}/{}", &CONFIG.database.url, &CONFIG.application.name)).await
+        .expect("storage: Error during connecting to 'storage' database"));
+    Migrator::up(db.deref(), None).await.expect("storage: Failed apply db migrations");
+    db
 }
 
 async fn listen_entity_events(order_service: Arc<OrderService<DatabaseConnection>>,

@@ -85,7 +85,7 @@ services:
   storage:
     image: storage:${TAG}
     environment:
-      STORAGE_DATABASE_URL: mysql://root:root@db:3306/storage
+      STORAGE_DATABASE_URL: postgres://postgres:root@db:3306
       STORAGE_INTERACTOR_URL: interactor:8083
       STORAGE_BROKER_URL: redpanda:9092
     networks:
@@ -118,10 +118,9 @@ services:
     privileged: true
     restart: unless-stopped
   db:
-    image: mysql
+    image: postgres:13.2
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: storage
+      POSTGRES_PASSWORD: root
     networks:
       tailscale_network:
         ipv4_address: 172.${SUBNET_ID}.0.11

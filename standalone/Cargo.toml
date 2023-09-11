@@ -17,6 +17,8 @@ tokio = { workspace = true }
 config = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true }
+anyhow = { workspace = true }
+pg-embed = { workspace = true }
 
 [dev-dependencies]
 domain-model = { workspace = true }
