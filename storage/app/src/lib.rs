@@ -38,7 +38,7 @@ pub async fn run() {
                          Arc::clone(&candle_service),
                          Arc::clone(&audit_service)).await;
 
-    let interactor_client = Arc::new(InteractorClient::new(&CONFIG.interactor.url)); // todo unhardcode
+    let interactor_client = Arc::new(InteractorClient::new(&CONFIG.interactor.url));
     let candle_sync_service = Arc::new(CandleSyncService::new(Arc::clone(&candle_service), Arc::clone(&interactor_client)));
     listen_deployment_events(Arc::clone(&candle_sync_service), Arc::clone(&audit_service)).await;
     listen_auditable_events(Arc::clone(&audit_service)).await;

@@ -6,37 +6,30 @@ members = [
     "common/strategy-api",
     "common/plugin-loader",
     "common/indicators-api",
-
     "engine/config",
     "engine/app",
     "engine/core",
     "engine/rest-api",
     "engine/rest-client",
-
     "interactor/config",
     "interactor/app",
     "interactor/core",
     "interactor/rest-api",
     "interactor/rest-client",
-
     "plugins/test",
     "plugins/simulation-e2e",
-
     "registry/config",
     "registry/app",
     "registry/core",
     "registry/rest-api",
     "registry/rest-client",
-
     "simulator/config",
     "simulator/app",
     "simulator/core",
     "simulator/rest-api",
     "simulator/rest-client",
-
     "standalone/config",
     "standalone/app",
-
     "storage/config",
     "storage/app",
     "storage/core",
@@ -81,15 +74,16 @@ simulator-core = { path = "simulator/core" }
 simulator-rest-api = { path = "simulator/rest-api" }
 simulator-rest-client = { path = "simulator/rest-client" }
 
-standalone-config = { path = "standalone/config"}
+standalone-config = { path = "standalone/config" }
 
 storage-config = { path = "storage/config" }
 storage-app = { path = "storage/app" }
-storage-migration = { path = "storage/migration"}
+storage-migration = { path = "storage/migration" }
 storage-core = { path = "storage/core" }
 storage-rest-api = { path = "storage/rest-api" }
 storage-rest-client = { path = "storage/rest-client" }
 
+async-nats = "0.31.0"
 rdkafka = { version = "0.33.2", features = ["cmake-build"] }
 tokio = { version = "1.28", features = ["full"] }
 futures = "0.3.28"
