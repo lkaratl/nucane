@@ -1,14 +1,15 @@
 use crate::api::subject;
 use crate::api::subject::{TestMessage, TestResponse};
-use crate::core::{RequestHandler, Synapse};
+use crate::core::{RequestHandler, RequestReceive, RequestSend};
+use crate::impls::nats::NatsSynapse;
 
 pub struct TestClient {
-    client: Synapse,
+    client: NatsSynapse,
 }
 
 impl TestClient {
     pub async fn new(address: &str) -> Self {
-        let client = Synapse::new(address).await;
+        let client = NatsSynapse::new(address).await;
         Self {
             client
         }
@@ -17,11 +18,21 @@ impl TestClient {
         let message = TestMessage {
             text
         };
-        self.client.request(&subject::Test, &message).await.unwrap()
+        self.client.send_request(&subject::Test, &message).await.unwrap()
     }
 
     pub async fn on_test(&self, group: Option<String>, handler: impl RequestHandler<TestMessage, TestResponse>) {
-        self.client.on_request(&subject::Test, group, handler)
+        self.client.handle_request(&subject::Test, group, handler)
+            .await
+            .expect("");
+    }
+
+    pub async fn send_test_binary(&self, content: Vec<u8>) -> Vec<u8> {
+        self.client.send_request(&subject::TestBinary, &content).await.unwrap()
+    }
+
+    pub async fn on_test_binary(&self, group: Option<String>, handler: impl RequestHandler<Vec<u8>, Vec<u8>>) {
+        self.client.handle_request(&subject::TestBinary, group, handler)
             .await
             .expect("");
     }
@@ -62,6 +73,37 @@ mod test {
     async fn run_responder() {
         let client = TestClient::new("localhost:4222").await;
         client.on_test(None, TestRequestHandler)
+            .await;
+        tokio::time::sleep(Duration::from_secs(20)).await;
+    }
+
+    #[tokio::test]
+    async fn run_requester_binary() {
+        let client = TestClient::new("localhost:4222").await;
+        for _ in 0..10 {
+            let response = client.send_test_binary("Test".as_bytes().to_vec())
+                .await;
+            println!("Response: {:?}", String::from_utf8(response).unwrap());
+            tokio::time::sleep(Duration::from_secs(2)).await;
+        }
+    }
+
+    #[derive(Default)]
+    struct TestBinaryRequestHandler;
+
+    #[async_trait]
+    impl RequestHandler<Vec<u8>, Vec<u8>> for TestBinaryRequestHandler {
+        async fn handle(&self, message: Vec<u8>) -> Vec<u8> {
+            let string = String::from_utf8(message).unwrap();
+            println!("Request: {:?}", string);
+            string.as_bytes().to_vec()
+        }
+    }
+
+    #[tokio::test]
+    async fn run_responder_binary() {
+        let client = TestClient::new("localhost:4222").await;
+        client.on_test_binary(None, TestBinaryRequestHandler)
             .await;
         tokio::time::sleep(Duration::from_secs(20)).await;
     }

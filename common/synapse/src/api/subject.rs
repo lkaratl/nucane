@@ -6,7 +6,7 @@ use crate::core::{MessageSubject, RequestSubject};
 pub struct Test;
 
 impl MessageSubject for Test {
-    type Type = TestMessage;
+    type MessageType = TestMessage;
     const SUBJECT: &'static str = "test";
 }
 
@@ -22,4 +22,16 @@ impl RequestSubject for Test {
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct TestResponse {
     pub text: String,
+}
+
+pub struct TestBinary;
+
+impl MessageSubject for TestBinary {
+    type MessageType = Vec<u8>;
+    const SUBJECT: &'static str = "test-binary";
+}
+
+
+impl RequestSubject for TestBinary {
+    type ResponseType = Vec<u8>;
 }
