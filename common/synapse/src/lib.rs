@@ -1,5 +1,4 @@
 mod core;
-mod subject;
 mod api;
 
 use std::fmt::Debug;

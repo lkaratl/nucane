@@ -1,15 +1,14 @@
-use std::future::Future;
-use crate::core::SynapseClient;
-use crate::subject;
-use crate::subject::{TestMessage, TestResponse};
+use crate::api::subject;
+use crate::api::subject::{TestMessage, TestResponse};
+use crate::core::{RequestHandler, Synapse};
 
 pub struct TestClient {
-    client: SynapseClient,
+    client: Synapse,
 }
 
 impl TestClient {
     pub async fn new(address: &str) -> Self {
-        let client = SynapseClient::new(address).await;
+        let client = Synapse::new(address).await;
         Self {
             client
         }
@@ -18,11 +17,11 @@ impl TestClient {
         let message = TestMessage {
             text
         };
-        self.client.request(&subject::TEST_MESSAGE_SUBJECT, &message).await.unwrap()
+        self.client.request(&subject::Test, &message).await.unwrap()
     }
 
-    pub async fn on_test<H: FnMut(TestMessage) -> F + Send + 'static, F: Future<Output=TestResponse> + Send + 'static>(&self, group: Option<String>, handler: H) {
-        self.client.on_request(&subject::TEST_MESSAGE_SUBJECT, group, handler)
+    pub async fn on_test(&self, group: Option<String>, handler: impl RequestHandler<TestMessage, TestResponse>) {
+        self.client.on_request(&subject::Test, group, handler)
             .await
             .expect("");
     }
@@ -31,8 +30,10 @@ impl TestClient {
 #[cfg(test)]
 mod test {
     use std::time::Duration;
+    use async_trait::async_trait;
+    use crate::api::subject::{TestMessage, TestResponse};
     use crate::api::test_request_api::TestClient;
-    use crate::subject::TestResponse;
+    use crate::core::RequestHandler;
 
     #[tokio::test]
     async fn run_requester() {
@@ -45,14 +46,22 @@ mod test {
         }
     }
 
+    #[derive(Default)]
+    struct TestRequestHandler;
+
+    #[async_trait]
+    impl RequestHandler<TestMessage, TestResponse> for TestRequestHandler {
+        async fn handle(&self, message: TestMessage) -> TestResponse {
+            TestResponse{
+                text: "Response".to_string()
+            }
+        }
+    }
+
     #[tokio::test]
     async fn run_responder() {
         let client = TestClient::new("localhost:4222").await;
-        client.on_test(None, |message| async move {
-            println!("Request {:?}", message);
-        TestResponse{
-            text: "Response".to_string()
-        }})
+        client.on_test(None, TestRequestHandler)
             .await;
         tokio::time::sleep(Duration::from_secs(20)).await;
     }

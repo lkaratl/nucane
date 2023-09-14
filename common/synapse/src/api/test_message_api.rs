@@ -1,16 +1,16 @@
 use std::future::Future;
-use crate::core::SynapseClient;
-use crate::subject;
-use crate::subject::TestMessage;
+use crate::core::{MessageHandler, Synapse};
 use anyhow::Result;
+use crate::api::subject;
+use crate::api::subject::TestMessage;
 
 pub struct TestClient {
-    client: SynapseClient,
+    client: Synapse,
 }
 
 impl TestClient {
     pub async fn new(address: &str) -> Self {
-        let client = SynapseClient::new(address).await;
+        let client = Synapse::new(address).await;
         Self {
             client
         }
@@ -19,11 +19,11 @@ impl TestClient {
         let message = TestMessage {
             text
         };
-        self.client.message(&subject::TEST_MESSAGE_SUBJECT, &message).await
+        self.client.message(&subject::Test, &message).await
     }
 
-    pub async fn on_test<H: FnMut(TestMessage) -> F + Send + 'static, F: Future<Output=()> + Send + 'static>(&self, group: Option<String>, handler: H) {
-        self.client.on_message(&subject::TEST_MESSAGE_SUBJECT, group, handler)
+    pub async fn on_test(&self, group: Option<String>, handler: impl MessageHandler<TestMessage>) {
+        self.client.on_message(&subject::Test, group, handler)
             .await
             .expect("");
     }
@@ -32,7 +32,10 @@ impl TestClient {
 #[cfg(test)]
 mod test {
     use std::time::Duration;
+    use async_trait::async_trait;
+    use crate::api::subject::TestMessage;
     use crate::api::test_message_api::TestClient;
+    use crate::core::MessageHandler;
 
     #[tokio::test]
     async fn run_producer() {
@@ -46,11 +49,22 @@ mod test {
         }
     }
 
+    #[derive(Default)]
+    struct TestMessageHandler;
+
+    #[async_trait]
+    impl MessageHandler<TestMessage> for TestMessageHandler {
+        async fn handle(&self, message: TestMessage) {
+            println!("{:?}", message);
+        }
+    }
+
     #[tokio::test]
     async fn run_consumer() {
         let client = TestClient::new("localhost:4222").await;
-        client.on_test(None, |message| async move {
-            println!("{:?}", message); })
+
+
+        client.on_test(None, TestMessageHandler)
             .await;
         tokio::time::sleep(Duration::from_secs(20)).await;
     }
