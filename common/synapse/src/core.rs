@@ -16,12 +16,7 @@ pub trait RequestSubject: MessageSubject + Send + 'static {
 }
 
 #[async_trait]
-pub trait MessageHandler<RequestType>: Send + Sync + 'static {
-    async fn handle(&self, message: RequestType);
-}
-
-#[async_trait]
-pub trait RequestHandler<RequestType, ResponseType>: Send + Sync + 'static {
+pub trait Handler<RequestType, ResponseType>: Send + Sync + 'static {
     async fn handle(&self, message: RequestType) -> ResponseType;
 }
 
@@ -37,12 +32,12 @@ pub trait RequestSend {
 
 #[async_trait]
 pub trait MessageReceive {
-    async fn handle_message<S: MessageSubject>(&self, subject: &S, group: Option<String>, handler: impl MessageHandler<S::MessageType>) -> Result<()>;
+    async fn handle_message<S: MessageSubject>(&self, subject: &S, group: Option<String>, handler: impl Handler<S::MessageType, ()>) -> Result<()>;
 }
 
 #[async_trait]
 pub trait RequestReceive {
-    async fn handle_request<S: RequestSubject>(&self, subject: &S, group: Option<String>, handler: impl RequestHandler<S::MessageType, S::ResponseType>) -> Result<()>;
+    async fn handle_request<S: RequestSubject>(&self, subject: &S, group: Option<String>, handler: impl Handler<S::MessageType, S::ResponseType>) -> Result<()>;
 }
 
 pub trait SynapseSend: MessageSend + RequestSend {}

@@ -5,14 +5,47 @@ use futures::StreamExt;
 use tokio::task;
 use tracing::{error, warn};
 
-use crate::core::{MessageHandler, MessageReceive, MessageSend, MessageSubject, RequestHandler, RequestReceive, RequestSend, RequestSubject, SynapseReceive, SynapseSend};
+use crate::core::{Handler, MessageReceive, MessageSend, MessageSubject, RequestReceive, RequestSend, RequestSubject, SynapseReceive, SynapseSend};
 
-pub struct NatsSynapse {
+// todo separate impls
+pub struct NatsSender {
     client: Client,
 }
 
-impl NatsSynapse {
-    pub async fn new(address: &str) -> NatsSynapse {
+impl NatsSender {
+    pub async fn new(address: &str) -> NatsSender {
+        Self {
+            client: async_nats::connect(address).await.expect("Error during nats client creation")
+        }
+    }
+}
+
+#[async_trait]
+impl MessageSend for NatsSender {
+    async fn send_message<S: MessageSubject>(&self, subject: &S, message: &S::MessageType) -> Result<()> {
+        let request_payload = serde_json::to_string(message)?;
+        Ok(self.client.publish(subject.subject(), request_payload.into()).await?)
+    }
+}
+
+#[async_trait]
+impl RequestSend for NatsSender {
+    async fn send_request<S: RequestSubject>(&self, subject: &S, message: &S::MessageType) -> Result<S::ResponseType> {
+        let request_payload = serde_json::to_string(message)?;
+        let response_massage = self.client.request(subject.subject(), request_payload.into()).await?;
+        let response = serde_json::from_slice(&response_massage.payload)?;
+        Ok(response)
+    }
+}
+
+impl SynapseSend for NatsSender {}
+
+pub struct NatsReceiver {
+    client: Client,
+}
+
+impl NatsReceiver {
+    pub async fn new(address: &str) -> NatsReceiver {
         Self {
             client: async_nats::connect(address).await.expect("Error during nats client creation")
         }
@@ -29,26 +62,8 @@ impl NatsSynapse {
 }
 
 #[async_trait]
-impl MessageSend for NatsSynapse {
-    async fn send_message<S: MessageSubject>(&self, subject: &S, message: &S::MessageType) -> Result<()> {
-        let request_payload = serde_json::to_string(message)?;
-        Ok(self.client.publish(subject.subject(), request_payload.into()).await?)
-    }
-}
-
-#[async_trait]
-impl RequestSend for NatsSynapse {
-    async fn send_request<S: RequestSubject>(&self, subject: &S, message: &S::MessageType) -> Result<S::ResponseType> {
-        let request_payload = serde_json::to_string(message)?;
-        let response_massage = self.client.request(subject.subject(), request_payload.into()).await?;
-        let response = serde_json::from_slice(&response_massage.payload)?;
-        Ok(response)
-    }
-}
-
-#[async_trait]
-impl MessageReceive for NatsSynapse {
-    async fn handle_message<S: MessageSubject>(&self, subject: &S, group: Option<String>, handler: impl MessageHandler<S::MessageType>) -> Result<()> {
+impl MessageReceive for NatsReceiver {
+    async fn handle_message<S: MessageSubject>(&self, subject: &S, group: Option<String>, handler: impl Handler<S::MessageType, ()>) -> Result<()> {
         let subject = subject.subject();
         let mut subscriber = self.new_subscriber(&subject, group).await?;
         task::spawn(async move {
@@ -66,8 +81,8 @@ impl MessageReceive for NatsSynapse {
 }
 
 #[async_trait]
-impl RequestReceive for NatsSynapse {
-    async fn handle_request<S: RequestSubject>(&self, subject: &S, group: Option<String>, handler: impl RequestHandler<S::MessageType, S::ResponseType>) -> Result<()> {
+impl RequestReceive for NatsReceiver {
+    async fn handle_request<S: RequestSubject>(&self, subject: &S, group: Option<String>, handler: impl Handler<S::MessageType, S::ResponseType>) -> Result<()> {
         let client = self.client.clone();
         let subject = subject.subject();
         let mut subscriber = self.new_subscriber(&subject, group).await?;
@@ -97,6 +112,4 @@ impl RequestReceive for NatsSynapse {
     }
 }
 
-impl SynapseSend for NatsSynapse {}
-
-impl SynapseReceive for NatsSynapse {}
+impl SynapseReceive for NatsReceiver {}

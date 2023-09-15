@@ -1,40 +1,41 @@
 use std::future::Future;
-use crate::core::{MessageHandler, MessageReceive, MessageSend};
+use crate::core::{Handler, MessageReceive, MessageSend};
 use anyhow::Result;
 use crate::api::subject;
 use crate::api::subject::TestMessage;
-use crate::impls::nats::NatsSynapse;
+use crate::impls::nats::{NatsReceiver, NatsSender};
 
 pub struct TestClient {
-    client: NatsSynapse,
+    send_client: NatsSender,
+    receive_client: NatsReceiver
 }
 
 impl TestClient {
     pub async fn new(address: &str) -> Self {
-        let client = NatsSynapse::new(address).await;
         Self {
-            client
+            send_client: NatsSender::new(address).await,
+            receive_client: NatsReceiver::new(address).await
         }
     }
     pub async fn send_test(&self, text: String) -> Result<()> {
         let message = TestMessage {
             text
         };
-        self.client.send_message(&subject::Test, &message).await
+        self.send_client.send_message(&subject::Test, &message).await
     }
 
-    pub async fn on_test(&self, group: Option<String>, handler: impl MessageHandler<TestMessage>) {
-        self.client.handle_message(&subject::Test, group, handler)
+    pub async fn on_test(&self, group: Option<String>, handler: impl Handler<TestMessage, ()>) {
+        self.receive_client.handle_message(&subject::Test, group, handler)
             .await
             .expect("");
     }
 
     pub async fn send_test_binary(&self, content: Vec<u8>) -> Result<()> {
-        self.client.send_message(&subject::TestBinary, &content).await
+        self.send_client.send_message(&subject::TestBinary, &content).await
     }
 
-    pub async fn on_test_binary(&self, group: Option<String>, handler: impl MessageHandler<Vec<u8>>) {
-        self.client.handle_message(&subject::TestBinary, group, handler)
+    pub async fn on_test_binary(&self, group: Option<String>, handler: impl Handler<Vec<u8>, ()>) {
+        self.receive_client.handle_message(&subject::TestBinary, group, handler)
             .await
             .expect("");
     }
@@ -46,7 +47,7 @@ mod test {
     use async_trait::async_trait;
     use crate::api::subject::TestMessage;
     use crate::api::test_message_api::TestClient;
-    use crate::core::MessageHandler;
+    use crate::core::Handler;
 
     #[tokio::test]
     async fn run_producer() {
@@ -64,7 +65,7 @@ mod test {
     struct TestMessageHandler;
 
     #[async_trait]
-    impl MessageHandler<TestMessage> for TestMessageHandler {
+    impl Handler<TestMessage, ()> for TestMessageHandler {
         async fn handle(&self, message: TestMessage) {
             println!("{:?}", message);
         }

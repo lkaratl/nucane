@@ -1,38 +1,39 @@
 use crate::api::subject;
 use crate::api::subject::{TestMessage, TestResponse};
-use crate::core::{RequestHandler, RequestReceive, RequestSend};
-use crate::impls::nats::NatsSynapse;
+use crate::core::{Handler, MessageSend, RequestReceive, RequestSend};
+use crate::impls::nats::{NatsReceiver, NatsSender};
 
 pub struct TestClient {
-    client: NatsSynapse,
+    send_client: NatsSender,
+    receive_client: NatsReceiver
 }
 
 impl TestClient {
     pub async fn new(address: &str) -> Self {
-        let client = NatsSynapse::new(address).await;
         Self {
-            client
+            send_client: NatsSender::new(address).await,
+            receive_client: NatsReceiver::new(address).await
         }
     }
     pub async fn send_test(&self, text: String) -> TestResponse {
         let message = TestMessage {
             text
         };
-        self.client.send_request(&subject::Test, &message).await.unwrap()
+        self.send_client.send_request(&subject::Test, &message).await.unwrap()
     }
 
-    pub async fn on_test(&self, group: Option<String>, handler: impl RequestHandler<TestMessage, TestResponse>) {
-        self.client.handle_request(&subject::Test, group, handler)
+    pub async fn on_test(&self, group: Option<String>, handler: impl Handler<TestMessage, TestResponse>) {
+        self.receive_client.handle_request(&subject::Test, group, handler)
             .await
             .expect("");
     }
 
     pub async fn send_test_binary(&self, content: Vec<u8>) -> Vec<u8> {
-        self.client.send_request(&subject::TestBinary, &content).await.unwrap()
+        self.send_client.send_request(&subject::TestBinary, &content).await.unwrap()
     }
 
-    pub async fn on_test_binary(&self, group: Option<String>, handler: impl RequestHandler<Vec<u8>, Vec<u8>>) {
-        self.client.handle_request(&subject::TestBinary, group, handler)
+    pub async fn on_test_binary(&self, group: Option<String>, handler: impl Handler<Vec<u8>, Vec<u8>>) {
+        self.receive_client.handle_request(&subject::TestBinary, group, handler)
             .await
             .expect("");
     }
@@ -44,7 +45,7 @@ mod test {
     use async_trait::async_trait;
     use crate::api::subject::{TestMessage, TestResponse};
     use crate::api::test_request_api::TestClient;
-    use crate::core::RequestHandler;
+    use crate::core::Handler;
 
     #[tokio::test]
     async fn run_requester() {
@@ -61,7 +62,7 @@ mod test {
     struct TestRequestHandler;
 
     #[async_trait]
-    impl RequestHandler<TestMessage, TestResponse> for TestRequestHandler {
+    impl Handler<TestMessage, TestResponse> for TestRequestHandler {
         async fn handle(&self, message: TestMessage) -> TestResponse {
             TestResponse{
                 text: "Response".to_string()
@@ -92,7 +93,7 @@ mod test {
     struct TestBinaryRequestHandler;
 
     #[async_trait]
-    impl RequestHandler<Vec<u8>, Vec<u8>> for TestBinaryRequestHandler {
+    impl Handler<Vec<u8>, Vec<u8>> for TestBinaryRequestHandler {
         async fn handle(&self, message: Vec<u8>) -> Vec<u8> {
             let string = String::from_utf8(message).unwrap();
             println!("Request: {:?}", string);
