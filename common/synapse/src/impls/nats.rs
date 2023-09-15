@@ -5,7 +5,7 @@ use futures::StreamExt;
 use tokio::task;
 use tracing::{error, warn};
 
-use crate::core::{MessageHandler, MessageReceive, MessageSend, MessageSubject, RequestHandler, RequestReceive, RequestSend, RequestSubject};
+use crate::core::{MessageHandler, MessageReceive, MessageSend, MessageSubject, RequestHandler, RequestReceive, RequestSend, RequestSubject, SynapseReceive, SynapseSend};
 
 pub struct NatsSynapse {
     client: Client,
@@ -96,3 +96,7 @@ impl RequestReceive for NatsSynapse {
         Ok(())
     }
 }
+
+impl SynapseSend for NatsSynapse {}
+
+impl SynapseReceive for NatsSynapse {}

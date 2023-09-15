@@ -7,8 +7,6 @@ use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use synapse::{Synapse, Topic};
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Simulation {
     pub id: Uuid,
@@ -28,12 +26,6 @@ impl AuditTags for Simulation {
         vec![
             CommonAuditTags::Simulation.to_string(),
         ]
-    }
-}
-
-impl Synapse for Simulation {
-    fn topic(&self) -> Topic {
-        Topic::Simulation
     }
 }
 
@@ -121,12 +113,6 @@ pub struct Candle {
     pub close_price: f64,
     pub target_volume: f64,
     pub source_volume: f64,
-}
-
-impl Synapse for Candle {
-    fn topic(&self) -> Topic {
-        Topic::Candle
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -249,12 +235,6 @@ impl AuditTags for Position {
     }
 }
 
-impl Synapse for Position {
-    fn topic(&self) -> Topic {
-        Topic::Position
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Order {
     pub id: String,
@@ -270,12 +250,6 @@ pub struct Order {
     pub avg_price: f64,
     pub stop_loss: Option<Trigger>,
     pub take_profit: Option<Trigger>,
-}
-
-impl Synapse for Order {
-    fn topic(&self) -> Topic {
-        Topic::Order
-    }
 }
 
 impl AuditTags for Order {
@@ -309,12 +283,6 @@ pub struct PluginEvent {
     pub strategy_version: String,
 }
 
-impl Synapse for PluginEvent {
-    fn topic(&self) -> Topic {
-        Topic::Plugin
-    }
-}
-
 #[derive(Eq, PartialEq, Debug, Deserialize, Serialize, Clone)]
 pub enum PluginEventType {
     Updated
@@ -329,12 +297,6 @@ pub struct Deployment {
     pub strategy_version: String,
     pub params: HashMap<String, String>,
     pub subscriptions: Vec<InstrumentId>,
-}
-
-impl Synapse for Deployment {
-    fn topic(&self) -> Topic {
-        Topic::Deployment
-    }
 }
 
 impl AuditTags for Deployment {
@@ -376,11 +338,6 @@ pub struct Tick {
     pub price: f64,
 }
 
-impl Synapse for Tick {
-    fn topic(&self) -> Topic {
-        Topic::Tick
-    }
-}
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Copy, Clone)]
 pub enum Exchange {
@@ -501,12 +458,6 @@ impl FromStr for MarketType {
 #[serde(tag = "action")]
 pub enum Action {
     OrderAction(OrderAction)
-}
-
-impl Synapse for Action {
-    fn topic(&self) -> Topic {
-        Topic::Action
-    }
 }
 
 impl AuditTags for Action {

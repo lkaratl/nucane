@@ -5,7 +5,6 @@ use tracing::trace;
 
 use domain_model::{Candle, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarketType, Order, Position, Tick, Timeframe};
 use interactor_config::CONFIG;
-use synapse::SynapseSend;
 
 use crate::service::okx::OKXService;
 

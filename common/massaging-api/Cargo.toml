@@ -1,10 +1,11 @@
 [package]
-name = "domain-model"
+name = "massaging-api"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
+synapse = { workspace = true }
 serde = { workspace = true }
-chrono = { workspace = true }
 uuid = { workspace = true }
+chrono = { workspace = true }
 anyhow = { workspace = true }
