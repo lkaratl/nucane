@@ -4,15 +4,16 @@ use tracing::debug;
 use uuid::Uuid;
 
 use domain_model::{Deployment, InstrumentId};
+use synapse::core::SynapseSend;
 use crate::service::ServiceFacade;
 
-pub struct SubscriptionManager {
+pub struct SubscriptionManager<S: SynapseSend> {
     subscriptions: Vec<Subscriptions>,
-    service_facade: Arc<Mutex<ServiceFacade>>,
+    service_facade: Arc<Mutex<ServiceFacade<S>>>,
 }
 
-impl SubscriptionManager {
-    pub fn new(service_facade: Arc<Mutex<ServiceFacade>>) -> Self {
+impl<S: SynapseSend> SubscriptionManager<S> {
+    pub fn new(service_facade: Arc<Mutex<ServiceFacade<S>>>) -> Self {
         Self {
             subscriptions: Vec::new(),
             service_facade,

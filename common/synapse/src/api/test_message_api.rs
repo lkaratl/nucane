@@ -1,9 +1,9 @@
 use std::future::Future;
-use crate::core::{Handler, MessageReceive, MessageSend};
 use anyhow::Result;
 use crate::api::subject;
 use crate::api::subject::TestMessage;
-use crate::impls::nats::{NatsReceiver, NatsSender};
+use crate::core::{Handler, SynapseReceive, SynapseSend};
+use crate::nats::core::{NatsReceiver, NatsSender};
 
 pub struct TestClient {
     send_client: NatsSender,
@@ -21,21 +21,21 @@ impl TestClient {
         let message = TestMessage {
             text
         };
-        self.send_client.send_message(&subject::Test, &message).await
+        self.send_client.send_message(subject::Test, &message).await
     }
 
     pub async fn on_test(&self, group: Option<String>, handler: impl Handler<TestMessage, ()>) {
-        self.receive_client.handle_message(&subject::Test, group, handler)
+        self.receive_client.handle_message(subject::Test, group, handler)
             .await
             .expect("");
     }
 
     pub async fn send_test_binary(&self, content: Vec<u8>) -> Result<()> {
-        self.send_client.send_message(&subject::TestBinary, &content).await
+        self.send_client.send_message(subject::TestBinary, &content).await
     }
 
     pub async fn on_test_binary(&self, group: Option<String>, handler: impl Handler<Vec<u8>, ()>) {
-        self.receive_client.handle_message(&subject::TestBinary, group, handler)
+        self.receive_client.handle_message(subject::TestBinary, group, handler)
             .await
             .expect("");
     }

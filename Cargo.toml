@@ -3,7 +3,6 @@ members = [
     "common/domain-model",
     "common/eac",
     "common/indicators-api",
-    "common/massaging-api",
     "common/plugin-loader",
     "common/strategy-api",
     "common/synapse",
@@ -47,7 +46,6 @@ edition = "2021"
 domain-model = { path = "common/domain-model" }
 eac = { path = "common/eac" }
 indicators-api = { path = "common/indicators-api" }
-massaging-api = { path = "common/massaging-api" }
 plugin-loader = { path = "common/plugin-loader" }
 strategy-api = { path = "common/strategy-api" }
 synapse = { path = "common/synapse" }

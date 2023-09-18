@@ -1,6 +1,7 @@
 mod handlers;
 
 use std::collections::HashMap;
+use std::future::Future;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -50,7 +51,7 @@ impl Default for OKXService {
 #[async_trait]
 impl Service for OKXService {
     // todo maybe better don't create client for each subscription and use one thread to handle all messages
-    async fn subscribe_ticks<T: Fn(Tick) + Send + 'static>(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T) {
+    async fn subscribe_ticks<T: Fn(Tick) -> F + Send + 'static, F: Future<Output=()>>(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T) {
         let mut inst_id = format!("{}-{}", currency_pair.target, currency_pair.source);
         if !MarketType::Spot.eq(market_type) {
             inst_id = format!("{}-{}", inst_id, market_type);

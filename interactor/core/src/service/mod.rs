@@ -1,10 +1,13 @@
+use std::future::Future;
+use std::sync::Arc;
 use async_trait::async_trait;
 use chrono::{DateTime, Duration, Utc};
 use tracing::{debug, info};
 use tracing::trace;
 
 use domain_model::{Candle, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarketType, Order, Position, Tick, Timeframe};
-use interactor_config::CONFIG;
+use domain_model::subject::{ExchangeCandleSubject, ExchangeOrderSubject, ExchangePositionSubject, ExchangeTickSubject};
+use synapse::core::SynapseSend;
 
 use crate::service::okx::OKXService;
 
@@ -12,7 +15,7 @@ mod okx;
 
 #[async_trait]
 pub trait Service {
-    async fn subscribe_ticks<T: Fn(Tick) + Send + 'static>(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T);
+    async fn subscribe_ticks<T: Fn(Tick) -> F + Send + 'static, F: Future<Output=()>>(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T);
     fn unsubscribe_ticks(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType);
     async fn subscribe_candles<T: Fn(Candle) + Send + 'static>(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T);
     fn unsubscribe_candles(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType);
@@ -23,11 +26,19 @@ pub trait Service {
 }
 
 #[derive(Default)]
-pub struct ServiceFacade {
+pub struct ServiceFacade<S> {
+    synapse_sender: Arc<S>,
     okx_service: OKXService,
 }
 
-impl ServiceFacade {
+impl<S: SynapseSend> ServiceFacade<S> {
+    pub fn new(synapse_sender: S) -> Self {
+        Self {
+            synapse_sender: Arc::new(synapse_sender),
+            okx_service: OKXService::default(),
+        }
+    }
+
     pub async fn subscribe_ticks(&mut self, instrument_id: &InstrumentId) {
         debug!("Subscribe ticks for instrument: '{}-{}-{}', exchange: '{}'",
             instrument_id.pair.target, instrument_id.pair.source, instrument_id.market_type, instrument_id.exchange);
@@ -41,7 +52,7 @@ impl ServiceFacade {
                 tick.instrument_id.pair.target,
                 tick.instrument_id.pair.source,
                 tick.price);
-            synapse::writer(&CONFIG.broker.url).send(&tick);
+            self.synapse_sender.send_message(ExchangeTickSubject, &tick).await.expect("Error during tick sending to synapse");
         }).await;
     }
 
@@ -61,9 +72,9 @@ impl ServiceFacade {
         let service = match instrument_id.exchange {
             Exchange::OKX => &mut self.okx_service,
         };
-        service.subscribe_candles(&instrument_id.pair, &instrument_id.market_type, |candle| {
+        service.subscribe_candles(&instrument_id.pair, &instrument_id.market_type, |candle| async {
             trace!("Send candle to synapse: {candle:?}");
-            synapse::writer(&CONFIG.broker.url).send(&candle);
+            self.synapse_sender.send_message(ExchangeCandleSubject, &candle).await.expect("Error during candle sending to synapse");
         }).await;
     }
 
@@ -81,11 +92,11 @@ impl ServiceFacade {
         let service = match exchange {
             Exchange::OKX => &mut self.okx_service,
         };
-        service.listen_orders(|order| {
+        service.listen_orders(|order| async {
             debug!("Retrieved new order with id: '{}' from exchange: '{}', market type: '{:?}', pair: '{}-{}', order type: '{:?}', stop-loss: '{:?}', take-profit: '{:?}'",
             order.id, order.exchange, order.market_type, order.pair.target, order.pair.source, order.order_type, order.stop_loss, order.take_profit);
             trace!("Send order to synapse: {order:?}");
-            synapse::writer(&CONFIG.broker.url).send(&order);
+            self.synapse_sender.send_message(ExchangeOrderSubject, &order).await.expect("Error during order sending to synapse");
         }).await;
     }
 
@@ -94,11 +105,11 @@ impl ServiceFacade {
         let service = match exchange {
             Exchange::OKX => &mut self.okx_service,
         };
-        service.listen_positions(|position| {
+        service.listen_positions(|position| async {
             debug!("Retrieved account position update from exchange: '{}', currency: '{}', size: '{}'",
                   position.exchange, position.currency, position.size);
             trace!("Send position to synapse: {position:?}");
-            synapse::writer(&CONFIG.broker.url).send(&position);
+            self.synapse_sender.send_message(ExchangePositionSubject, &position).await.expect("Error during position sending to synapse");
         }).await;
     }
 
@@ -109,7 +120,7 @@ impl ServiceFacade {
             Exchange::OKX => &mut self.okx_service,
         };
         let order = service.place_order(&create_order).await;
-        synapse::writer(&CONFIG.broker.url).send(&order);
+        self.synapse_sender.send_message(ExchangeOrderSubject, &order).await.expect("Error during placed order sending to synapse");
     }
 
     pub async fn candles_history(&mut self,

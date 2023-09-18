@@ -1,7 +1,7 @@
 use crate::api::subject;
 use crate::api::subject::{TestMessage, TestResponse};
-use crate::core::{Handler, MessageSend, RequestReceive, RequestSend};
-use crate::impls::nats::{NatsReceiver, NatsSender};
+use crate::core::{Handler, SynapseReceive, SynapseSend};
+use crate::nats::core::{NatsReceiver, NatsSender};
 
 pub struct TestClient {
     send_client: NatsSender,
@@ -19,21 +19,21 @@ impl TestClient {
         let message = TestMessage {
             text
         };
-        self.send_client.send_request(&subject::Test, &message).await.unwrap()
+        self.send_client.send_request(subject::Test, &message).await.unwrap()
     }
 
     pub async fn on_test(&self, group: Option<String>, handler: impl Handler<TestMessage, TestResponse>) {
-        self.receive_client.handle_request(&subject::Test, group, handler)
+        self.receive_client.handle_request(subject::Test, group, handler)
             .await
             .expect("");
     }
 
     pub async fn send_test_binary(&self, content: Vec<u8>) -> Vec<u8> {
-        self.send_client.send_request(&subject::TestBinary, &content).await.unwrap()
+        self.send_client.send_request(subject::TestBinary, &content).await.unwrap()
     }
 
     pub async fn on_test_binary(&self, group: Option<String>, handler: impl Handler<Vec<u8>, Vec<u8>>) {
-        self.receive_client.handle_request(&subject::TestBinary, group, handler)
+        self.receive_client.handle_request(subject::TestBinary, group, handler)
             .await
             .expect("");
     }

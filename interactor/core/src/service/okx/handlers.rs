@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::future::Future;
 use std::str::FromStr;
 use chrono::Utc;
 use serde_json::from_value;
@@ -13,9 +14,9 @@ use eac::websocket::{Channel, Message};
 const TICK_PRICE_DEVIATION_MULTIPLIER: f64 = 1000.0;
 const TICK_PRICE_THRESHOLD: f64 = 2.0;
 
-pub fn on_tick<C: Fn(Tick) + Send + 'static>(callback: C, currency_pair: CurrencyPair, market_type: MarketType) -> impl FnMut(Message) {
+pub async fn on_tick<C: Fn(Tick) -> F + Send + 'static, F: Future<Output=()>, R: Fn(Message) -> F>(callback: C, currency_pair: CurrencyPair, market_type: MarketType) -> R {
     let mut deviation_percent = 1f64;
-    move |message| {
+    move |message| async {
         match message {
             Message::Data { arg: _, mut data, .. } => {
                 trace!("Retrieved massage with raw payload: {:?}", &data);
@@ -37,7 +38,7 @@ pub fn on_tick<C: Fn(Tick) + Send + 'static>(callback: C, currency_pair: Currenc
                         },
                         price,
                     };
-                    callback(tick);
+                    callback(tick).await;
                 }
             }
             Message::Error { code, msg, .. } => error!("Error {}: {}", code, msg),

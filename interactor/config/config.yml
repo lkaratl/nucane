@@ -19,4 +19,4 @@ eac:
         secret: # put value according to eac.demo value
         passphrase: # put value according to eac.demo value
         
-broker.url: localhost:19092
+nats.url: localhost:4222

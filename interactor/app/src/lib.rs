@@ -14,7 +14,7 @@ use interactor_core::service::ServiceFacade;
 use interactor_core::subscription_manager::SubscriptionManager;
 use interactor_rest_api::endpoints::{GET_CANDLES_HISTORY, GET_PRICE};
 use interactor_rest_api::path_query::{CandlesQuery, PriceQuery};
-use synapse::{SynapseListen, Topic};
+use synapse::nats::core::NatsSender;
 
 pub async fn run() {
     if CONFIG.eac.demo {
@@ -22,7 +22,8 @@ pub async fn run() {
     } else {
         info!("+ interactor running in LIVE mode...");
     }
-    let service_facade = Arc::new(Mutex::new(Default::default()));
+    let synapse_sender = NatsSender::new(&CONFIG.nats.url);
+    let service_facade = Arc::new(Mutex::new(ServiceFacade::new(synapse_sender)));
 
     listen_deployment_events(Arc::clone(&service_facade)).await;
     listen_actions(Arc::clone(&service_facade)).await;

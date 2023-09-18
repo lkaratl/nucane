@@ -21,25 +21,13 @@ pub trait Handler<RequestType, ResponseType>: Send + Sync + 'static {
 }
 
 #[async_trait]
-pub trait MessageSend {
-    async fn send_message<S: MessageSubject>(&self, subject: &S, message: &S::MessageType) -> Result<()>;
+pub trait SynapseSend: Send + Sync {
+    async fn send_message<S: MessageSubject>(&self, subject: S, message: &S::MessageType) -> Result<()>;
+    async fn send_request<S: RequestSubject>(&self, subject: S, message: &S::MessageType) -> Result<S::ResponseType>;
 }
 
 #[async_trait]
-pub trait RequestSend {
-    async fn send_request<S: RequestSubject>(&self, subject: &S, message: &S::MessageType) -> Result<S::ResponseType>;
+pub trait SynapseReceive: Send {
+    async fn handle_message<S: MessageSubject>(&self, subject: S, group: Option<String>, handler: impl Handler<S::MessageType, ()>) -> Result<()>;
+    async fn handle_request<S: RequestSubject>(&self, subject: S, group: Option<String>, handler: impl Handler<S::MessageType, S::ResponseType>) -> Result<()>;
 }
-
-#[async_trait]
-pub trait MessageReceive {
-    async fn handle_message<S: MessageSubject>(&self, subject: &S, group: Option<String>, handler: impl Handler<S::MessageType, ()>) -> Result<()>;
-}
-
-#[async_trait]
-pub trait RequestReceive {
-    async fn handle_request<S: RequestSubject>(&self, subject: &S, group: Option<String>, handler: impl Handler<S::MessageType, S::ResponseType>) -> Result<()>;
-}
-
-pub trait SynapseSend: MessageSend + RequestSend {}
-
-pub trait SynapseReceive: MessageReceive + RequestReceive {}

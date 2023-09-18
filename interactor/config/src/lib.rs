@@ -9,7 +9,7 @@ pub struct Config {
     pub logging: Logging,
     pub application: Application,
     pub eac: EAC,
-    pub broker: Broker
+    pub nats: Nats
 }
 
 #[derive(Deserialize)]
@@ -60,7 +60,7 @@ pub struct Logging {
 }
 
 #[derive(Deserialize)]
-pub struct Broker {
+pub struct Nats {
     pub url: String
 }
 

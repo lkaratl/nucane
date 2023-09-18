@@ -1,3 +1,5 @@
+pub mod subject;
+
 use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
@@ -337,7 +339,6 @@ pub struct Tick {
     pub instrument_id: InstrumentId,
     pub price: f64,
 }
-
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Copy, Clone)]
 pub enum Exchange {
