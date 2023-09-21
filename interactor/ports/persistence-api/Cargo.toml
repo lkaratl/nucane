@@ -1,0 +1,8 @@
+[package]
+name = "interactor-persistence-api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+domain-model = { workspace = true }
+anyhow = { workspace = true }

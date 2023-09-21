@@ -8,7 +8,6 @@ registry-config = { workspace = true }
 strategy-api = { workspace = true }
 plugin-loader = { workspace = true }
 domain-model = { workspace = true }
-synapse = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 once_cell = { workspace = true }

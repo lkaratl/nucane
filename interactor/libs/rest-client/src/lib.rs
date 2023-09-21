@@ -5,7 +5,7 @@ use serde_urlencoded::to_string;
 use tracing::{trace};
 
 use domain_model::{Candle, InstrumentId, Timeframe};
-use interactor_rest_api::endpoints::{GET_CANDLES_HISTORY, GET_PRICE};
+use interactor_rest_api::endpoints::{GET_CANDLES, GET_PRICE};
 use interactor_rest_api::path_query::{CandlesQuery, PriceQuery};
 
 pub struct InteractorClient {
@@ -42,7 +42,7 @@ impl InteractorClient {
             limit: limit.unwrap_or(100),
         };
 
-        let endpoint = format!("{}{}", self.url, GET_CANDLES_HISTORY);
+        let endpoint = format!("{}{}", self.url, GET_CANDLES);
         let mut url = Url::parse(&endpoint)?;
         url.set_query(Some(&to_string(&query)?));
         trace!("Request url: {url:?}");

@@ -5,9 +5,10 @@ edition.workspace = true
 
 [dependencies]
 interactor-config = { workspace = true }
+interactor-core-api = { workspace = true }
+interactor-persistence-api = { workspace = true }
 domain-model = { workspace = true }
 eac = { workspace = true }
-synapse = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
 uuid = { workspace = true }
@@ -20,3 +21,4 @@ tracing-subscriber = { workspace = true }
 once_cell = { workspace = true }
 axum = { workspace = true }
 async-trait = { workspace = true }
+anyhow = { worksapce = true }

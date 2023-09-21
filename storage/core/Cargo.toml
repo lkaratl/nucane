@@ -6,7 +6,6 @@ edition.workspace = true
 [dependencies]
 interactor-rest-client = { workspace = true }
 domain-model = { workspace = true }
-synapse = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
 tracing = { workspace = true }

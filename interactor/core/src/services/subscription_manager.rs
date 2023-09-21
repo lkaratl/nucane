@@ -1,20 +1,24 @@
-use std::sync::{Arc};
+use std::sync::Arc;
+
 use tokio::sync::Mutex;
 use tracing::debug;
 use uuid::Uuid;
 
-use domain_model::{Deployment, InstrumentId};
-use synapse::core::SynapseSend;
-use crate::service::ServiceFacade;
+use domain_model::{InstrumentId, Subscription};
+use interactor_persistence_api::SubscriptionRepository;
 
-pub struct SubscriptionManager<S: SynapseSend> {
+use crate::exchanges::ServiceFacade;
+
+pub struct SubscriptionManager<S: SubscriptionRepository> {
     subscriptions: Vec<Subscriptions>,
-    service_facade: Arc<Mutex<ServiceFacade<S>>>,
+    subscription_repository: S,
+    service_facade: Arc<Mutex<ServiceFacade>>,
 }
 
-impl<S: SynapseSend> SubscriptionManager<S> {
-    pub fn new(service_facade: Arc<Mutex<ServiceFacade<S>>>) -> Self {
+impl<S: SubscriptionRepository> SubscriptionManager<S> {
+    pub fn new(service_facade: Arc<Mutex<ServiceFacade>>, subscription_repository: impl SubscriptionRepository) -> Self {
         Self {
+            subscription_repository,
             subscriptions: Vec::new(),
             service_facade,
         }
@@ -62,22 +66,7 @@ impl<S: SynapseSend> SubscriptionManager<S> {
 }
 
 #[derive(Debug)]
-pub struct Subscription {
-    pub deployment_id: Uuid,
-    pub instruments: Vec<InstrumentId>,
-}
-
-impl From<Deployment> for Subscription {
-    fn from(value: Deployment) -> Self {
-        Self {
-            deployment_id: value.id,
-            instruments: value.subscriptions,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Subscriptions {
+struct Subscriptions {
     pub instrument_id: InstrumentId,
     pub deployment_ids: Vec<Uuid>,
 }

@@ -1,5 +1,3 @@
-mod handlers;
-
 use std::collections::HashMap;
 use std::future::Future;
 
@@ -14,9 +12,8 @@ use eac::rest::{CandlesHistoryRequest, OkExRest, PlaceOrderRequest, RateLimitedR
 use eac::websocket::{Channel, Command, OkxWsClient};
 use interactor_config::CONFIG;
 
-use crate::service::Service;
 
-pub struct OKXService {
+pub struct OkxService {
     is_demo: bool,
     api_key: String,
     api_secret: String,
@@ -26,7 +23,7 @@ pub struct OKXService {
     rest_client: RateLimitedRestClient,
 }
 
-impl Default for OKXService {
+impl Default for OkxService {
     fn default() -> Self {
         let is_demo = CONFIG.eac.demo;
         let http_url = &CONFIG.eac.exchanges.okx.http.url;
@@ -49,7 +46,7 @@ impl Default for OKXService {
 }
 
 #[async_trait]
-impl Service for OKXService {
+impl Exchange for OkxService {
     // todo maybe better don't create client for each subscription and use one thread to handle all messages
     async fn subscribe_ticks<T: Fn(Tick) -> F + Send + 'static, F: Future<Output=()>>(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T) {
         let mut inst_id = format!("{}-{}", currency_pair.target, currency_pair.source);

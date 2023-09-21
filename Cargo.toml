@@ -5,7 +5,6 @@ members = [
     "common/indicators-api",
     "common/plugin-loader",
     "common/strategy-api",
-    "common/synapse",
     "engine/config",
     "engine/app",
     "engine/core",
@@ -14,8 +13,12 @@ members = [
     "interactor/config",
     "interactor/app",
     "interactor/core",
-    "interactor/rest-api",
-    "interactor/rest-client",
+    "interactor/ports/core-api",
+    "interactor/ports/persistence-api",
+    "interactor/adapters/rest-api-server",
+    "interactor/adapters/embedded-persistance",
+    "interactor/libs/rest-api",
+    "interactor/libs/rest-client",
     "plugins/test",
     "plugins/simulation-e2e",
     "registry/config",
@@ -48,7 +51,6 @@ eac = { path = "common/eac" }
 indicators-api = { path = "common/indicators-api" }
 plugin-loader = { path = "common/plugin-loader" }
 strategy-api = { path = "common/strategy-api" }
-synapse = { path = "common/synapse" }
 
 engine-config = { path = "engine/config" }
 engine-app = { path = "engine/app" }
@@ -59,8 +61,12 @@ engine-rest-client = { path = "engine/rest-client" }
 interactor-config = { path = "interactor/config" }
 interactor-app = { path = "interactor/app" }
 interactor-core = { path = "interactor/core" }
-interactor-rest-api = { path = "interactor/rest-api" }
-interactor-rest-client = { path = "interactor/rest-client" }
+interactor-core-api = { path = "interactor/ports/core-api" }
+interactor-persistence-api = { path = "interactor/ports/persistence-api" }
+interactor-rest-api-server = { path = "interactor/adapters/rest-api-server" }
+interactor-embedded-persistence = { path = "interactor/adapters/embedded-persistance" }
+interactor-rest-api = { path = "interactor/libs/rest-api" }
+interactor-rest-client = { path = "interactor/libs/rest-client" }
 
 registry-config = { path = "registry/config" }
 registry-app = { path = "registry/app" }

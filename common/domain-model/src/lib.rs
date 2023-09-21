@@ -1,5 +1,3 @@
-pub mod subject;
-
 use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
@@ -315,6 +313,30 @@ impl AuditTags for Deployment {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum DeploymentEvent {
     Created,
+    Deleted,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Subscription {
+    pub deployment_id: Uuid,
+    pub instruments: Vec<InstrumentId>,
+    pub status: SubscriptionStatus
+}
+
+impl From<Deployment> for Subscription {
+    fn from(value: Deployment) -> Self {
+        Self {
+            deployment_id: value.id,
+            instruments: value.subscriptions,
+            status: SubscriptionStatus::Created
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub enum SubscriptionStatus {
+    Created,
+    Ready,
     Deleted,
 }
 

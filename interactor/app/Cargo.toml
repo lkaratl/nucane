@@ -6,10 +6,9 @@ edition.workspace = true
 [dependencies]
 interactor-config = { workspace = true }
 interactor-core = { workspace = true }
-interactor-rest-api = { workspace = true }
+interactor-rest-api-server = { workspace = true }
 domain-model = { workspace = true }
 eac = { workspace = true }
-synapse = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
 uuid = { workspace = true }

@@ -4,7 +4,6 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-synapse = { workspace = true }
 interactor-rest-client = { workspace = true }
 domain-model = { workspace = true }
 storage-config = { workspace = true }

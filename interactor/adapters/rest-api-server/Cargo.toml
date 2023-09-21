@@ -1,24 +1,20 @@
 [package]
-name = "engine-core"
+name = "interactor-rest-api-server"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-engine-config = { workspace = true }
+interactor-core-api = { workspace = true }
+interactor-rest-api = { workspace = true }
 domain-model = { workspace = true }
-storage-rest-client = { workspace = true }
-indicators-api = { workspace = true }
-strategy-api = { workspace = true }
-registry-rest-client = { workspace = true }
-plugin-loader = { workspace = true }
 tokio = { workspace = true }
+futures = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+serde-inline-default = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 once_cell = { workspace = true }
 axum = { workspace = true }
-anyhow = { workspace = true }
-thiserror = { workspace = true }

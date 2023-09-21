@@ -1,0 +1,9 @@
+[package]
+name = "interactor-core-api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+domain-model = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }

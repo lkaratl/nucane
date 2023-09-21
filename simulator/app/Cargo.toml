@@ -7,7 +7,6 @@ edition.workspace = true
 simulator-config = { workspace = true }
 simulator-rest-api = { workspace = true }
 domain-model = { workspace = true }
-synapse = { workspace = true }
 engine-rest-api = { workspace = true }
 engine-rest-client = { workspace = true }
 storage-rest-client = { workspace = true }

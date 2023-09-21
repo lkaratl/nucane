@@ -1,0 +1,9 @@
+[package]
+name = "embedded-persistance"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+domain-model = { workspace = true }
+interactor-persistence-api = { workspace = true }
+anyhow = { workspace = true }
