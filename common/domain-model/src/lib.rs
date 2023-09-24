@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::str::FromStr;
 
@@ -318,17 +318,19 @@ pub enum DeploymentEvent {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Subscription {
+    pub simulation_id: Option<Uuid>,
     pub deployment_id: Uuid,
     pub instruments: Vec<InstrumentId>,
-    pub status: SubscriptionStatus
+    pub status: SubscriptionStatus,
 }
 
 impl From<Deployment> for Subscription {
     fn from(value: Deployment) -> Self {
         Self {
+            simulation_id: value.simulation_id,
             deployment_id: value.id,
             instruments: value.subscriptions,
-            status: SubscriptionStatus::Created
+            status: SubscriptionStatus::Created,
         }
     }
 }
@@ -337,8 +339,17 @@ impl From<Deployment> for Subscription {
 pub enum SubscriptionStatus {
     Created,
     Ready,
+    Active,
+    Failed,
     Deleted,
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Subscriptions {
+    pub instrument_id: InstrumentId,
+    pub deployment_ids: HashSet<Uuid>,
+}
+
 
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Clone)]
 pub struct InstrumentId {

@@ -16,7 +16,7 @@ members = [
     "interactor/ports/core-api",
     "interactor/ports/persistence-api",
     "interactor/adapters/rest-api-server",
-    "interactor/adapters/embedded-persistance",
+    "interactor/adapters/inmemory-persistence",
     "interactor/libs/rest-api",
     "interactor/libs/rest-client",
     "plugins/test",
@@ -64,7 +64,7 @@ interactor-core = { path = "interactor/core" }
 interactor-core-api = { path = "interactor/ports/core-api" }
 interactor-persistence-api = { path = "interactor/ports/persistence-api" }
 interactor-rest-api-server = { path = "interactor/adapters/rest-api-server" }
-interactor-embedded-persistence = { path = "interactor/adapters/embedded-persistance" }
+interactor-inmemory-persistence = { path = "interactor/adapters/inmemory-persistence" }
 interactor-rest-api = { path = "interactor/libs/rest-api" }
 interactor-rest-client = { path = "interactor/libs/rest-client" }
 

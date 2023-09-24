@@ -23,7 +23,6 @@ use storage_migration::{Migrator, MigratorTrait};
 use storage_rest_api::dto::SyncReportDto;
 use storage_rest_api::endpoints::{GET_AUDIT, POST_CANDLES_SYNC, GET_CANDLES, GET_ORDERS, GET_POSITIONS};
 use storage_rest_api::path_query::{AuditQuery, CandlesQuery, CandleSyncQuery, OrdersQuery, PositionsQuery};
-use synapse::{SynapseListen, Topic};
 
 pub async fn run() {
     info!("+ storage running...");

@@ -7,3 +7,4 @@ edition.workspace = true
 domain-model = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
+async-trait = { workspace = true }

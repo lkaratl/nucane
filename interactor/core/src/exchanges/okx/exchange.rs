@@ -1,8 +1,10 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
-use std::future::Future;
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use tokio::sync::Mutex;
 use tracing::{debug, error};
 
 use domain_model::{Candle, CandleStatus, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Size, Tick, Timeframe};
@@ -12,6 +14,8 @@ use eac::rest::{CandlesHistoryRequest, OkExRest, PlaceOrderRequest, RateLimitedR
 use eac::websocket::{Channel, Command, OkxWsClient};
 use interactor_config::CONFIG;
 
+use crate::exchanges::exchange::ExchangeApi;
+use crate::exchanges::okx::handlers;
 
 pub struct OkxService {
     is_demo: bool,
@@ -19,7 +23,7 @@ pub struct OkxService {
     api_secret: String,
     api_passphrase: String,
     ws_url: String,
-    sockets: HashMap<String, OkxWsClient>,
+    sockets: Arc<Mutex<RefCell<HashMap<String, OkxWsClient>>>>,
     rest_client: RateLimitedRestClient,
 }
 
@@ -39,47 +43,63 @@ impl Default for OkxService {
             api_secret: api_secret.to_owned(),
             api_passphrase: api_passphrase.to_owned(),
             ws_url: ws_url.to_owned(),
-            sockets: HashMap::new(),
+            sockets: Default::default(),
             rest_client: RateLimitedRestClient::new(rest_client),
         }
     }
 }
 
 #[async_trait]
-impl Exchange for OkxService {
+impl ExchangeApi for OkxService {
     // todo maybe better don't create client for each subscription and use one thread to handle all messages
-    async fn subscribe_ticks<T: Fn(Tick) -> F + Send + 'static, F: Future<Output=()>>(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T) {
+    async fn subscribe_ticks<T: Fn(Tick) + Send + 'static>(&self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T) {
         let mut inst_id = format!("{}-{}", currency_pair.target, currency_pair.source);
         if !MarketType::Spot.eq(market_type) {
             inst_id = format!("{}-{}", inst_id, market_type);
         }
         let id: &str = &format!("mark-price-{}", &inst_id);
-        let already_exists = self.sockets.contains_key(id);
+        let already_exists = self.sockets
+            .lock()
+            .await
+            .borrow()
+            .contains_key(id);
         if !already_exists {
             let client = OkxWsClient::public(false, &self.ws_url, handlers::on_tick(callback, *currency_pair, *market_type)).await;
             client.send(Command::subscribe(vec![Channel::MarkPrice {
                 inst_id,
             }])).await;
-            self.sockets.insert(id.to_string(), client);
+            self.sockets
+                .lock()
+                .await
+                .borrow_mut()
+                .insert(id.to_string(), client);
         }
     }
 
-    fn unsubscribe_ticks(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType) {
+    async fn unsubscribe_ticks(&self, currency_pair: &CurrencyPair, market_type: &MarketType) {
         debug!("Remove socket for ticks");
         let mut socket_id = format!("mark-price-{}-{}", currency_pair.target, currency_pair.source);
         if !MarketType::Spot.eq(market_type) {
             socket_id = format!("{}-{}", socket_id, market_type);
         }
-        self.sockets.retain(|key, _| !socket_id.eq(key));
+        self.sockets
+            .lock()
+            .await
+            .borrow_mut()
+            .retain(|key, _| !socket_id.eq(key));
     }
 
-    async fn subscribe_candles<T: Fn(Candle) + Send + 'static>(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T) {
+    async fn subscribe_candles<T: Fn(Candle) + Send + 'static>(&self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T) {
         let mut inst_id = format!("{}-{}", currency_pair.target, currency_pair.source);
         if !MarketType::Spot.eq(market_type) {
             inst_id = format!("{}-{}", inst_id, market_type);
         }
         let id: &str = &format!("candles-{}", &inst_id);
-        let already_exists = self.sockets.contains_key(id);
+        let already_exists = self.sockets
+            .lock()
+            .await
+            .borrow()
+            .contains_key(id);
         if !already_exists {
             let client = OkxWsClient::business(
                 self.is_demo,
@@ -96,22 +116,34 @@ impl Exchange for OkxService {
                 Channel::candle_1d(&inst_id),
             ]);
             client.send(subscribe_command).await;
-            self.sockets.insert(id.to_string(), client);
+            self.sockets
+                .lock()
+                .await
+                .borrow_mut()
+                .insert(id.to_string(), client);
         }
     }
 
-    fn unsubscribe_candles(&mut self, currency_pair: &CurrencyPair, market_type: &MarketType) {
+    async fn unsubscribe_candles(&self, currency_pair: &CurrencyPair, market_type: &MarketType) {
         debug!("Remove socket for candles");
         let mut socket_id = format!("candles-{}-{}", currency_pair.target, currency_pair.source);
         if !MarketType::Spot.eq(market_type) {
             socket_id = format!("{}-{}", socket_id, market_type);
         }
-        self.sockets.retain(|key, _| !socket_id.eq(key));
+        self.sockets
+            .lock()
+            .await
+            .borrow_mut()
+            .retain(|key, _| !socket_id.eq(key));
     }
 
-    async fn listen_orders<T: Fn(Order) + Send + 'static>(&mut self, callback: T) {
+    async fn listen_orders<T: Fn(Order) + Send + 'static>(&self, callback: T) {
         const ID: &str = "orders";
-        let already_exists = self.sockets.contains_key(ID);
+        let already_exists = self.sockets
+            .lock()
+            .await
+            .borrow()
+            .contains_key(ID);
         if !already_exists {
             let client = OkxWsClient::private(
                 self.is_demo,
@@ -125,13 +157,21 @@ impl Exchange for OkxService {
                 inst_id: None,
                 uly: None,
             }])).await;
-            self.sockets.insert(ID.to_string(), client);
+            self.sockets
+                .lock()
+                .await
+                .borrow_mut()
+                .insert(ID.to_string(), client);
         }
     }
 
-    async fn listen_positions<T: Fn(Position) + Send + 'static>(&mut self, callback: T) {
+    async fn listen_positions<T: Fn(Position) + Send + 'static>(&self, callback: T) {
         const ID: &str = "position";
-        let already_exists = self.sockets.contains_key(ID);
+        let already_exists = self.sockets
+            .lock()
+            .await
+            .borrow()
+            .contains_key(ID);
         if !already_exists {
             let client = OkxWsClient::private(
                 self.is_demo,
@@ -141,11 +181,15 @@ impl Exchange for OkxService {
                 &self.api_passphrase,
                 handlers::on_position(callback)).await;
             client.send(Command::subscribe(vec![Channel::account(None)])).await;
-            self.sockets.insert(ID.to_string(), client);
+            self.sockets
+                .lock()
+                .await
+                .borrow_mut()
+                .insert(ID.to_string(), client);
         }
     }
 
-    async fn place_order(&mut self, create_order: &CreateOrder) -> Order {
+    async fn place_order(&self, create_order: &CreateOrder) -> Order {
         let inst_id = format!("{}-{}",
                               create_order.pair.target,
                               create_order.pair.source);
@@ -224,7 +268,7 @@ impl Exchange for OkxService {
         }
     }
 
-    async fn candles_history(&mut self,
+    async fn candles_history(&self,
                              currency_pair: &CurrencyPair,
                              market_type: &MarketType,
                              timeframe: Timeframe,

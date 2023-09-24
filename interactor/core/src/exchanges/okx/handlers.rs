@@ -14,9 +14,9 @@ use eac::websocket::{Channel, Message};
 const TICK_PRICE_DEVIATION_MULTIPLIER: f64 = 1000.0;
 const TICK_PRICE_THRESHOLD: f64 = 2.0;
 
-pub async fn on_tick<C: Fn(Tick) -> F + Send + 'static, F: Future<Output=()>, R: Fn(Message) -> F>(callback: C, currency_pair: CurrencyPair, market_type: MarketType) -> R {
+pub fn on_tick<C: Fn(Tick) + Send + 'static>(callback: C, currency_pair: CurrencyPair, market_type: MarketType) -> impl FnMut(Message) {
     let mut deviation_percent = 1f64;
-    move |message| async {
+    move |message| {
         match message {
             Message::Data { arg: _, mut data, .. } => {
                 trace!("Retrieved massage with raw payload: {:?}", &data);
@@ -38,7 +38,7 @@ pub async fn on_tick<C: Fn(Tick) -> F + Send + 'static, F: Future<Output=()>, R:
                         },
                         price,
                     };
-                    callback(tick).await;
+                    callback(tick);
                 }
             }
             Message::Error { code, msg, .. } => error!("Error {}: {}", code, msg),

@@ -4,7 +4,6 @@ use crate::registry;
 use anyhow::Result;
 use domain_model::PluginEventType;
 use registry_config::CONFIG;
-use synapse::SynapseSend;
 
 #[derive(Default)]
 pub struct RegistryService {}
@@ -48,7 +47,7 @@ impl RegistryService {
         registry::add_plugin(plugin.clone()).await;
 
         if already_exists {
-            synapse::writer(&CONFIG.broker.url).send(&plugin.as_event(PluginEventType::Updated));
+            // synapse::writer(&CONFIG.broker.url).send(&plugin.as_event(PluginEventType::Updated));
         }
         Ok(plugin)
     }

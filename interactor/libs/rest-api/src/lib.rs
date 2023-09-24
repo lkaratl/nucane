@@ -1,4 +1,5 @@
 pub mod endpoints {
+    pub const GET_SUBSCRIPTIONS: &str = "/api/v1/interactor/subscriptions";
     pub const POST_SUBSCRIBE: &str = "/api/v1/interactor/subscriptions";
     pub const DELETE_UNSUBSCRIBE: &str = "/api/v1/interactor/subscriptions";
     pub const POST_EXECUTE_ACTIONS: &str = "/api/v1/interactor/actions";
