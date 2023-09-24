@@ -17,8 +17,8 @@ members = [
     "interactor/ports/persistence-api",
     "interactor/adapters/rest-api-server",
     "interactor/adapters/inmemory-persistence",
+    "interactor/adapters/rest-client",
     "interactor/libs/rest-api",
-    "interactor/libs/rest-client",
     "plugins/test",
     "plugins/simulation-e2e",
     "registry/config",
@@ -64,9 +64,9 @@ interactor-core = { path = "interactor/core" }
 interactor-core-api = { path = "interactor/ports/core-api" }
 interactor-persistence-api = { path = "interactor/ports/persistence-api" }
 interactor-rest-api-server = { path = "interactor/adapters/rest-api-server" }
+interactor-rest-client = { path = "interactor/adapters/rest-client" }
 interactor-inmemory-persistence = { path = "interactor/adapters/inmemory-persistence" }
 interactor-rest-api = { path = "interactor/libs/rest-api" }
-interactor-rest-client = { path = "interactor/libs/rest-client" }
 
 registry-config = { path = "registry/config" }
 registry-app = { path = "registry/app" }

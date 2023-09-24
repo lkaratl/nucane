@@ -18,5 +18,3 @@ eac:
         key: # put value according to eac.demo value
         secret: # put value according to eac.demo value
         passphrase: # put value according to eac.demo value
-        
-nats.url: localhost:4222

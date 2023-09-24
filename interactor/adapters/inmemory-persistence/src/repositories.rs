@@ -13,8 +13,6 @@ pub struct InMemorySubscriptionRepository {
     storage: Arc<Mutex<RefCell<Vec<Subscriptions>>>>,
 }
 
-impl InMemorySubscriptionRepository {}
-
 #[async_trait]
 impl SubscriptionRepository for InMemorySubscriptionRepository {
     async fn get_all(&self) -> Vec<Subscriptions> {

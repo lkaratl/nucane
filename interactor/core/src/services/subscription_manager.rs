@@ -2,10 +2,9 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use tracing::debug;
-use uuid::Uuid;
 
 use domain_model::{Subscription, Subscriptions};
-use interactor_persistence_api::{SubscriptionRepository};
+use interactor_persistence_api::SubscriptionRepository;
 
 use crate::exchanges::ServiceFacade;
 
@@ -64,7 +63,7 @@ impl<S: SubscriptionRepository> SubscriptionManager<S> {
             let service_facade = &self.service_facade;
             for subscription in updated_subscriptions {
                 if subscription.deployment_ids.is_empty() {
-                    service_facade.unsubscribe_candles(&subscription.instrument_id);
+                    service_facade.unsubscribe_candles(&subscription.instrument_id).await;
                     service_facade.unsubscribe_ticks(&subscription.instrument_id).await;
                     self.subscription_repository.delete(&subscription.instrument_id).await;
                 }

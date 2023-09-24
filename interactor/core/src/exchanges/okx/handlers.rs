@@ -1,12 +1,13 @@
 use std::collections::HashMap;
-use std::future::Future;
 use std::str::FromStr;
+
 use chrono::Utc;
 use serde_json::from_value;
 use tracing::{error, info, trace};
 use uuid::Uuid;
+
 use domain_model::{Candle, CandleStatus, Currency, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Size, Tick, Timeframe, Trigger};
-use eac::{enums};
+use eac::enums;
 use eac::enums::{OrdState, OrdType, TdMode};
 use eac::rest::{Account, CandleResponse, MarkPriceResponse, OrderDetailsResponse};
 use eac::websocket::{Channel, Message};

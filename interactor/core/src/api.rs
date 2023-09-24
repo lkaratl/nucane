@@ -29,10 +29,9 @@ impl<S: SubscriptionRepository> Interactor<S> {
 
 #[async_trait]
 impl<S: SubscriptionRepository> InteractorApi for Interactor<S> {
-    async fn subscriptions(&self) -> Vec<Subscriptions> {
-        self.subscription_manager.subscriptions().await
+    async fn subscriptions(&self) -> Result<Vec<Subscriptions>> {
+        Ok(self.subscription_manager.subscriptions().await)
     }
-
 
     async fn subscribe(&self, subscription: Subscription) -> Result<()> {
         self.subscription_manager.subscribe(subscription).await;
@@ -67,7 +66,7 @@ impl<S: SubscriptionRepository> InteractorApi for Interactor<S> {
         Ok(candles)
     }
 
-    async fn get_price(&self, instrument_id: &InstrumentId, timestamp: DateTime<Utc>) -> Result<f64> {
+    async fn get_price(&self, instrument_id: &InstrumentId, timestamp: Option<DateTime<Utc>>) -> Result<f64> {
         let price = self.service_facade.price(instrument_id, timestamp).await;
         Ok(price)
     }

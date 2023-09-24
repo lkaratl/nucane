@@ -47,7 +47,7 @@ impl RegistryService {
         registry::add_plugin(plugin.clone()).await;
 
         if already_exists {
-            // synapse::writer(&CONFIG.broker.url).send(&plugin.as_event(PluginEventType::Updated));
+            // synapse::writer(&CONFIG.broker.url).send(&plugin.as_event(PluginEventType::Updated)); // todo use rest client
         }
         Ok(plugin)
     }

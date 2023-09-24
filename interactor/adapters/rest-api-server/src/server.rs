@@ -1,7 +1,7 @@
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 use axum::extract::{Query, State};
-use axum::{debug_handler, Json, Router};
+use axum::{Json, Router};
 use axum::routing::{delete, get, post};
 use chrono::{TimeZone, Utc};
 use domain_model::{Action, Candle, CurrencyPair, InstrumentId, Subscription, Subscriptions};
@@ -28,7 +28,7 @@ pub async fn run(port: u16, interactor: impl InteractorApi) {
 }
 
 async fn subscriptions(State(interactor): State<Arc<dyn InteractorApi>>) -> Json<Vec<Subscriptions>> {
-    let subscriptions = interactor.subscriptions().await;
+    let subscriptions = interactor.subscriptions().await.unwrap();
     Json(subscriptions)
 }
 
@@ -55,8 +55,8 @@ async fn get_candles(Query(query_params): Query<CandlesQuery>,
         },
     };
     let timeframe = query_params.timeframe;
-    let from = query_params.from_timestamp.map(|millis| Utc.timestamp_millis_opt(millis).unwrap());
-    let to = query_params.to_timestamp.map(|millis| Utc.timestamp_millis_opt(millis).unwrap());
+    let from = query_params.from.map(|millis| Utc.timestamp_millis_opt(millis).unwrap());
+    let to = query_params.to.map(|millis| Utc.timestamp_millis_opt(millis).unwrap());
     let limit = Some(query_params.limit);
 
     let result = interactor.get_candles(&instrument_id, timeframe, from, to, limit).await.unwrap();
@@ -66,8 +66,7 @@ async fn get_candles(Query(query_params): Query<CandlesQuery>,
 async fn get_price(Query(query_params): Query<PriceQuery>,
                    State(interactor): State<Arc<dyn InteractorApi>>) -> Json<f64> {
     let timestamp = query_params.timestamp
-        .map(|millis| Utc.timestamp_millis_opt(millis).unwrap())
-        .unwrap_or(Utc::now());
+        .map(|millis| Utc.timestamp_millis_opt(millis).unwrap());
     let instrument_id = InstrumentId {
         exchange: query_params.exchange,
         market_type: query_params.market_type,
