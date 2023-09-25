@@ -1,20 +1,18 @@
 [package]
-name = "storage-core"
+name = "storage-rest-client"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-interactor-core-api = { workspace = true }
-storage-core-api = { workspace = true }
-storage-persistence-api = { workspace = true }
 domain-model = { workspace = true }
+storage-core-api = { workspace = true }
+storage-rest-api = { workspace = true }
+reqwest = { workspace = true }
 tokio = { workspace = true }
-futures = { workspace = true }
-tracing = { workspace = true }
-uuid = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
-sea-orm = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+serde_urlencoded = { workspace = true }
+tracing = { workspace = true }
 async-trait = { workspace = true }

@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use reqwest::{Client, Url};
 use domain_model::{Action, Candle, InstrumentId, Subscription, Subscriptions, Timeframe};
 use interactor_core_api::InteractorApi;
-use interactor_rest_api::path_query::{CandlesQuery, PriceQuery};
+use interactor_rest_api::path_queries::{CandlesQuery, PriceQuery};
 use serde_urlencoded::to_string;
 use tracing::trace;
 use interactor_rest_api::endpoints::{DELETE_UNSUBSCRIBE, GET_CANDLES, GET_PRICE, GET_SUBSCRIPTIONS, POST_EXECUTE_ACTIONS, POST_SUBSCRIBE};

@@ -36,9 +36,12 @@ members = [
     "storage/config",
     "storage/app",
     "storage/core",
-    "storage/migration",
-    "storage/rest-api",
-    "storage/rest-client",
+    "storage/ports/core-api",
+    "storage/ports/persistence-api",
+    "storage/adapters/rest-api-server",
+    "storage/adapters/postgres-persistence",
+    "storage/adapters/rest-client",
+    "storage/libs/rest-api",
 ]
 
 [workspace.package]
@@ -84,13 +87,15 @@ standalone-config = { path = "standalone/config" }
 
 storage-config = { path = "storage/config" }
 storage-app = { path = "storage/app" }
-storage-migration = { path = "storage/migration" }
 storage-core = { path = "storage/core" }
-storage-rest-api = { path = "storage/rest-api" }
-storage-rest-client = { path = "storage/rest-client" }
+storage-core-api = { path = "storage/ports/core-api" }
+storage-persistence-api = { path = "storage/ports/persistence-api" }
+storage-rest-api-server = { path = "storage/adapters/rest-api-server" }
+storage-rest-client = { path = "storage/adapters/rest-client" }
+storage-postgres-persistence = { path = "storage/adapters/postgres-persistence" }
+storage-rest-api = { path = "storage/libs/rest-api" }
 
 async-nats = "0.31.0"
-rdkafka = { version = "0.33.2", features = ["cmake-build"] }
 tokio = { version = "1.28", features = ["full"] }
 futures = "0.3.28"
 uuid = { version = "1.3.2", features = ["v4", "serde"] }

@@ -7,7 +7,7 @@ use chrono::{TimeZone, Utc};
 use domain_model::{Action, Candle, CurrencyPair, InstrumentId, Subscription, Subscriptions};
 use interactor_core_api::InteractorApi;
 use interactor_rest_api::endpoints::{DELETE_UNSUBSCRIBE, GET_CANDLES, GET_PRICE, GET_SUBSCRIPTIONS, POST_EXECUTE_ACTIONS, POST_SUBSCRIBE};
-use interactor_rest_api::path_query::{CandlesQuery, PriceQuery};
+use interactor_rest_api::path_queries::{CandlesQuery, PriceQuery};
 
 pub async fn run(port: u16, interactor: impl InteractorApi) {
     let interactor = Arc::new(interactor);

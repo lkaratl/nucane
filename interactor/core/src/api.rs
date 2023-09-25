@@ -18,8 +18,9 @@ pub struct Interactor<S: SubscriptionRepository> {
 }
 
 impl<S: SubscriptionRepository> Interactor<S> {
-    pub fn new(service_facade: Arc<ServiceFacade>,
-               subscription_manager: SubscriptionManager<S>, ) -> Self {
+    pub fn new(subscription_repository: S) -> Self {
+        let service_facade = Arc::new(ServiceFacade::new());
+        let subscription_manager = SubscriptionManager::new(Arc::clone(&service_facade), subscription_repository);
         Self {
             service_facade,
             subscription_manager,

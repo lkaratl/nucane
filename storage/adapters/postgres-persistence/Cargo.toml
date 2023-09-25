@@ -1,20 +1,19 @@
 [package]
-name = "storage-core"
+name = "storage-postgres-persistence"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-interactor-core-api = { workspace = true }
-storage-core-api = { workspace = true }
 storage-persistence-api = { workspace = true }
 domain-model = { workspace = true }
-tokio = { workspace = true }
-futures = { workspace = true }
-tracing = { workspace = true }
-uuid = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 sea-orm = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
+uuid = { workspace = true }
+async-std = { workspace = true }
+sea-orm-migration = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

@@ -15,10 +15,10 @@ pub fn run() {
     let db = Arc::new(run_db());
     // thread::spawn(|| { run_registry() });
     // thread::spawn(|| { run_engine() });
-    // thread::spawn({
-    //     let db = Arc::clone(&db);
-    //     || { run_storage(db) }
-    // });
+    thread::spawn({
+        let db = Arc::clone(&db);
+        || { run_storage(db) }
+    });
     // thread::spawn(|| { run_simulator() });
     thread::spawn(|| { run_interactor() });
 }
@@ -61,12 +61,12 @@ async fn run_db() -> PgEmbed {
 // async fn run_engine() {
 //     engine_app::run().await;
 // }
-//
-// #[tokio::main]
-// async fn run_storage(_db: Arc<PgEmbed>) {
-//     storage_app::run().await;
-// }
-//
+
+#[tokio::main]
+async fn run_storage(_db: Arc<PgEmbed>) {
+    storage_app::run().await;
+}
+
 // #[tokio::main]
 // async fn run_simulator() {
 //     simulator_app::run().await;
