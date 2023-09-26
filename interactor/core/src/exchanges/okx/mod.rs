@@ -1,4 +1,4 @@
 mod exchange;
-mod handlers;
+pub mod handlers;
 
 pub use exchange::OkxService;

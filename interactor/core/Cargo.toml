@@ -7,6 +7,7 @@ edition.workspace = true
 interactor-config = { workspace = true }
 interactor-core-api = { workspace = true }
 interactor-persistence-api = { workspace = true }
+storage-core-api = {workspace = true}
 domain-model = { workspace = true }
 eac = { workspace = true }
 tokio = { workspace = true }

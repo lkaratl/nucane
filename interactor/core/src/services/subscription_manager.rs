@@ -5,16 +5,17 @@ use tracing::debug;
 
 use domain_model::{Subscription, Subscriptions};
 use interactor_persistence_api::SubscriptionRepository;
+use storage_core_api::StorageApi;
 
 use crate::exchanges::ServiceFacade;
 
-pub struct SubscriptionManager<S: SubscriptionRepository> {
-    subscription_repository: S,
-    service_facade: Arc<ServiceFacade>,
+pub struct SubscriptionManager<S: StorageApi, R: SubscriptionRepository> {
+    subscription_repository: R,
+    service_facade: Arc<ServiceFacade<S>>,
 }
 
-impl<S: SubscriptionRepository> SubscriptionManager<S> {
-    pub fn new(service_facade: Arc<ServiceFacade>, subscription_repository: S) -> Self {
+impl<S: StorageApi, R: SubscriptionRepository> SubscriptionManager<S, R> {
+    pub fn new(service_facade: Arc<ServiceFacade<S>>, subscription_repository: R) -> Self {
         Self {
             subscription_repository,
             service_facade,

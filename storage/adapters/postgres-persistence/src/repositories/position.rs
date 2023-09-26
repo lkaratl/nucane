@@ -25,7 +25,7 @@ impl<T: ConnectionTrait> PositionPostgresRepository<T> {
 
 #[async_trait]
 impl<T: ConnectionTrait+Send+'static> PositionRepository for PositionPostgresRepository<T> {
-    async fn save(&self, position: domain_model::Position) -> anyhow::Result<()> {
+    async fn save(&self, position: domain_model::Position) -> Result<()> {
         let exchange = position.exchange.to_string();
         let currency = position.currency.to_string();
         let id = {
@@ -37,7 +37,7 @@ impl<T: ConnectionTrait+Send+'static> PositionRepository for PositionPostgresRep
         };
         let position = position::ActiveModel {
             id: ActiveValue::Set(id),
-            simulation_id: ActiveValue::Set(position.simulation_id.map(|id| id.as_bytes().to_vec())),
+            simulation_id: ActiveValue::Set(position.simulation_id),
             exchange: ActiveValue::Set(exchange),
             currency: ActiveValue::Set(currency),
             side: ActiveValue::Set(position.side.to_string()),
@@ -75,7 +75,7 @@ impl<T: ConnectionTrait+Send+'static> PositionRepository for PositionPostgresRep
             .map(|model| {
                 domain_model::Position {
                     id: model.id,
-                    simulation_id: model.simulation_id.map(|id| Uuid::from_slice(&id).unwrap()),
+                    simulation_id: model.simulation_id,
                     exchange: domain_model::Exchange::from_str(&model.exchange).unwrap(),
                     currency: domain_model::Currency::from_str(&model.currency).unwrap(),
                     side: domain_model::Side::from_str(&model.side).unwrap(),

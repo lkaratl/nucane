@@ -7,15 +7,14 @@ use chrono::{DateTime, Utc};
 use tokio::sync::Mutex;
 use tracing::{debug, error};
 
-use domain_model::{Candle, CandleStatus, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Position, Side, Size, Tick, Timeframe};
+use domain_model::{Candle, CandleStatus, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Timeframe};
 use eac::{enums, rest};
 use eac::enums::{InstType, TdMode};
 use eac::rest::{CandlesHistoryRequest, OkExRest, PlaceOrderRequest, RateLimitedRestClient, Trigger};
-use eac::websocket::{Channel, Command, OkxWsClient};
+use eac::websocket::{Channel, Command, OkxWsClient, WsMessageHandler};
 use interactor_config::CONFIG;
 
 use crate::exchanges::exchange::ExchangeApi;
-use crate::exchanges::okx::handlers;
 
 pub struct OkxService {
     is_demo: bool,
@@ -52,7 +51,7 @@ impl Default for OkxService {
 #[async_trait]
 impl ExchangeApi for OkxService {
     // todo maybe better don't create client for each subscription and use one thread to handle all messages
-    async fn subscribe_ticks<T: Fn(Tick) + Send + 'static>(&self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T) {
+    async fn subscribe_ticks<H: WsMessageHandler>(&self, currency_pair: &CurrencyPair, market_type: &MarketType, handler: H) {
         let mut inst_id = format!("{}-{}", currency_pair.target, currency_pair.source);
         if !MarketType::Spot.eq(market_type) {
             inst_id = format!("{}-{}", inst_id, market_type);
@@ -64,7 +63,7 @@ impl ExchangeApi for OkxService {
             .borrow()
             .contains_key(id);
         if !already_exists {
-            let client = OkxWsClient::public(false, &self.ws_url, handlers::on_tick(callback, *currency_pair, *market_type)).await;
+            let client = OkxWsClient::public(false, &self.ws_url, handler).await;
             client.send(Command::subscribe(vec![Channel::MarkPrice {
                 inst_id,
             }])).await;
@@ -89,7 +88,7 @@ impl ExchangeApi for OkxService {
             .retain(|key, _| !socket_id.eq(key));
     }
 
-    async fn subscribe_candles<T: Fn(Candle) + Send + 'static>(&self, currency_pair: &CurrencyPair, market_type: &MarketType, callback: T) {
+    async fn subscribe_candles<H: WsMessageHandler>(&self, currency_pair: &CurrencyPair, market_type: &MarketType, handler: H) {
         let mut inst_id = format!("{}-{}", currency_pair.target, currency_pair.source);
         if !MarketType::Spot.eq(market_type) {
             inst_id = format!("{}-{}", inst_id, market_type);
@@ -104,7 +103,8 @@ impl ExchangeApi for OkxService {
             let client = OkxWsClient::business(
                 self.is_demo,
                 &self.ws_url,
-                handlers::on_candles(callback, *currency_pair, *market_type)).await;
+                handler).await;
+
             let subscribe_command = Command::subscribe(vec![
                 Channel::candle_1m(&inst_id),
                 Channel::candle_5m(&inst_id),
@@ -137,7 +137,7 @@ impl ExchangeApi for OkxService {
             .retain(|key, _| !socket_id.eq(key));
     }
 
-    async fn listen_orders<T: Fn(Order) + Send + 'static>(&self, callback: T) {
+    async fn listen_orders<H: WsMessageHandler>(&self, handler: H) {
         const ID: &str = "orders";
         let already_exists = self.sockets
             .lock()
@@ -151,7 +151,7 @@ impl ExchangeApi for OkxService {
                 &self.api_key,
                 &self.api_secret,
                 &self.api_passphrase,
-                handlers::on_order(callback)).await;
+                handler).await;
             client.send(Command::subscribe(vec![Channel::Orders {
                 inst_type: InstType::Any,
                 inst_id: None,
@@ -165,7 +165,7 @@ impl ExchangeApi for OkxService {
         }
     }
 
-    async fn listen_positions<T: Fn(Position) + Send + 'static>(&self, callback: T) {
+    async fn listen_positions<H: WsMessageHandler>(&self, handler: H) {
         const ID: &str = "position";
         let already_exists = self.sockets
             .lock()
@@ -179,7 +179,7 @@ impl ExchangeApi for OkxService {
                 &self.api_key,
                 &self.api_secret,
                 &self.api_passphrase,
-                handlers::on_position(callback)).await;
+                handler).await;
             client.send(Command::subscribe(vec![Channel::account(None)])).await;
             self.sockets
                 .lock()

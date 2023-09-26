@@ -8,6 +8,7 @@ interactor-config = { workspace = true }
 interactor-core = { workspace = true }
 interactor-rest-api-server = { workspace = true }
 interactor-inmemory-persistence = { workspace = true }
+storage-rest-client = {workspace = true}
 domain-model = { workspace = true }
 eac = { workspace = true }
 tokio = { workspace = true }

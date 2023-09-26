@@ -5,6 +5,7 @@ logging:
 application:
   name: interactor
   port: 8083
+storage.url: localhost:8082
 
 eac:
   demo: true

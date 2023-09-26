@@ -8,6 +8,7 @@ use serde::Deserialize;
 pub struct Config {
     pub logging: Logging,
     pub application: Application,
+    pub storage: Storage,
     pub eac: EAC,
 }
 
@@ -56,6 +57,11 @@ pub struct Application {
 pub struct Logging {
     level: String,
     crates: HashMap<String, String>,
+}
+
+#[derive(Deserialize)]
+pub struct Storage {
+    pub url: String
 }
 
 impl Logging {

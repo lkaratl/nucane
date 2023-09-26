@@ -32,8 +32,8 @@ impl<T: ConnectionTrait+ Send +'static> OrderRepository for OrderPostgresReposit
     async fn save(&self, order: domain_model::Order) -> Result<()> {
         let order = order::ActiveModel {
             id: ActiveValue::Set(order.id),
-            timestamp: ActiveValue::Set(order.timestamp),
-            simulation_id: ActiveValue::Set(order.simulation_id.map(|id| id.as_bytes().to_vec())),
+            timestamp: ActiveValue::Set(order.timestamp.naive_utc()),
+            simulation_id: ActiveValue::Set(order.simulation_id),
             status: ActiveValue::Set(json!(order.status)),
             exchange: ActiveValue::Set(order.exchange.to_string()),
             pair: ActiveValue::Set(json!(order.pair)),
@@ -97,8 +97,8 @@ impl<T: ConnectionTrait+ Send +'static> OrderRepository for OrderPostgresReposit
             .map(|model| {
                 domain_model::Order {
                     id: model.id,
-                    timestamp: model.timestamp,
-                    simulation_id: model.simulation_id.map(|id| Uuid::from_slice(&id).unwrap()),
+                    timestamp: model.timestamp.and_utc(),
+                    simulation_id: model.simulation_id,
                     status: serde_json::from_value(model.status).unwrap(),
                     exchange: Exchange::from_str(&model.exchange).unwrap(),
                     pair: serde_json::from_value(model.pair).unwrap(),

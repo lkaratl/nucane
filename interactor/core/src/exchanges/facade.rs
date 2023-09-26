@@ -1,20 +1,25 @@
+use std::sync::Arc;
+
 use chrono::{DateTime, Duration, Utc};
 use tracing::{debug, info};
-use tracing::trace;
 
 use domain_model::{Candle, CreateOrder, Exchange, InstrumentId, Timeframe};
-use crate::exchanges::exchange::ExchangeApi;
+use storage_core_api::StorageApi;
 
+use crate::exchanges::exchange::ExchangeApi;
+use crate::exchanges::okx::handlers::{CandleHandler, OrderHandler, PositionHandler};
 use crate::exchanges::okx::OkxService;
 
 #[derive(Default)]
-pub struct ServiceFacade {
+pub struct ServiceFacade<S: StorageApi> {
+    storage_client: Arc<S>,
     okx: OkxService,
 }
 
-impl ServiceFacade {
-    pub fn new() -> Self {
+impl<S: StorageApi> ServiceFacade<S> {
+    pub fn new(storage_client: Arc<S>) -> Self {
         Self {
+            storage_client,
             okx: Default::default(),
         }
     }
@@ -25,15 +30,15 @@ impl ServiceFacade {
         let service = match instrument_id.exchange {
             Exchange::OKX => &self.okx,
         };
-        service.subscribe_ticks(&instrument_id.pair, &instrument_id.market_type, |tick| {
-            trace!("Send tick to synapse: {tick:?}");
-            debug!("{}={:?}-{:?}: {}",
-                tick.instrument_id.exchange,
-                tick.instrument_id.pair.target,
-                tick.instrument_id.pair.source,
-                tick.price);
-            // self.synapse_sender.send_message(ExchangeTickSubject, &tick).await.expect("Error during tick sending to synapse"); // todo use rest client
-        }).await;
+        // service.subscribe_ticks(&instrument_id.pair, &instrument_id.market_type, |tick| {
+        //     trace!("Send tick to synapse: {tick:?}");
+        //     debug!("{}={:?}-{:?}: {}",
+        //         tick.instrument_id.exchange,
+        //         tick.instrument_id.pair.target,
+        //         tick.instrument_id.pair.source,
+        //         tick.price);
+        //     // self.synapse_sender.send_message(ExchangeTickSubject, &tick).await.expect("Error during tick sending to synapse"); // todo use rest client
+        // }).await;
     }
 
     pub async fn unsubscribe_ticks(&self, instrument_id: &InstrumentId) {
@@ -52,10 +57,11 @@ impl ServiceFacade {
         let service = match instrument_id.exchange {
             Exchange::OKX => &self.okx,
         };
-        service.subscribe_candles(&instrument_id.pair, &instrument_id.market_type, |candle| {
-            trace!("Send candle to synapse: {candle:?}");
-            // self.synapse_sender.send_message(ExchangeCandleSubject, &candle).await.expect("Error during candle sending to synapse"); //todo use rest client
-        }).await;
+        let currency_pair = instrument_id.pair;
+        let market_type = instrument_id.market_type;
+        let storage_client = Arc::clone(&self.storage_client);
+        let handler = CandleHandler::new(currency_pair, market_type, storage_client);
+        service.subscribe_candles(&currency_pair, &market_type, handler).await;
     }
 
     pub async fn unsubscribe_candles(&self, instrument_id: &InstrumentId) {
@@ -72,12 +78,9 @@ impl ServiceFacade {
         let service = match exchange {
             Exchange::OKX => &self.okx,
         };
-        service.listen_orders(|order| {
-            debug!("Retrieved new order with id: '{}' from exchange: '{}', market type: '{:?}', pair: '{}-{}', order type: '{:?}', stop-loss: '{:?}', take-profit: '{:?}'",
-            order.id, order.exchange, order.market_type, order.pair.target, order.pair.source, order.order_type, order.stop_loss, order.take_profit);
-            trace!("Send order to synapse: {order:?}");
-            // self.synapse_sender.send_message(ExchangeOrderSubject, &order).await.expect("Error during order sending to synapse"); // todo use rest client
-        }).await;
+        let storage_client = Arc::clone(&self.storage_client);
+        let handler = OrderHandler::new(storage_client);
+        service.listen_orders(handler).await;
     }
 
     pub async fn listen_position(&self, exchange: Exchange) {
@@ -85,12 +88,9 @@ impl ServiceFacade {
         let service = match exchange {
             Exchange::OKX => &self.okx,
         };
-        service.listen_positions(|position| {
-            debug!("Retrieved account position update from exchange: '{}', currency: '{}', size: '{}'",
-                  position.exchange, position.currency, position.size);
-            trace!("Send position to synapse: {position:?}");
-            // self.synapse_sender.send_message(ExchangePositionSubject, &position).await.expect("Error during position sending to synapse"); // todo use rest client
-        }).await;
+        let storage_client = Arc::clone(&self.storage_client);
+        let handler = PositionHandler::new(storage_client);
+        service.listen_positions(handler).await;
     }
 
     pub async fn place_order(&self, exchange: Exchange, create_order: CreateOrder) {
@@ -100,7 +100,7 @@ impl ServiceFacade {
             Exchange::OKX => &self.okx,
         };
         let order = service.place_order(&create_order).await;
-        // self.synapse_sender.send_message(ExchangeOrderSubject, &order).await.expect("Error during placed order sending to synapse"); // todo use rest client
+        self.storage_client.save_order(order).await;
     }
 
     pub async fn candles_history(&self,
