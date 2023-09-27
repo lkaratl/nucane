@@ -5,7 +5,7 @@ edition.workspace = true
 
 [dependencies]
 standalone-config = { workspace = true }
-#registry-app = { workspace = true }
+registry-app = { workspace = true }
 interactor-app = { workspace = true }
 #engine-app = { workspace = true }
 storage-app = { workspace = true }

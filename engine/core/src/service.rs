@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
-use registry_rest_client::RegistryClient;
+use registry_rest_client::RegistryRestClient;
 use crate::registry;
 use crate::registry::Deployment;
 use anyhow::{Result};
@@ -11,15 +11,14 @@ use tracing::{debug, error};
 use domain_model::DeploymentEvent;
 use engine_config::CONFIG;
 use plugin_loader::Plugin;
-use synapse::SynapseSend;
 use crate::service::EngineError::{PluginLoadingError, PluginNotFound};
 
 pub struct EngineService {
-    registry_client: Arc<RegistryClient>,
+    registry_client: Arc<RegistryRestClient>,
 }
 
 impl EngineService {
-    pub fn new(registry_client: Arc<RegistryClient>) -> Self {
+    pub fn new(registry_client: Arc<RegistryRestClient>) -> Self {
         Self {
             registry_client
         }

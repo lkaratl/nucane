@@ -5,6 +5,7 @@ edition.workspace = true
 
 [dependencies]
 registry-rest-api = { workspace = true }
+registry-core-api = { workspace = true }
 domain-model = { workspace = true }
 reqwest = { workspace = true }
 tokio = { workspace = true }
@@ -14,3 +15,4 @@ serde_json = { workspace = true }
 serde_urlencoded = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
+async-trait = { workspace = true }

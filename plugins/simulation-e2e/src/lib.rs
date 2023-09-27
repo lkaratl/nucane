@@ -16,7 +16,7 @@ pub extern fn load() -> Box<dyn Strategy> {
 }
 
 const STRATEGY_NAME: &str = "simulation-e2e";
-const STRATEGY_VERSION: &str = "1.0";
+const STRATEGY_VERSION: i64 = 1;
 const PARAMETER_NAME: &str = "test-parameter";
 const LOGGING_LEVEL: &str = "INFO";
 
@@ -46,8 +46,8 @@ impl Strategy for SimulationE2EStrategy {
         STRATEGY_NAME.to_string()
     }
 
-    fn version(&self) -> String {
-        STRATEGY_VERSION.to_string()
+    fn version(&self) -> i64 {
+        STRATEGY_VERSION
     }
 
     fn subscriptions(&self) -> Vec<InstrumentId> {
@@ -95,21 +95,21 @@ impl Strategy for SimulationE2EStrategy {
                 )
             ];
         } else if self.order_id.is_some() {
-            let orders = api.storage.get_orders(self.order_id.clone(),
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None).await;
+            let orders = api.storage_client.get_orders(self.order_id.clone(),
+                                                       None,
+                                                       None,
+                                                       None,
+                                                       None,
+                                                       None,
+                                                       None,
+                                                       None).await;
             if let Ok(orders) = orders {
                 if let Some(order) = orders.first() {
                     if order.status == OrderStatus::Completed {
                         info!("Successfully Completed order with id: {}, market type: {:?}, target currency: {}, source currency: {}, order type: {:?}",
                 order.id, order.market_type, order.pair.target, order.pair.source, order.order_type);
 
-                        let btc_positions = api.storage.get_positions(Some(Exchange::OKX), Some(Currency::BTC), None)
+                        let btc_positions = api.storage_client.get_positions(Some(Exchange::OKX), Some(Currency::BTC), None)
                             .await
                             .unwrap();
                         let btc_position = btc_positions

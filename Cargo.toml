@@ -24,8 +24,12 @@ members = [
     "registry/config",
     "registry/app",
     "registry/core",
-    "registry/rest-api",
-    "registry/rest-client",
+    "registry/ports/core-api",
+    "registry/ports/blob-api",
+    "registry/adapters/rest-api-server",
+    "registry/adapters/inmemory-blob-storage",
+    "registry/adapters/rest-client",
+    "registry/libs/rest-api",
     "simulator/config",
     "simulator/app",
     "simulator/core",
@@ -74,8 +78,12 @@ interactor-rest-api = { path = "interactor/libs/rest-api" }
 registry-config = { path = "registry/config" }
 registry-app = { path = "registry/app" }
 registry-core = { path = "registry/core" }
-registry-rest-api = { path = "registry/rest-api" }
-registry-rest-client = { path = "registry/rest-client" }
+registry-core-api = { path = "registry/ports/core-api" }
+registry-blob-api = { path = "registry/ports/blob-api" }
+registry-rest-api-server = { path = "registry/adapters/rest-api-server" }
+registry-rest-client = { path = "registry/adapters/rest-client" }
+registry-inmemory-blob-storage = { path = "registry/adapters/inmemory-blob-storage" }
+registry-rest-api = { path = "registry/libs/rest-api" }
 
 simulator-config = { path = "simulator/config" }
 simulator-app = { path = "simulator/app" }

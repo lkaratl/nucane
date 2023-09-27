@@ -18,13 +18,13 @@ use engine_core::registry::Deployment;
 use engine_core::service::{EngineError, EngineService};
 use engine_rest_api::dto::{CreateDeploymentDto, DeploymentInfo};
 use engine_rest_api::endpoints::{POST_CREATE_ACTIONS, GET_POST_DEPLOYMENTS, DELETE_DEPLOYMENTS_BY_ID};
-use registry_rest_client::RegistryClient;
+use registry_rest_client::RegistryRestClient;
 use synapse::{SynapseListen, Topic};
 
 pub async fn run() {
     info!("+ engine running...");
     let executor = Arc::new(Executor::new(&CONFIG.storage.url));
-    let registry_client = Arc::new(RegistryClient::new(&CONFIG.registry.url));
+    let registry_client = Arc::new(RegistryRestClient::new(&CONFIG.registry.url));
     let engine_service = Arc::new(EngineService::new(Arc::clone(&registry_client)));
     listen_ticks(Arc::clone(&executor)).await;
     // listen_plugins(Arc::clone(&engine_service)); // todo fix problem with tokio async runtime

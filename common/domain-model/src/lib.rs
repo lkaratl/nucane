@@ -275,6 +275,58 @@ pub enum Size {
     Source(f64),
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PluginInfo {
+    pub id: PluginId,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct PluginId {
+    pub name: String,
+    pub version: i64,
+}
+
+impl PluginId {
+    pub fn new(name: &str, version: i64) -> Self {
+        Self {
+            name: name.to_string(),
+            version,
+        }
+    }
+}
+
+impl From<Plugin> for PluginInfo {
+    fn from(value: Plugin) -> Self {
+        Self {
+            id: value.id,
+        }
+    }
+}
+
+impl From<&Plugin> for PluginInfo {
+    fn from(value: &Plugin) -> Self {
+        Self {
+            id: value.id.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Plugin {
+    pub id: PluginId,
+    pub binary: Vec<u8>,
+}
+
+impl Plugin {
+    pub fn new(name: &str, version: i64, binary: &[u8]) -> Self {
+        let id = PluginId::new(name, version);
+        Self {
+            id,
+            binary: binary.to_vec(),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PluginEvent {
     pub id: Uuid,
@@ -528,7 +580,7 @@ pub struct OrderAction {
     pub id: Uuid,
     pub simulation_id: Option<Uuid>,
     pub strategy_name: String,
-    pub strategy_version: String,
+    pub strategy_version: i64,
     pub timestamp: DateTime<Utc>,
     pub exchange: Exchange,
     pub status: OrderStatus,

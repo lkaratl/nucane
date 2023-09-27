@@ -6,7 +6,7 @@ edition.workspace = true
 [dependencies]
 domain-model = { workspace = true }
 indicators-api = { workspace = true }
-storage-rest-client = { workspace = true }
+storage-core-api = { workspace = true }
 async-trait = { workspace = true }
 nanoid = { workspace = true }
 tokio = { workspace = true }

@@ -8,7 +8,7 @@ use serde::Deserialize;
 pub struct Config {
     pub logging: Logging,
     pub application: Application,
-    pub broker: Broker
+    pub engine: Engine
 }
 
 #[derive(Deserialize)]
@@ -24,7 +24,7 @@ pub struct Logging {
 }
 
 #[derive(Deserialize)]
-pub struct Broker {
+pub struct Engine {
     pub url: String
 }
 

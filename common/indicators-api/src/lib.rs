@@ -1,15 +1,16 @@
 mod calculation;
 
+use std::sync::Arc;
 use domain_model::{InstrumentId, Timeframe};
-use storage_rest_client::StorageClient;
+use storage_core_api::StorageApi;
 use crate::calculation::moving_average;
 
 pub struct Indicators {
-    storage_client: StorageClient,
+    storage_client: Arc<dyn StorageApi>,
 }
 
 impl Indicators {
-    pub fn new(storage_client: StorageClient) -> Self {
+    pub fn new(storage_client: Arc<dyn StorageApi>) -> Self {
         Self {
             storage_client
         }
@@ -30,27 +31,5 @@ impl Indicators {
             .unwrap()
             .first()
             .unwrap()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use domain_model::{Currency, CurrencyPair, Exchange, MarketType};
-    use super::*;
-
-    #[ignore = "failed ci"]
-    #[tokio::test]
-    async fn test_moving_average() {
-        let indicators = Indicators::new(StorageClient::new("http://localhost:8082"));
-        let instrument_id = InstrumentId {
-            exchange: Exchange::OKX,
-            market_type: MarketType::Spot,
-            pair: CurrencyPair {
-                target: Currency::BTC,
-                source: Currency::USDT,
-            },
-        };
-        let moving_average = indicators.moving_average(&instrument_id, Timeframe::OneH, 7).await;
-        println!("Moving AVG: {}", moving_average);
     }
 }

@@ -5,6 +5,8 @@ edition.workspace = true
 
 [dependencies]
 registry-config = { workspace = true }
+registry-core-api = { workspace = true }
+registry-blob-api = { workspace = true }
 strategy-api = { workspace = true }
 plugin-loader = { workspace = true }
 domain-model = { workspace = true }
@@ -13,3 +15,4 @@ tracing = { workspace = true }
 once_cell = { workspace = true }
 uuid = { workspace = true }
 anyhow = { workspace = true }
+async-trait = { workspace = true }

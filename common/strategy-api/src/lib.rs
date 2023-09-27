@@ -2,6 +2,7 @@ pub mod utils;
 
 use std::collections::HashMap;
 use std::future::Future;
+use std::sync::Arc;
 use std::time::Duration;
 use async_trait::async_trait;
 use tokio::time::error::Elapsed;
@@ -10,13 +11,13 @@ use tracing::Level;
 
 use domain_model::{Action, InstrumentId, Tick};
 use indicators_api::Indicators;
-use storage_rest_client::StorageClient;
+use storage_core_api::StorageApi;
 
 #[async_trait]
 pub trait Strategy {
     fn tune(&mut self, _: &HashMap<String, String>) {}
     fn name(&self) -> String;
-    fn version(&self) -> String;
+    fn version(&self) -> i64;
     fn subscriptions(&self) -> Vec<InstrumentId>;
 
     fn on_tick_sync(&mut self, tick: &Tick, api: &StrategyApi) -> Vec<Action> {
@@ -41,16 +42,16 @@ async fn with_tokio_runtime<T: Default>(future: impl Future<Output=T>) -> Result
     tokio::time::timeout(Duration::from_secs(5), future).await
 }
 
-pub struct StrategyApi {
-    pub storage: StorageClient,
+pub struct StrategyApi{
+    pub storage_client: Arc<dyn StorageApi>,
     pub indicators: Indicators,
 }
 
 impl StrategyApi {
-    pub fn new(storage_url: &str) -> Self {
+    pub fn new(storage_client: Arc<dyn StorageApi>) -> Self {
         Self {
-            storage: StorageClient::new(storage_url),
-            indicators: Indicators::new(StorageClient::new(storage_url)),
+            storage_client: Arc::clone(&storage_client),
+            indicators: Indicators::new(storage_client),
         }
     }
 }

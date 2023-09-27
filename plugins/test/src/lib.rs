@@ -14,7 +14,7 @@ pub extern fn load() -> Box<dyn Strategy> {
 }
 
 const STRATEGY_NAME: &str = "test";
-const STRATEGY_VERSION: &str = "1.0";
+const STRATEGY_VERSION: i64 = 1;
 const LOGGING_LEVEL: &str = "INFO";
 
 #[derive(Clone)]
@@ -41,8 +41,8 @@ impl Strategy for TestStrategy {
         STRATEGY_NAME.to_string()
     }
 
-    fn version(&self) -> String {
-        STRATEGY_VERSION.to_string()
+    fn version(&self) -> i64 {
+        STRATEGY_VERSION
     }
 
     fn subscriptions(&self) -> Vec<InstrumentId> {
@@ -126,14 +126,14 @@ impl Strategy for TestStrategy {
 impl TestStrategy {
     async fn check_orders(&mut self, api: &StrategyApi) {
         if self.spot_market_buy.is_some() {
-            let orders = api.storage.get_orders(self.spot_market_buy.clone(),
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None).await;
+            let orders = api.storage_client.get_orders(self.spot_market_buy.clone(),
+                                                       None,
+                                                       None,
+                                                       None,
+                                                       None,
+                                                       None,
+                                                       None,
+                                                       None).await;
             if let Ok(orders) = orders {
                 if let Some(order) = orders.first() {
                     if order.status == OrderStatus::Completed {
@@ -148,14 +148,14 @@ impl TestStrategy {
             }
         }
         if self.spot_limit_buy_with_sl_and_tp.is_some() {
-            let orders = api.storage.get_orders(self.spot_limit_buy_with_sl_and_tp.clone(),
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None).await;
+            let orders = api.storage_client.get_orders(self.spot_limit_buy_with_sl_and_tp.clone(),
+                                                       None,
+                                                       None,
+                                                       None,
+                                                       None,
+                                                       None,
+                                                       None,
+                                                       None).await;
             if let Ok(orders) = orders {
                 if let Some(order) = orders.first() {
                     if order.status == OrderStatus::Completed {

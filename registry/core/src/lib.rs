@@ -1,3 +1,3 @@
-mod registry;
-pub mod model;
-pub mod service;
+pub use api::Registry;
+
+mod api;

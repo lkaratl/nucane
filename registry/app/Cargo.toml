@@ -6,7 +6,8 @@ edition.workspace = true
 [dependencies]
 registry-config = { workspace = true }
 registry-core = { workspace = true }
-registry-rest-api = { workspace = true }
+registry-rest-api-server = { workspace = true }
+registry-inmemory-blob-storage = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
