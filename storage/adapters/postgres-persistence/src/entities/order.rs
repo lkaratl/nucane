@@ -11,7 +11,7 @@ pub struct Model {
     pub simulation_id: Option<Uuid>,
     pub status: Json,
     pub exchange: String,
-    pub pair: Json,
+    pub pair: String,
     pub market_type: Json,
     pub order_type: Json,
     pub side: String,

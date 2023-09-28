@@ -8,8 +8,10 @@ members = [
     "engine/config",
     "engine/app",
     "engine/core",
-    "engine/rest-api",
-    "engine/rest-client",
+    "engine/ports/core-api",
+    "engine/adapters/rest-api-server",
+    "engine/adapters/rest-client",
+    "engine/libs/rest-api",
     "interactor/config",
     "interactor/app",
     "interactor/core",
@@ -62,8 +64,10 @@ strategy-api = { path = "common/strategy-api" }
 engine-config = { path = "engine/config" }
 engine-app = { path = "engine/app" }
 engine-core = { path = "engine/core" }
-engine-rest-api = { path = "engine/rest-api" }
-engine-rest-client = { path = "engine/rest-client" }
+engine-core-api = { path = "engine/ports/core-api" }
+engine-rest-api-server = { path = "engine/adapters/rest-api-server" }
+engine-rest-client = { path = "engine/adapters/rest-client" }
+engine-rest-api = { path = "engine/libs/rest-api" }
 
 interactor-config = { path = "interactor/config" }
 interactor-app = { path = "interactor/app" }

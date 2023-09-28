@@ -7,7 +7,7 @@ use axum::http::StatusCode;
 use axum::routing::{delete, get, post};
 use tracing::error;
 
-use domain_model::{Plugin, PluginId, PluginInfo};
+use domain_model::{PluginBinary, PluginId, PluginInfo};
 use registry_core_api::RegistryApi;
 use registry_rest_api::endpoints::{DELETE_PLUGINS, GET_PLUGIN_BINARY, GET_PLUGINS_INFO, POST_CREATE_PLUGINS};
 use registry_rest_api::path_query::{AddPluginQuery, PluginQuery};
@@ -38,7 +38,7 @@ async fn get_plugins_info(State(registry): State<Arc<dyn RegistryApi>>, Query(qu
     Json(plugins_info)
 }
 
-async fn get_plugin_binary(State(registry): State<Arc<dyn RegistryApi>>, Query(query): Query<PluginQuery>) -> Result<Json<Plugin>, StatusCode> {
+async fn get_plugin_binary(State(registry): State<Arc<dyn RegistryApi>>, Query(query): Query<PluginQuery>) -> Result<Json<PluginBinary>, StatusCode> {
     let plugin_id = PluginId::new(&query.name.unwrap(), query.version.unwrap());
     registry.get_plugin_binary(plugin_id).await
         .map(Json)

@@ -145,7 +145,7 @@ async fn sync_batch<I: InteractorApi, R: CandleRepository>(candle_service: Arc<C
                 if saved_candle.timestamp != timestamp {
                     warn!("Inconsistent candle: {}, for timestamp: {}", saved_candle.timestamp, timestamp);
                     if let Some(actual_candle) = actual_candles.take(timestamp).await {
-                        debug!("Add new candle: {}", actual_candle.timestamp);
+                        trace!("Add new candle: {}", actual_candle.timestamp);
                         candles_for_save.push(actual_candle);
                     } else {
                         error!("Can't load required actual candle for timestamp: {}", timestamp);
@@ -156,7 +156,7 @@ async fn sync_batch<I: InteractorApi, R: CandleRepository>(candle_service: Arc<C
             }
             None => {
                 if let Some(actual_candle) = actual_candles.take(timestamp).await {
-                    debug!("Add new candle: {}", actual_candle.timestamp);
+                    trace!("Add new candle: {}", actual_candle.timestamp);
                     candles_for_save.push(actual_candle);
                 } else {
                     error!("Can't load required actual candle for timestamp: {}", timestamp);

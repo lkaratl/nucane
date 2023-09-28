@@ -1,33 +1,38 @@
+use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::{from_value, Value};
+use tokio::sync::Mutex;
 use tracing::trace;
 use uuid::Uuid;
 
 use domain_model::{CurrencyPair, Exchange, InstrumentId, MarketType, Tick};
 use eac::rest::MarkPriceResponse;
 use eac::websocket::{Action, Channel, WsMessageHandler};
+use engine_core_api::api::EngineApi;
 
 const TICK_PRICE_DEVIATION_MULTIPLIER: f64 = 1000.0;
 const TICK_PRICE_THRESHOLD: f64 = 2.0;
 
-pub struct TickHandler {
+pub struct TickHandler<E: EngineApi> {
     deviation_percent: f64,
     currency_pair: CurrencyPair,
     market_type: MarketType,
+    engine_client: Arc<E>,
 }
 
-impl TickHandler {
-    pub fn new(currency_pair: CurrencyPair, market_type: MarketType) -> Self {
+impl <E: EngineApi> TickHandler<E> {
+    pub fn new(engine_client: Arc<E>, currency_pair: CurrencyPair, market_type: MarketType) -> Self {
         Self {
             deviation_percent: 1f64,
             currency_pair,
             market_type,
+            engine_client
         }
     }
 }
 
 #[async_trait]
-impl WsMessageHandler for TickHandler {
+impl <E: EngineApi>WsMessageHandler for TickHandler<E> {
     type Type = Tick;
 
     async fn convert_data(&mut self, _arg: Channel, _action: Option<Action>, mut data: Vec<Value>) -> Option<Self::Type> {
@@ -57,6 +62,6 @@ impl WsMessageHandler for TickHandler {
     }
 
     async fn handle(&mut self, message: Self::Type) {
-        todo!()
+        let _ = self.engine_client.get_actions(&message).await;
     }
 }

@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use reqwest::{Client, Url};
 use tracing::{trace};
-use domain_model::{Plugin, PluginId, PluginInfo};
+use domain_model::{PluginBinary, PluginId, PluginInfo};
 use registry_core_api::RegistryApi;
 use registry_rest_api::endpoints::{DELETE_PLUGINS, GET_PLUGIN_BINARY, GET_PLUGINS_INFO};
 use registry_rest_api::path_query::PluginQuery;
@@ -54,7 +54,7 @@ impl RegistryApi for RegistryRestClient {
             .await.unwrap()
     }
 
-    async fn get_plugin_binary(&self, id: PluginId) -> Option<Plugin> {
+    async fn get_plugin_binary(&self, id: PluginId) -> Option<PluginBinary> {
         let query = PluginQuery {
             name: Some(id.name),
             version: Some(id.version),

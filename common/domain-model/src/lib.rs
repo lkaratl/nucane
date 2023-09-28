@@ -67,7 +67,7 @@ pub struct AuditEvent {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum AuditDetails {
-    Deployment(Deployment),
+    Deployment(DeploymentInfo),
     Action(Action),
     Order(Order),
     Position(Position),
@@ -295,16 +295,16 @@ impl PluginId {
     }
 }
 
-impl From<Plugin> for PluginInfo {
-    fn from(value: Plugin) -> Self {
+impl From<PluginBinary> for PluginInfo {
+    fn from(value: PluginBinary) -> Self {
         Self {
             id: value.id,
         }
     }
 }
 
-impl From<&Plugin> for PluginInfo {
-    fn from(value: &Plugin) -> Self {
+impl From<&PluginBinary> for PluginInfo {
+    fn from(value: &PluginBinary) -> Self {
         Self {
             id: value.id.clone(),
         }
@@ -312,12 +312,12 @@ impl From<&Plugin> for PluginInfo {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct Plugin {
+pub struct PluginBinary {
     pub id: PluginId,
     pub binary: Vec<u8>,
 }
 
-impl Plugin {
+impl PluginBinary {
     pub fn new(name: &str, version: i64, binary: &[u8]) -> Self {
         let id = PluginId::new(name, version);
         Self {
@@ -341,29 +341,28 @@ pub enum PluginEventType {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct Deployment {
+pub struct DeploymentInfo {
     pub id: Uuid,
-    pub event: DeploymentEvent,
+    pub status: DeploymentStatus,
     pub simulation_id: Option<Uuid>,
-    pub strategy_name: String,
-    pub strategy_version: String,
+    pub plugin_id: PluginId,
     pub params: HashMap<String, String>,
     pub subscriptions: Vec<InstrumentId>,
 }
 
-impl AuditTags for Deployment {
+impl AuditTags for DeploymentInfo {
     fn audit_tags(&self) -> Vec<String> {
         let mut tags = vec![CommonAuditTags::Deployment.to_string()];
-        match self.event {
-            DeploymentEvent::Created => tags.push(CommonAuditTags::Created.to_string()),
-            DeploymentEvent::Deleted => tags.push(CommonAuditTags::Deleted.to_string())
+        match self.status {
+            DeploymentStatus::Created => tags.push(CommonAuditTags::Created.to_string()),
+            DeploymentStatus::Deleted => tags.push(CommonAuditTags::Deleted.to_string())
         }
         tags
     }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub enum DeploymentEvent {
+pub enum DeploymentStatus {
     Created,
     Deleted,
 }
@@ -376,12 +375,12 @@ pub struct Subscription {
     pub status: SubscriptionStatus,
 }
 
-impl From<Deployment> for Subscription {
-    fn from(value: Deployment) -> Self {
+impl From<&DeploymentInfo> for Subscription {
+    fn from(value: &DeploymentInfo) -> Self {
         Self {
             simulation_id: value.simulation_id,
             deployment_id: value.id,
-            instruments: value.subscriptions,
+            instruments: value.subscriptions.clone(),
             status: SubscriptionStatus::Created,
         }
     }

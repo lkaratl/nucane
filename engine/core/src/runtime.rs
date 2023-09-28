@@ -1,33 +1,72 @@
-use tracing::debug;
-use domain_model::{Action, Tick};
-use engine_config::CONFIG;
-use strategy_api::{Strategy, StrategyApi};
-use synapse::SynapseSend;
-use crate::registry;
+use std::cell::RefCell;
+use std::sync::Arc;
 
-pub struct Executor {
+use tokio::sync::Mutex;
+use tracing::debug;
+use uuid::Uuid;
+
+use domain_model::{Action, DeploymentInfo, Tick};
+use engine_core_api::api::Deployment;
+use storage_core_api::StorageApi;
+use strategy_api::{Strategy, StrategyApi};
+
+pub struct Runtime {
+    deployments: Mutex<RefCell<Vec<Deployment>>>,
     api: StrategyApi,
 }
 
-impl Executor {
-    pub fn new(storage_url: &str) -> Self {
+impl Runtime {
+    pub fn new<S: StorageApi>(storage_client: Arc<S>) -> Self {
         Self {
-            api: StrategyApi::new(storage_url)
+            deployments: Default::default(),
+            api: StrategyApi::new(storage_client),
         }
     }
 
-    pub async fn handle(&self, tick: &Tick) {
-        self.get_actions(tick).await
-            .into_iter()
-            .for_each(|action| produce_action(&action));
+    pub async fn get_deployments_info(&self) -> Vec<DeploymentInfo> {
+        self.deployments
+            .lock()
+            .await
+            .borrow()
+            .iter()
+            .map(|deployment| deployment.into())
+            .collect()
+    }
+
+    pub async fn deploy(&self, deployment: Deployment) {
+        self.deployments
+            .lock()
+            .await
+            .borrow_mut()
+            .push(deployment);
+    }
+
+    pub async fn delete_deployment(&self, id: Uuid) -> Option<DeploymentInfo> {
+        let index = self.deployments
+            .lock()
+            .await
+            .borrow()
+            .iter()
+            .position(|deployment| deployment.id == id);
+        if let Some(index) = index {
+            let removed_deployment = self.deployments
+                .lock()
+                .await
+                .borrow_mut()
+                .remove(index);
+            Some((&removed_deployment).into())
+        } else {
+            None
+        }
     }
 
     pub async fn get_actions(&self, tick: &Tick) -> Vec<Action> {
         let mut result = Vec::new();
-        for deployment in registry::get_deployments()
+        for deployment in self.deployments
+            .lock()
             .await
+            .borrow_mut()
             .iter_mut() {
-            let mut deployment = deployment.lock().await;
             let is_simulation = deployment.simulation_id == tick.simulation_id;
             let strategy = &mut deployment.plugin.strategy;
             if is_subscribed(strategy.as_ref(), tick) && is_simulation {
@@ -55,8 +94,4 @@ fn is_subscribed(strategy: &(dyn Strategy + Send), tick: &Tick) -> bool {
                 subscription.pair.target.eq(&instrument_id.pair.target) &&
                 subscription.pair.source.eq(&instrument_id.pair.source)
         )
-}
-
-fn produce_action(action: &Action) {
-    synapse::writer(&CONFIG.broker.url).send(action)
 }

@@ -1,4 +1,4 @@
-use domain_model::{Plugin, PluginId, PluginInfo};
+use domain_model::{PluginBinary, PluginId, PluginInfo};
 use registry_blob_api::BlobApi;
 use registry_core_api::RegistryApi;
 use anyhow::Result;
@@ -26,15 +26,15 @@ impl<B: BlobApi> RegistryApi for Registry<B> {
         self.plugins_storage.get_plugins_info_by_name(name).await
     }
 
-    async fn get_plugin_binary(&self, id: PluginId) -> Option<Plugin> {
+    async fn get_plugin_binary(&self, id: PluginId) -> Option<PluginBinary> {
         let binary = self.plugins_storage.get_plugin_binary(id).await;
         if let Some(binary) = binary {
             plugin_loader::load(&binary)
                 .ok()
                 .map(|plugin|
-                    Plugin::new(&plugin.strategy.name(),
-                                plugin.strategy.version(),
-                                &binary))
+                    PluginBinary::new(&plugin.strategy.name(),
+                                      plugin.strategy.version(),
+                                      &binary))
         } else {
             None
         }
@@ -44,7 +44,7 @@ impl<B: BlobApi> RegistryApi for Registry<B> {
         let active_plugin = plugin_loader::load(binary)?;
         let name = &active_plugin.strategy.name();
         let version = active_plugin.strategy.version();
-        let plugin = Plugin::new(name, version, binary);
+        let plugin = PluginBinary::new(name, version, binary);
         let result = self.plugins_storage.add_plugin(plugin, force).await;
         // synapse::writer(&CONFIG.broker.url).send(&plugin.as_event(PluginEventType::Updated)); // todo use rest client
         result

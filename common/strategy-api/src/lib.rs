@@ -14,7 +14,7 @@ use indicators_api::Indicators;
 use storage_core_api::StorageApi;
 
 #[async_trait]
-pub trait Strategy {
+pub trait Strategy: Send + Sync {
     fn tune(&mut self, _: &HashMap<String, String>) {}
     fn name(&self) -> String;
     fn version(&self) -> i64;

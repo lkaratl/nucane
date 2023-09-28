@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 domain-model = { workspace = true }
 engine-rest-api = { workspace = true }
+engine-core-api = { workspace = true }
 reqwest = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
@@ -13,3 +14,4 @@ serde = { workspace = true }
 serde_urlencoded = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
+async-trait = { workspace = true }

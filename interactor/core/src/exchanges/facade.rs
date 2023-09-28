@@ -4,21 +4,24 @@ use chrono::{DateTime, Duration, Utc};
 use tracing::{debug, info};
 
 use domain_model::{Candle, CreateOrder, Exchange, InstrumentId, Timeframe};
+use engine_core_api::api::EngineApi;
 use storage_core_api::StorageApi;
 
 use crate::exchanges::exchange::ExchangeApi;
-use crate::exchanges::okx::handlers::{CandleHandler, OrderHandler, PositionHandler};
+use crate::exchanges::okx::handlers::{CandleHandler, OrderHandler, PositionHandler, TickHandler};
 use crate::exchanges::okx::OkxService;
 
 #[derive(Default)]
-pub struct ServiceFacade<S: StorageApi> {
+pub struct ServiceFacade<E: EngineApi, S: StorageApi> {
+    engine_client: Arc<E>,
     storage_client: Arc<S>,
     okx: OkxService,
 }
 
-impl<S: StorageApi> ServiceFacade<S> {
-    pub fn new(storage_client: Arc<S>) -> Self {
+impl<E: EngineApi, S: StorageApi> ServiceFacade<E, S> {
+    pub fn new(engine_client: Arc<E>, storage_client: Arc<S>) -> Self {
         Self {
+            engine_client,
             storage_client,
             okx: Default::default(),
         }
@@ -30,15 +33,11 @@ impl<S: StorageApi> ServiceFacade<S> {
         let service = match instrument_id.exchange {
             Exchange::OKX => &self.okx,
         };
-        // service.subscribe_ticks(&instrument_id.pair, &instrument_id.market_type, |tick| {
-        //     trace!("Send tick to synapse: {tick:?}");
-        //     debug!("{}={:?}-{:?}: {}",
-        //         tick.instrument_id.exchange,
-        //         tick.instrument_id.pair.target,
-        //         tick.instrument_id.pair.source,
-        //         tick.price);
-        //     // self.synapse_sender.send_message(ExchangeTickSubject, &tick).await.expect("Error during tick sending to synapse"); // todo use rest client
-        // }).await;
+        let currency_pair = instrument_id.pair;
+        let market_type = instrument_id.market_type;
+        let engine_client = Arc::clone(&self.engine_client);
+        let handler = TickHandler::new(engine_client, currency_pair, market_type);
+        service.subscribe_ticks(&currency_pair, &market_type, handler).await;
     }
 
     pub async fn unsubscribe_ticks(&self, instrument_id: &InstrumentId) {

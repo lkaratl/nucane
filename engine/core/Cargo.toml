@@ -5,6 +5,10 @@ edition.workspace = true
 
 [dependencies]
 engine-config = { workspace = true }
+engine-core-api = { workspace = true }
+registry-core-api = { workspace = true }
+interactor-core-api = { workspace = true }
+storage-core-api = { workspace = true }
 domain-model = { workspace = true }
 storage-rest-client = { workspace = true }
 indicators-api = { workspace = true }

@@ -9,6 +9,7 @@ pub struct Config {
     pub logging: Logging,
     pub application: Application,
     pub storage: Storage,
+    pub engine: Engine,
     pub eac: EAC,
 }
 
@@ -61,6 +62,11 @@ pub struct Logging {
 
 #[derive(Deserialize)]
 pub struct Storage {
+    pub url: String
+}
+
+#[derive(Deserialize)]
+pub struct Engine {
     pub url: String
 }
 

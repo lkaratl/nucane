@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use tracing::info;
+use engine_rest_client::EngineRestClient;
 
 use interactor_config::CONFIG;
 use interactor_core::Interactor;
@@ -13,9 +14,10 @@ pub async fn run() {
     } else {
         info!(" ▸ interactor: LIVE mode");
     }
+    let engine_client = Arc::new(EngineRestClient::new(&CONFIG.engine.url));
     let storage_client = Arc::new(StorageRestClient::new(&CONFIG.storage.url));
     let subscription_repository = InMemorySubscriptionRepository::default();
-    let interactor = Interactor::new(storage_client, subscription_repository);
+    let interactor = Interactor::new(engine_client, storage_client, subscription_repository);
     interactor_rest_api_server::run(CONFIG.application.port, interactor).await;
 }
 

@@ -33,7 +33,7 @@ impl<T: ConnectionTrait + Send+ 'static> CandleRepository for CandlePostgresRepo
         let candle = candle::ActiveModel {
             id: ActiveValue::Set(candle.id),
             status: ActiveValue::Set(candle.status.to_string()),
-            pair: ActiveValue::Set(json!(candle.instrument_id.pair)),
+            pair: ActiveValue::Set(serde_json::to_string(&candle.instrument_id.pair)?),
             exchange: ActiveValue::Set(candle.instrument_id.exchange.to_string()),
             market_type: ActiveValue::Set(candle.instrument_id.market_type.to_string()),
             timestamp: ActiveValue::Set(candle.timestamp.naive_utc()),
@@ -68,7 +68,7 @@ impl<T: ConnectionTrait + Send+ 'static> CandleRepository for CandlePostgresRepo
                 candle::ActiveModel {
                     id: ActiveValue::Set(candle.id),
                     status: ActiveValue::Set(candle.status.to_string()),
-                    pair: ActiveValue::Set(json!(candle.instrument_id.pair)),
+                    pair: ActiveValue::Set(serde_json::to_string(&candle.instrument_id.pair).unwrap()),
                     exchange: ActiveValue::Set(candle.instrument_id.exchange.to_string()),
                     market_type: ActiveValue::Set(candle.instrument_id.market_type.to_string()),
                     timestamp: ActiveValue::Set(candle.timestamp.naive_utc()),
@@ -132,7 +132,7 @@ impl<T: ConnectionTrait + Send+ 'static> CandleRepository for CandlePostgresRepo
                     instrument_id: domain_model::InstrumentId {
                         exchange: domain_model::Exchange::from_str(&model.exchange).unwrap(),
                         market_type: domain_model::MarketType::from_str(&model.market_type).unwrap(),
-                        pair: serde_json::from_value(model.pair).unwrap(),
+                        pair: serde_json::from_str(&model.pair).unwrap(),
                     },
                     timestamp: model.timestamp.and_utc(),
                     timeframe: domain_model::Timeframe::from_str(&model.timeframe).unwrap(),

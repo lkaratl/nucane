@@ -6,12 +6,12 @@ use anyhow::{bail, Result};
 use async_trait::async_trait;
 use tokio::sync::Mutex;
 
-use domain_model::{Plugin, PluginId, PluginInfo};
+use domain_model::{PluginBinary, PluginId, PluginInfo};
 use registry_blob_api::BlobApi;
 
 #[derive(Default)]
 pub struct InMemoryBlobStorage {
-    plugins: Arc<Mutex<RefCell<Vec<Plugin>>>>,
+    plugins: Arc<Mutex<RefCell<Vec<PluginBinary>>>>,
 }
 
 #[async_trait]
@@ -46,7 +46,7 @@ impl BlobApi for InMemoryBlobStorage {
             .map(|plugin| plugin.binary.clone())
     }
 
-    async fn add_plugin(&self, plugin: Plugin, force: bool) -> Result<PluginInfo> {
+    async fn add_plugin(&self, plugin: PluginBinary, force: bool) -> Result<PluginInfo> {
         let existing_plugin_index = self.plugins.lock()
             .await
             .borrow_mut()

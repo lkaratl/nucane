@@ -6,6 +6,7 @@ use chrono::{DateTime, Utc};
 use tracing::{debug, trace, warn};
 
 use domain_model::{Action, Candle, InstrumentId, OrderAction, OrderActionType, Subscription, Subscriptions, Timeframe};
+use engine_core_api::api::EngineApi;
 use interactor_core_api::InteractorApi;
 use interactor_persistence_api::SubscriptionRepository;
 use storage_core_api::StorageApi;
@@ -13,14 +14,14 @@ use storage_core_api::StorageApi;
 use crate::exchanges::ServiceFacade;
 use crate::services::SubscriptionManager;
 
-pub struct Interactor<S: StorageApi, R: SubscriptionRepository> {
-    service_facade: Arc<ServiceFacade<S>>,
-    subscription_manager: SubscriptionManager<S, R>,
+pub struct Interactor<E: EngineApi, S: StorageApi, R: SubscriptionRepository> {
+    service_facade: Arc<ServiceFacade<E, S>>,
+    subscription_manager: SubscriptionManager<E, S, R>,
 }
 
-impl<S: StorageApi, R: SubscriptionRepository> Interactor<S, R> {
-    pub fn new(storage_client: Arc<S>, subscription_repository: R) -> Self {
-        let service_facade = Arc::new(ServiceFacade::new(storage_client));
+impl<E: EngineApi, S: StorageApi, R: SubscriptionRepository> Interactor<E, S, R> {
+    pub fn new(engine_client: Arc<E>, storage_client: Arc<S>, subscription_repository: R) -> Self {
+        let service_facade = Arc::new(ServiceFacade::new(engine_client, storage_client));
         let subscription_manager = SubscriptionManager::new(Arc::clone(&service_facade), subscription_repository);
         Self {
             service_facade,
@@ -30,7 +31,7 @@ impl<S: StorageApi, R: SubscriptionRepository> Interactor<S, R> {
 }
 
 #[async_trait]
-impl<S: StorageApi, R: SubscriptionRepository> InteractorApi for Interactor<S, R> {
+impl<E: EngineApi, S: StorageApi, R: SubscriptionRepository> InteractorApi for Interactor<E, S, R> {
     async fn subscriptions(&self) -> Result<Vec<Subscriptions>> {
         Ok(self.subscription_manager.subscriptions().await)
     }

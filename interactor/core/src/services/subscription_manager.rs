@@ -4,18 +4,19 @@ use std::sync::Arc;
 use tracing::debug;
 
 use domain_model::{Subscription, Subscriptions};
+use engine_core_api::api::EngineApi;
 use interactor_persistence_api::SubscriptionRepository;
 use storage_core_api::StorageApi;
 
 use crate::exchanges::ServiceFacade;
 
-pub struct SubscriptionManager<S: StorageApi, R: SubscriptionRepository> {
+pub struct SubscriptionManager<E: EngineApi, S: StorageApi, R: SubscriptionRepository> {
     subscription_repository: R,
-    service_facade: Arc<ServiceFacade<S>>,
+    service_facade: Arc<ServiceFacade<E, S>>,
 }
 
-impl<S: StorageApi, R: SubscriptionRepository> SubscriptionManager<S, R> {
-    pub fn new(service_facade: Arc<ServiceFacade<S>>, subscription_repository: R) -> Self {
+impl<E: EngineApi, S: StorageApi, R: SubscriptionRepository> SubscriptionManager<E, S, R> {
+    pub fn new(service_facade: Arc<ServiceFacade<E,S>>, subscription_repository: R) -> Self {
         Self {
             subscription_repository,
             service_facade,

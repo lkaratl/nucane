@@ -9,7 +9,7 @@ pub struct Model {
     pub id: String,
     pub status: String,
     pub exchange: String,
-    pub pair: Json,
+    pub pair: String,
     pub market_type: String,
     pub timestamp: DateTime,
     pub timeframe: String,

@@ -11,16 +11,16 @@ use tracing::info;
 use standalone_config::CONFIG;
 
 pub fn run() {
-    info!("{APP_NAME}");
     let db = Arc::new(run_db());
     thread::spawn(|| { run_registry() });
-    // thread::spawn(|| { run_engine() });
+    thread::spawn(|| { run_engine() });
     thread::spawn({
         let db = Arc::clone(&db);
         || { run_storage(db) }
     });
     // thread::spawn(|| { run_simulator() });
     thread::spawn(|| { run_interactor() });
+    info!("{APP_NAME}");
 }
 
 #[tokio::main]
@@ -57,10 +57,10 @@ async fn run_registry() {
     registry_app::run().await;
 }
 
-// #[tokio::main]
-// async fn run_engine() {
-//     engine_app::run().await;
-// }
+#[tokio::main]
+async fn run_engine() {
+    engine_app::run().await;
+}
 
 #[tokio::main]
 async fn run_storage(_db: Arc<PgEmbed>) {
