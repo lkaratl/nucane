@@ -99,7 +99,7 @@ impl<E: EngineApi, S: StorageApi> ServiceFacade<E, S> {
             Exchange::OKX => &self.okx,
         };
         let order = service.place_order(&create_order).await;
-        self.storage_client.save_order(order).await;
+        let _ = self.storage_client.save_order(order).await;
     }
 
     pub async fn candles_history(&self,

@@ -1,13 +1,11 @@
-use std::collections::HashMap;
-
 use async_trait::async_trait;
 use reqwest::{Client, Url};
 use tracing::trace;
 use uuid::Uuid;
 
-use domain_model::{Action, DeploymentInfo, PluginId, Tick};
+use domain_model::{Action, DeploymentInfo, NewDeployment, PluginId, Tick};
 use engine_core_api::api::{EngineApi, EngineError};
-use engine_rest_api::endpoints::{DELETE_DEPLOYMENT, POST_CREATE_ACTIONS};
+use engine_rest_api::endpoints::{DELETE_DEPLOYMENT, GET_DEPLOYMENTS, POST_CREATE_ACTIONS, POST_CREATE_DEPLOYMENTS};
 
 pub struct EngineRestClient {
     url: String,
@@ -30,22 +28,28 @@ impl EngineRestClient {
 #[async_trait]
 impl EngineApi for EngineRestClient {
     async fn get_deployments_info(&self) -> Vec<DeploymentInfo> {
-        todo!()
+        let endpoint = format!("{}{}", self.url, GET_DEPLOYMENTS);
+        let url = Url::parse(&endpoint).unwrap();
+        trace!("Request url: {url:?}");
+        self.client.get(url)
+            .send()
+            .await.unwrap()
+            .json()
+            .await.unwrap()
     }
 
-    async fn deploy(&self, simulation_id: Option<Uuid>, strategy_name: &str, strategy_version: i64, params: &HashMap<String, String>) -> Result<DeploymentInfo, EngineError> {
-        // let endpoint = format!("{}{}", self.url, POST_CREATE_DEPLOYMENTS);
-        // let url = Url::parse(&endpoint)
-        //     .map_err(|_| EngineError::PluginLoadingError)?;
-        // trace!("Request url: {url:?}");
-        // let response = self.client.post(url)
-        //     .json(&create_deployments)
-        //     .send()
-        //     .await.unwrap()
-        //     .json()
-        //     .await.unwrap();
-        // Ok(response)
-        todo!()
+    async fn deploy(&self, deployments: &[NewDeployment]) -> Result<Vec<DeploymentInfo>, EngineError> {
+        let endpoint = format!("{}{}", self.url, POST_CREATE_DEPLOYMENTS);
+        let url = Url::parse(&endpoint)
+            .map_err(|_| EngineError::PluginLoadingError)?;
+        trace!("Request url: {url:?}");
+        let response = self.client.post(url)
+            .json(&deployments)
+            .send()
+            .await.unwrap()
+            .json()
+            .await.unwrap();
+        Ok(response)
     }
 
     async fn get_actions(&self, tick: &Tick) -> Vec<Action> {

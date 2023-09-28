@@ -29,7 +29,7 @@ impl<S: StorageApi> CandleHandler<S> {
 impl<S: StorageApi> WsMessageHandler for CandleHandler<S> {
     type Type = Vec<Candle>;
 
-    async fn convert_data(&mut self, arg: Channel, _action: Option<Action>, mut data: Vec<Value>) -> Option<Self::Type> {
+    async fn convert_data(&mut self, arg: Channel, _action: Option<Action>, data: Vec<Value>) -> Option<Self::Type> {
         trace!("Retrieved massage with raw payload: {:?}", &data);
         let mut candles = Vec::new();
         for item in data {
@@ -79,7 +79,7 @@ impl<S: StorageApi> WsMessageHandler for CandleHandler<S> {
 
     async fn handle(&mut self, message: Self::Type) {
         for candle in message {
-            self.storage_client.save_candle(candle).await;
+            let _ = self.storage_client.save_candle(candle).await;
         }
     }
 }

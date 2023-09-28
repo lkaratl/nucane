@@ -11,7 +11,6 @@ pub struct Config {
     pub engine: Engine,
     pub storage: Storage,
     pub interactor: Interactor,
-    pub broker: Broker
 }
 
 #[derive(Deserialize)]
@@ -38,11 +37,6 @@ pub struct Storage {
 
 #[derive(Deserialize)]
 pub struct Interactor {
-    pub url: String
-}
-
-#[derive(Deserialize)]
-pub struct Broker {
     pub url: String
 }
 

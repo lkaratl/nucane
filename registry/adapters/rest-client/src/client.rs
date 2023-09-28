@@ -29,7 +29,7 @@ impl RegistryRestClient {
 impl RegistryApi for RegistryRestClient {
     async fn get_plugins_info(&self) -> Vec<PluginInfo> {
         let endpoint = format!("{}{}", self.url, GET_PLUGINS_INFO);
-        let mut url = Url::parse(&endpoint).unwrap();
+        let url = Url::parse(&endpoint).unwrap();
         trace!("Request url: {url:?}");
         self.client.get(url)
             .send()

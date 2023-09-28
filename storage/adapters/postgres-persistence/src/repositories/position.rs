@@ -3,7 +3,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 use async_trait::async_trait;
 use sea_orm::{ActiveValue, Condition, ConnectionTrait, EntityTrait, sea_query};
-use uuid::Uuid;
 use storage_persistence_api::PositionRepository;
 use crate::entities::position;
 use crate::entities::prelude::Position;

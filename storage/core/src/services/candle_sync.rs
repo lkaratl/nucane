@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use chrono::{DateTime, Duration, DurationRound, Utc};
-use sea_orm::DatabaseConnection;
 use tracing::{debug, error, info, trace, warn};
 
 use domain_model::{Candle, InstrumentId, Timeframe};

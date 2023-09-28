@@ -44,7 +44,7 @@ impl<E: EngineApi, S: StorageApi, R: SubscriptionRepository> SubscriptionManager
                         instrument_id: new_instrument,
                         deployment_ids: HashSet::from([new_subscription.deployment_id]),
                     };
-                    self.subscription_repository.save(&new_subscription).await;
+                    let _ = self.subscription_repository.save(&new_subscription).await;
                 }
             }
         }
@@ -60,14 +60,14 @@ impl<E: EngineApi, S: StorageApi, R: SubscriptionRepository> SubscriptionManager
                     subscription.deployment_ids.retain(|id| !id.eq(&deployment_id));
                     subscription
                 }).collect();
-            self.subscription_repository.save_many(&updated_subscriptions).await;
+            let _ = self.subscription_repository.save_many(&updated_subscriptions).await;
 
             let service_facade = &self.service_facade;
             for subscription in updated_subscriptions {
                 if subscription.deployment_ids.is_empty() {
                     service_facade.unsubscribe_candles(&subscription.instrument_id).await;
                     service_facade.unsubscribe_ticks(&subscription.instrument_id).await;
-                    self.subscription_repository.delete(&subscription.instrument_id).await;
+                    let _ = self.subscription_repository.delete(&subscription.instrument_id).await;
                 }
             }
         }

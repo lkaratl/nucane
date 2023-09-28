@@ -33,15 +33,15 @@ async fn subscriptions(State(interactor): State<Arc<dyn InteractorApi>>) -> Json
 }
 
 async fn subscribe(State(interactor): State<Arc<dyn InteractorApi>>, Json(subscription): Json<Subscription>) {
-    interactor.subscribe(subscription).await;
+    let _ = interactor.subscribe(subscription).await;
 }
 
 async fn unsubscribe(State(interactor): State<Arc<dyn InteractorApi>>, Json(subscription): Json<Subscription>) {
-    interactor.unsubscribe(subscription).await;
+    let _ = interactor.unsubscribe(subscription).await;
 }
 
 async fn execute_action(State(interactor): State<Arc<dyn InteractorApi>>, Json(actions): Json<Vec<Action>>) {
-    interactor.execute_actions(actions).await;
+    let _ = interactor.execute_actions(actions).await;
 }
 
 async fn get_candles(Query(query_params): Query<CandlesQuery>,

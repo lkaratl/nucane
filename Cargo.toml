@@ -35,8 +35,10 @@ members = [
     "simulator/config",
     "simulator/app",
     "simulator/core",
-    "simulator/rest-api",
-    "simulator/rest-client",
+    "simulator/ports/core-api",
+    "simulator/adapters/rest-api-server",
+    "simulator/adapters/rest-client",
+    "simulator/libs/rest-api",
     "standalone/config",
     "standalone/app",
     "storage/config",
@@ -92,8 +94,10 @@ registry-rest-api = { path = "registry/libs/rest-api" }
 simulator-config = { path = "simulator/config" }
 simulator-app = { path = "simulator/app" }
 simulator-core = { path = "simulator/core" }
-simulator-rest-api = { path = "simulator/rest-api" }
-simulator-rest-client = { path = "simulator/rest-client" }
+simulator-core-api = { path = "simulator/ports/core-api" }
+simulator-rest-api-server = { path = "simulator/adapters/rest-api-server" }
+simulator-rest-client = { path = "simulator/adapters/rest-client" }
+simulator-rest-api = { path = "simulator/libs/rest-api" }
 
 standalone-config = { path = "standalone/config" }
 

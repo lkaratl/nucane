@@ -5,7 +5,7 @@ edition.workspace = true
 
 [dependencies]
 simulator-config = { workspace = true }
-simulator-rest-api = { workspace = true }
+simulator-rest-api-server = { workspace = true }
 domain-model = { workspace = true }
 engine-rest-api = { workspace = true }
 engine-rest-client = { workspace = true }

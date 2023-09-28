@@ -5,6 +5,7 @@ edition.workspace = true
 
 [dependencies]
 domain-model = { workspace = true }
+simulator-core-api = { workspace = true }
 simulator-rest-api = { workspace = true }
 simulator-core = { workspace = true }
 reqwest = { workspace = true }
@@ -15,3 +16,4 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 serde_urlencoded = { workspace = true }
 tracing = { workspace = true }
+async-trait = { workspace = true }

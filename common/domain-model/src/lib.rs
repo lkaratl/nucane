@@ -3,7 +3,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use anyhow::{bail, Error};
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -33,8 +33,7 @@ impl AuditTags for Simulation {
 pub struct SimulationDeployment {
     pub deployment_id: Option<Uuid>,
     pub timeframe: Timeframe,
-    pub strategy_name: String,
-    pub strategy_version: String,
+    pub plugin_id: PluginId,
     pub params: HashMap<String, String>,
     pub subscriptions: Vec<InstrumentId>,
 }
@@ -367,6 +366,13 @@ pub enum DeploymentStatus {
     Deleted,
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct NewDeployment {
+    pub simulation_id: Option<Uuid>,
+    pub plugin_id: PluginId,
+    pub params: HashMap<String, String>,
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Subscription {
     pub simulation_id: Option<Uuid>,
@@ -683,4 +689,77 @@ pub enum OrderMarketType {
 pub enum MarginMode {
     Cross,
     Isolated,
+}
+
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateSimulation {
+    pub start: i64,
+    pub end: i64,
+    pub positions: Vec<CreatePosition>,
+    pub strategies: Vec<CreateSimulationDeployment>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateSimulationDeployment {
+    pub simulation_id: Option<Uuid>,
+    pub timeframe: Timeframe,
+    pub strategy_name: String,
+    pub strategy_version: i64,
+    pub params: HashMap<String, String>,
+}
+
+pub fn convert_to_simulation_deployment(value: CreateSimulationDeployment, ) -> SimulationDeployment {
+    let plugin_id = PluginId::new(&value.strategy_name, value.strategy_version);
+    SimulationDeployment {
+        deployment_id: None,
+        timeframe: value.timeframe,
+        plugin_id,
+        params: value.params,
+        subscriptions: Vec::new(),
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreatePosition {
+    pub exchange: Exchange,
+    pub currency: Currency,
+    pub side: Side,
+    pub size: f64,
+}
+
+pub fn convert(value: CreatePosition, simulation_id: Uuid) -> SimulationPosition {
+    SimulationPosition {
+        simulation_id,
+        exchange: value.exchange,
+        currency: value.currency,
+        start: value.size,
+        end: value.size,
+        diff: 0.0,
+        fees: 0.0,
+    }
+}
+
+impl From<CreateSimulation> for Simulation {
+    fn from(value: CreateSimulation) -> Self {
+        let simulation_id = Uuid::new_v4();
+        let positions = value.positions.into_iter()
+            .map(|position| convert(position, simulation_id))
+            .collect();
+        let deployments = value.strategies.into_iter()
+            .map(convert_to_simulation_deployment)
+            .collect();
+
+        Self {
+            id: simulation_id,
+            timestamp: Utc::now(),
+            start: Utc.timestamp_millis_opt(value.start).unwrap(),
+            end: Utc.timestamp_millis_opt(value.end).unwrap(),
+            positions,
+            deployments,
+            ticks_len: 0,
+            actions_count: 0,
+            active_orders: Vec::new(),
+        }
+    }
 }

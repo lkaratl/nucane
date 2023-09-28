@@ -7,7 +7,7 @@ use chrono::{Duration, Utc};
 use tracing::{debug, error, info};
 use uuid::Uuid;
 
-use domain_model::{Action, DeploymentInfo, InstrumentId, PluginId, Tick, Timeframe};
+use domain_model::{Action, DeploymentInfo, InstrumentId, NewDeployment, PluginId, Tick, Timeframe};
 use engine_core_api::api::{Deployment, EngineApi, EngineError};
 use interactor_core_api::InteractorApi;
 use plugin_loader::Plugin;
@@ -67,6 +67,26 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> Engine<I, R, S> {
             info!("Sync data reports: '{sync_result:?}' for instrument: '{subscription:?}'")
         }
     }
+
+    async fn deploy_single(&self, deployment: &NewDeployment)->Result<DeploymentInfo, EngineError> {
+        let strategy_name = deployment.plugin_id.name.clone();
+        let strategy_version = deployment.plugin_id.version;
+        let params = deployment.params.clone();
+        debug!("Create deployment for strategy with name: '{strategy_name}' and version: '{strategy_version}' and params: '{params:?}'");
+
+        let plugin = self.load_plugin(&strategy_name, strategy_version, &params).await?;
+        let deployment = Deployment {
+            id: Uuid::new_v4(),
+            simulation_id: deployment.simulation_id,
+            params: params.clone(),
+            plugin,
+        };
+        let deployment_info: DeploymentInfo = (&deployment).into();
+        self.runtime.deploy(deployment).await;
+        self.sync_data(&deployment_info.subscriptions).await;
+        let _ = self.interactor_client.subscribe((&deployment_info).into()).await;
+        Ok(deployment_info)
+    }
 }
 
 #[async_trait]
@@ -75,29 +95,19 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> EngineApi for Engine<I, R,
         self.runtime.get_deployments_info().await
     }
 
-    async fn deploy(&self, simulation_id: Option<Uuid>,
-                    strategy_name: &str,
-                    strategy_version: i64,
-                    params: &HashMap<String, String>) -> Result<DeploymentInfo, EngineError> {
-        debug!("Create deployment for strategy with name: '{strategy_name}' and version: '{strategy_version}' and params: '{params:?}'");
-        let plugin = self.load_plugin(strategy_name, strategy_version, params).await?;
-        let deployment = Deployment {
-            id: Uuid::new_v4(),
-            simulation_id,
-            params: params.clone(),
-            plugin,
-        };
-        let deployment_info: DeploymentInfo = (&deployment).into();
-        self.runtime.deploy(deployment).await;
-        self.sync_data(&deployment_info.subscriptions).await;
-        self.interactor_client.subscribe((&deployment_info).into()).await;
-        Ok(deployment_info)
+    async fn deploy(&self, deployments: &[NewDeployment]) -> Result<Vec<DeploymentInfo>, EngineError> {
+        let mut result = Vec::new();
+        for deployment in deployments {
+            let deployment_info = self.deploy_single(deployment).await?;
+            result.push(deployment_info);
+        }
+        Ok(result)
     }
 
     async fn get_actions(&self, tick: &Tick) -> Vec<Action> {
-        let actions = self.runtime.get_actions(&tick).await;
+        let actions = self.runtime.get_actions(tick).await;
         if !actions.is_empty() {
-            self.interactor_client.execute_actions(actions.clone()).await;
+            let _ = self.interactor_client.execute_actions(actions.clone()).await;
         }
         actions
     }

@@ -29,7 +29,7 @@ impl<S: StorageApi> OrderHandler<S> {
 impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
     type Type = Vec<Order>;
 
-    async fn convert_data(&mut self, _arg: Channel, _action: Option<Action>, mut data: Vec<Value>) -> Option<Self::Type> {
+    async fn convert_data(&mut self, _arg: Channel, _action: Option<Action>, data: Vec<Value>) -> Option<Self::Type> {
         trace!("Retrieved massage with raw payload: {:?}", &data);
         let mut orders = Vec::new();
         for item in data {
@@ -108,7 +108,7 @@ impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
 
     async fn handle(&mut self, message: Self::Type) {
         for order in message {
-            self.storage_client.save_order(order).await;
+            let _ = self.storage_client.save_order(order).await;
         }
     }
 }

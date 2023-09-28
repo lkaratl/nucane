@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 #[async_trait]
 pub trait StorageApi: Send + Sync + 'static {
     async fn save_order(&self, order: Order) -> Result<()>;
+
+    #[allow(clippy::too_many_arguments)]
     async fn get_orders(&self, id: Option<String>,
                        exchange: Option<Exchange>,
                        market_type: Option<MarketType>,

@@ -61,7 +61,7 @@ async fn create_plugins(State(registry): State<Arc<dyn RegistryApi>>, Query(quer
                 error!("Error during plugin creation: {err}");
                 StatusCode::BAD_REQUEST
             })?;
-        plugins_info.push(plugin.into());
+        plugins_info.push(plugin);
     }
     Ok(Json(plugins_info))
 }

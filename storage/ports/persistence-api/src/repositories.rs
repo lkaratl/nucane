@@ -7,6 +7,8 @@ use domain_model::{Candle, Currency, Exchange, InstrumentId, MarketType, Order, 
 #[async_trait]
 pub trait OrderRepository: Send + Sync + 'static {
     async fn save(&self, order: Order) -> Result<()>;
+
+    #[allow(clippy::too_many_arguments)]
     async fn get(&self,
                  id: Option<String>,
                  exchange: Option<Exchange>,

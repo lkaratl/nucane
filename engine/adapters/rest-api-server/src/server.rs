@@ -9,9 +9,8 @@ use axum::routing::{delete, get, post, put};
 use tracing::debug;
 use uuid::Uuid;
 
-use domain_model::{Action, DeploymentInfo, PluginId, Tick};
+use domain_model::{Action, DeploymentInfo, NewDeployment, PluginId, Tick};
 use engine_core_api::api::{EngineApi, EngineError};
-use engine_rest_api::dtos::CreateDeploymentDto;
 use engine_rest_api::endpoints::{DELETE_DEPLOYMENT, GET_DEPLOYMENTS, POST_CREATE_ACTIONS, POST_CREATE_DEPLOYMENTS, PUT_UPDATE_PLUGIN};
 
 pub async fn run(port: u16, engine: impl EngineApi) {
@@ -36,19 +35,14 @@ async fn get_deployments(State(engine): State<Arc<dyn EngineApi>>) -> Json<Vec<D
     Json(result)
 }
 
-async fn create_deployment(State(engine): State<Arc<dyn EngineApi>>, Json(request): Json<Vec<CreateDeploymentDto>>) -> Result<Json<Vec<DeploymentInfo>>, StatusCode> {
-    let mut result = Vec::new();
-    for create_deployment in request {
-        let deployment_info = engine
-            .deploy(create_deployment.simulation_id, &create_deployment.name, create_deployment.version, &create_deployment.params)
-            .await
-            .map_err(|err|
-                match err {
-                    EngineError::PluginNotFound => StatusCode::NOT_FOUND,
-                    EngineError::PluginLoadingError => StatusCode::INTERNAL_SERVER_ERROR
-                })?;
-        result.push(deployment_info);
-    }
+async fn create_deployment(State(engine): State<Arc<dyn EngineApi>>, Json(request): Json<Vec<NewDeployment>>) -> Result<Json<Vec<DeploymentInfo>>, StatusCode> {
+    let result = engine.deploy(&request)
+        .await
+        .map_err(|err|
+            match err {
+                EngineError::PluginNotFound => StatusCode::NOT_FOUND,
+                EngineError::PluginLoadingError => StatusCode::INTERNAL_SERVER_ERROR
+            })?;
     Ok(Json(result))
 }
 

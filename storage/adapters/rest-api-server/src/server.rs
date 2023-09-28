@@ -53,7 +53,7 @@ async fn get_candles(Query(query_params): Query<CandlesQuery>, State(storage): S
 }
 
 async fn create_candle(State(storage): State<Arc<dyn StorageApi>>, Json(candle): Json<Candle>) {
-    storage.save_candle(candle).await;
+    let _ = storage.save_candle(candle).await;
 
 }
 
@@ -73,7 +73,7 @@ async fn get_orders(Query(query_params): Query<OrdersQuery>, State(storage): Sta
 }
 
 async fn create_order(State(storage): State<Arc<dyn StorageApi>>, Json(order): Json<Order>) {
-    storage.save_order(order).await;
+    let _ = storage.save_order(order).await;
 }
 
 async fn get_positions(Query(query_params): Query<PositionsQuery>,
@@ -84,7 +84,7 @@ async fn get_positions(Query(query_params): Query<PositionsQuery>,
 }
 
 async fn create_position(State(storage): State<Arc<dyn StorageApi>>, Json(position): Json<Position>) {
-    storage.save_position(position).await;
+    let _ = storage.save_position(position).await;
 }
 
 async fn sync(Query(query_params): Query<CandleSyncQuery>,

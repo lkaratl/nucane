@@ -3,16 +3,13 @@ use anyhow::Result;
 use async_trait::async_trait;
 use thiserror::Error;
 use uuid::Uuid;
-use domain_model::{Action, DeploymentInfo, DeploymentStatus, PluginId, Tick};
+use domain_model::{Action, DeploymentInfo, DeploymentStatus, NewDeployment, PluginId, Tick};
 use plugin_loader::Plugin;
 
 #[async_trait]
 pub trait EngineApi: Send + Sync + 'static {
     async fn get_deployments_info(&self) -> Vec<DeploymentInfo>;
-    async fn deploy(&self, simulation_id: Option<Uuid>,
-                    strategy_name: &str,
-                    strategy_version: i64,
-                    params: &HashMap<String, String>) -> Result<DeploymentInfo, EngineError>;
+    async fn deploy(&self, deployments: &[NewDeployment]) -> Result<Vec<DeploymentInfo>, EngineError>;
     async fn get_actions(&self, tick: &Tick) -> Vec<Action>;
     async fn delete_deployment(&self, id: Uuid) -> Option<DeploymentInfo>;
     async fn update_plugin(&self, plugin_id: PluginId);
