@@ -8,6 +8,7 @@ use tracing::{debug, trace, warn};
 use domain_model::{Action, Candle, InstrumentId, OrderAction, OrderActionType, Subscription, Subscriptions, Timeframe};
 use engine_core_api::api::EngineApi;
 use interactor_core_api::InteractorApi;
+use interactor_exchange_api::ExchangeApi;
 use interactor_persistence_api::SubscriptionRepository;
 use storage_core_api::StorageApi;
 
@@ -20,8 +21,8 @@ pub struct Interactor<E: EngineApi, S: StorageApi, R: SubscriptionRepository> {
 }
 
 impl<E: EngineApi, S: StorageApi, R: SubscriptionRepository> Interactor<E, S, R> {
-    pub fn new(engine_client: Arc<E>, storage_client: Arc<S>, subscription_repository: R) -> Self {
-        let service_facade = Arc::new(ServiceFacade::new(engine_client, storage_client));
+    pub fn new(engine_client: Arc<E>, storage_client: Arc<S>, subscription_repository: R, exchanges: Vec<Box<dyn ExchangeApi>>) -> Self {
+        let service_facade = Arc::new(ServiceFacade::new(engine_client, storage_client, exchanges));
         let subscription_manager = SubscriptionManager::new(Arc::clone(&service_facade), subscription_repository);
         Self {
             service_facade,

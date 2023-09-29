@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use reqwest::{Client, Url};
-use tracing::trace;
+use tracing::{error, trace};
 use uuid::Uuid;
 
 use domain_model::{Action, DeploymentInfo, NewDeployment, PluginId, Tick};

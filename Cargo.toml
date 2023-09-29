@@ -16,7 +16,9 @@ members = [
     "interactor/app",
     "interactor/core",
     "interactor/ports/core-api",
+    "interactor/ports/exchange-api",
     "interactor/ports/persistence-api",
+    "interactor/adapters/okx-exchange",
     "interactor/adapters/rest-api-server",
     "interactor/adapters/inmemory-persistence",
     "interactor/adapters/rest-client",
@@ -75,7 +77,9 @@ interactor-config = { path = "interactor/config" }
 interactor-app = { path = "interactor/app" }
 interactor-core = { path = "interactor/core" }
 interactor-core-api = { path = "interactor/ports/core-api" }
+interactor-exchange-api = { path = "interactor/ports/exchange-api" }
 interactor-persistence-api = { path = "interactor/ports/persistence-api" }
+interactor-okx-exchange = { path = "interactor/adapters/okx-exchange" }
 interactor-rest-api-server = { path = "interactor/adapters/rest-api-server" }
 interactor-rest-client = { path = "interactor/adapters/rest-client" }
 interactor-inmemory-persistence = { path = "interactor/adapters/inmemory-persistence" }

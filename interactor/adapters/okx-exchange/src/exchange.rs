@@ -12,11 +12,12 @@ use eac::{enums, rest};
 use eac::enums::{InstType, TdMode};
 use eac::rest::{CandlesHistoryRequest, OkExRest, PlaceOrderRequest, RateLimitedRestClient, Trigger};
 use eac::websocket::{Channel, Command, OkxWsClient, WsMessageHandler};
-use interactor_config::CONFIG;
+use engine_core_api::api::EngineApi;
+use interactor_exchange_api::ExchangeApi;
+use storage_core_api::StorageApi;
+use crate::handlers::{CandleHandler, OrderHandler, PositionHandler, TickHandler};
 
-use crate::exchanges::exchange::ExchangeApi;
-
-pub struct OkxService {
+pub struct OkxExchange<E: EngineApi, S: StorageApi> {
     is_demo: bool,
     api_key: String,
     api_secret: String,
@@ -24,17 +25,14 @@ pub struct OkxService {
     ws_url: String,
     sockets: Arc<Mutex<RefCell<HashMap<String, OkxWsClient>>>>,
     rest_client: RateLimitedRestClient,
+
+    engine_client: Arc<E>,
+    storage_client: Arc<S>,
 }
 
-impl Default for OkxService {
-    fn default() -> Self {
-        let is_demo = CONFIG.eac.demo;
-        let http_url = &CONFIG.eac.exchanges.okx.http.url;
-        let ws_url = &CONFIG.eac.exchanges.okx.ws.url;
-        let api_key = &CONFIG.eac.exchanges.okx.auth.key;
-        let api_secret = &CONFIG.eac.exchanges.okx.auth.secret;
-        let api_passphrase = &CONFIG.eac.exchanges.okx.auth.passphrase;
-
+impl<E: EngineApi, S: StorageApi> OkxExchange<E, S> {
+    pub fn new(is_demo: bool, http_url: &str, ws_url: &str, api_key: &str, api_secret: &str, api_passphrase: &str,
+               engine_client: Arc<E>, storage_client: Arc<S>) -> Self {
         let rest_client = OkExRest::with_credential(http_url, is_demo, api_key, api_secret, api_passphrase);
         Self {
             is_demo,
@@ -44,14 +42,20 @@ impl Default for OkxService {
             ws_url: ws_url.to_owned(),
             sockets: Default::default(),
             rest_client: RateLimitedRestClient::new(rest_client),
+            engine_client,
+            storage_client,
         }
     }
 }
 
 #[async_trait]
-impl ExchangeApi for OkxService {
+impl <E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E,S> {
+    fn id(&self) -> Exchange {
+        Exchange::OKX
+    }
+
     // todo maybe better don't create client for each subscription and use one thread to handle all messages
-    async fn subscribe_ticks<H: WsMessageHandler>(&self, currency_pair: &CurrencyPair, market_type: &MarketType, handler: H) {
+    async fn subscribe_ticks(&self, currency_pair: &CurrencyPair, market_type: &MarketType) {
         let mut inst_id = format!("{}-{}", currency_pair.target, currency_pair.source);
         if !MarketType::Spot.eq(market_type) {
             inst_id = format!("{}-{}", inst_id, market_type);
@@ -63,6 +67,8 @@ impl ExchangeApi for OkxService {
             .borrow()
             .contains_key(id);
         if !already_exists {
+            let engine_client = Arc::clone(&self.engine_client);
+            let handler = TickHandler::new(engine_client, *currency_pair, *market_type);
             let client = OkxWsClient::public(false, &self.ws_url, handler).await;
             client.send(Command::subscribe(vec![Channel::MarkPrice {
                 inst_id,
@@ -88,7 +94,7 @@ impl ExchangeApi for OkxService {
             .retain(|key, _| !socket_id.eq(key));
     }
 
-    async fn subscribe_candles<H: WsMessageHandler>(&self, currency_pair: &CurrencyPair, market_type: &MarketType, handler: H) {
+    async fn subscribe_candles(&self, currency_pair: &CurrencyPair, market_type: &MarketType) {
         let mut inst_id = format!("{}-{}", currency_pair.target, currency_pair.source);
         if !MarketType::Spot.eq(market_type) {
             inst_id = format!("{}-{}", inst_id, market_type);
@@ -100,6 +106,8 @@ impl ExchangeApi for OkxService {
             .borrow()
             .contains_key(id);
         if !already_exists {
+            let storage_client = Arc::clone(&self.storage_client);
+            let handler = CandleHandler::new(*currency_pair, *market_type, storage_client);
             let client = OkxWsClient::business(
                 self.is_demo,
                 &self.ws_url,
@@ -137,7 +145,7 @@ impl ExchangeApi for OkxService {
             .retain(|key, _| !socket_id.eq(key));
     }
 
-    async fn listen_orders<H: WsMessageHandler>(&self, handler: H) {
+    async fn listen_orders(&self) {
         const ID: &str = "orders";
         let already_exists = self.sockets
             .lock()
@@ -145,6 +153,8 @@ impl ExchangeApi for OkxService {
             .borrow()
             .contains_key(ID);
         if !already_exists {
+            let storage_client = Arc::clone(&self.storage_client);
+            let handler = OrderHandler::new(storage_client);
             let client = OkxWsClient::private(
                 self.is_demo,
                 &self.ws_url,
@@ -165,7 +175,7 @@ impl ExchangeApi for OkxService {
         }
     }
 
-    async fn listen_positions<H: WsMessageHandler>(&self, handler: H) {
+    async fn listen_positions(&self) {
         const ID: &str = "position";
         let already_exists = self.sockets
             .lock()
@@ -173,6 +183,8 @@ impl ExchangeApi for OkxService {
             .borrow()
             .contains_key(ID);
         if !already_exists {
+            let storage_client = Arc::clone(&self.storage_client);
+            let handler = PositionHandler::new(storage_client);
             let client = OkxWsClient::private(
                 self.is_demo,
                 &self.ws_url,

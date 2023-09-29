@@ -6,7 +6,7 @@ use tracing::debug;
 use tracing_subscriber::fmt::SubscriberBuilder;
 use tracing_subscriber::EnvFilter;
 
-use domain_model::{CreatePosition, CreateSimulation, CreateSimulationDeployment, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Side, Timeframe};
+use domain_model::{CreatePosition, CreateSimulation, CreateSimulationDeployment, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, PluginId, Side, Timeframe};
 use simulator_core_api::SimulatorApi;
 use simulator_rest_client::SimulatorRestClient;
 use storage_core_api::StorageApi;
@@ -18,7 +18,7 @@ static INIT: Once = Once::new();
 const STORAGE_URL: &str = "http://localhost:8082";
 const SIMULATOR_URL: &str = "http://localhost:8084";
 
-async fn init() {
+fn init() {
     unsafe {
         if !INITED {
             init_logger();
@@ -39,11 +39,12 @@ fn init_logger() {
     tracing::subscriber::set_global_default(subscriber)
         .expect("Setting default subscriber failed");
 }
+
 #[ignore = "run db and broker on ci"]
 // clean storage before this test
 #[tokio::test]
 async fn test_e2e_candles_sync() {
-    init().await;
+    init();
     let storage_client = StorageRestClient::new(STORAGE_URL);
 
     let instrument_id = InstrumentId {
@@ -106,7 +107,7 @@ async fn test_e2e_candles_sync() {
 #[ignore = "run db and broker on ci"]
 #[tokio::test]
 async fn test_e2e_simulation() {
-    init().await;
+    init();
     let simulator_client = SimulatorRestClient::new(SIMULATOR_URL);
 
     let positions = vec![CreatePosition {
@@ -115,24 +116,23 @@ async fn test_e2e_simulation() {
         side: Side::Buy,
         size: 5000.0,
     }];
-
+    let plugin_id = PluginId::new("simulation-e2e", 1);
     let strategy = CreateSimulationDeployment {
         simulation_id: None,
         timeframe: Timeframe::FiveM,
-        strategy_name: "simulation-e2e".to_string(),
-        strategy_version: 1,
+        plugin_id,
         params: HashMap::from([(
             "test-parameter".to_string(),
             "test-value".to_string()
         )]),
     };
 
-   let new_simulation = CreateSimulation{
-       positions,
-       start: 1685879400000,
-       end: 1685880000000,
-       strategies: vec![strategy]
-   };
+    let new_simulation = CreateSimulation {
+        positions,
+        start: 1685879400000,
+        end: 1685880000000,
+        strategies: vec![strategy],
+    };
 
     let simulation_report = simulator_client.run_simulation(new_simulation)
         .await

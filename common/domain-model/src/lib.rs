@@ -21,14 +21,6 @@ pub struct Simulation {
     pub active_orders: Vec<Order>,
 }
 
-impl AuditTags for Simulation {
-    fn audit_tags(&self) -> Vec<String> {
-        vec![
-            CommonAuditTags::Simulation.to_string(),
-        ]
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SimulationDeployment {
     pub deployment_id: Option<Uuid>,
@@ -53,49 +45,6 @@ impl From<SimulationPosition> for Position {
     fn from(value: SimulationPosition) -> Self {
         let side = if value.end >= 0.0 { Side::Buy } else { Side::Sell };
         Position::new(Some(value.simulation_id), value.exchange, value.currency, side, value.end)
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct AuditEvent {
-    pub id: Uuid,
-    pub timestamp: DateTime<Utc>,
-    pub tags: Vec<String>,
-    pub event: AuditDetails,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub enum AuditDetails {
-    Deployment(DeploymentInfo),
-    Action(Action),
-    Order(Order),
-    Position(Position),
-    Simulation(Simulation),
-}
-
-pub trait AuditTags {
-    fn audit_tags(&self) -> Vec<String>;
-}
-
-#[derive(Debug)]
-pub enum CommonAuditTags {
-    Deployment,
-    Action,
-    Order,
-    Position,
-    Created,
-    Deleted,
-    OrderAction,
-    InProgress,
-    Failed,
-    Completed,
-    Canceled,
-    Simulation,
-}
-
-impl fmt::Display for CommonAuditTags {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
     }
 }
 
@@ -224,16 +173,6 @@ impl Position {
     }
 }
 
-impl AuditTags for Position {
-    fn audit_tags(&self) -> Vec<String> {
-        vec![
-            CommonAuditTags::Position.to_string(),
-            self.exchange.to_string(),
-            self.currency.to_string(),
-        ]
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Order {
     pub id: String,
@@ -249,23 +188,6 @@ pub struct Order {
     pub avg_price: f64,
     pub stop_loss: Option<Trigger>,
     pub take_profit: Option<Trigger>,
-}
-
-impl AuditTags for Order {
-    fn audit_tags(&self) -> Vec<String> {
-        let mut tags = vec![CommonAuditTags::Order.to_string()];
-        tags.push(self.exchange.to_string());
-        tags.push(self.pair.target.to_string());
-        tags.push(self.pair.source.to_string());
-        match self.status {
-            OrderStatus::Created => tags.push(CommonAuditTags::Created.to_string()),
-            OrderStatus::InProgress => tags.push(CommonAuditTags::InProgress.to_string()),
-            OrderStatus::Failed(_) => tags.push(CommonAuditTags::Failed.to_string()),
-            OrderStatus::Completed => tags.push(CommonAuditTags::Completed.to_string()),
-            OrderStatus::Canceled => tags.push(CommonAuditTags::Canceled.to_string()),
-        }
-        tags
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -347,17 +269,6 @@ pub struct DeploymentInfo {
     pub plugin_id: PluginId,
     pub params: HashMap<String, String>,
     pub subscriptions: Vec<InstrumentId>,
-}
-
-impl AuditTags for DeploymentInfo {
-    fn audit_tags(&self) -> Vec<String> {
-        let mut tags = vec![CommonAuditTags::Deployment.to_string()];
-        match self.status {
-            DeploymentStatus::Created => tags.push(CommonAuditTags::Created.to_string()),
-            DeploymentStatus::Deleted => tags.push(CommonAuditTags::Deleted.to_string())
-        }
-        tags
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -551,35 +462,6 @@ pub enum Action {
     OrderAction(OrderAction)
 }
 
-impl AuditTags for Action {
-    fn audit_tags(&self) -> Vec<String> {
-        let mut tags = vec![CommonAuditTags::Action.to_string()];
-        match self {
-            Action::OrderAction(order_action) => {
-                tags.push(CommonAuditTags::OrderAction.to_string());
-                tags.push(order_action.exchange.to_string());
-                match order_action.status {
-                    OrderStatus::Created => tags.push(CommonAuditTags::Created.to_string()),
-                    OrderStatus::InProgress => tags.push(CommonAuditTags::InProgress.to_string()),
-                    OrderStatus::Failed(_) => tags.push(CommonAuditTags::Failed.to_string()),
-                    OrderStatus::Completed => tags.push(CommonAuditTags::Completed.to_string()),
-                    OrderStatus::Canceled => tags.push(CommonAuditTags::Canceled.to_string()),
-                }
-
-                match &order_action.order {
-                    OrderActionType::CreateOrder(create_order) => {
-                        tags.push(create_order.pair.target.to_string());
-                        tags.push(create_order.pair.source.to_string());
-                    }
-                    OrderActionType::PatchOrder => {}
-                    OrderActionType::CancelOrder => {}
-                }
-            }
-        }
-        tags
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OrderAction {
     pub id: Uuid,
@@ -691,7 +573,6 @@ pub enum MarginMode {
     Isolated,
 }
 
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateSimulation {
     pub start: i64,
@@ -704,17 +585,15 @@ pub struct CreateSimulation {
 pub struct CreateSimulationDeployment {
     pub simulation_id: Option<Uuid>,
     pub timeframe: Timeframe,
-    pub strategy_name: String,
-    pub strategy_version: i64,
+    pub plugin_id: PluginId,
     pub params: HashMap<String, String>,
 }
 
 pub fn convert_to_simulation_deployment(value: CreateSimulationDeployment, ) -> SimulationDeployment {
-    let plugin_id = PluginId::new(&value.strategy_name, value.strategy_version);
     SimulationDeployment {
         deployment_id: None,
         timeframe: value.timeframe,
-        plugin_id,
+        plugin_id: value.plugin_id,
         params: value.params,
         subscriptions: Vec::new(),
     }
