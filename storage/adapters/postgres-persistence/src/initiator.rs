@@ -1,8 +1,10 @@
 use std::ops::Deref;
 use std::sync::Arc;
+
 use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbErr};
 use sea_orm_migration::MigratorTrait;
 use tracing::{error, warn};
+
 use crate::migrations::Migrator;
 
 pub async fn init_db(url: &str, db_name: &str) -> Arc<DatabaseConnection> {

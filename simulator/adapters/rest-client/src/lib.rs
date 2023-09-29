@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use reqwest::{Client, Url};
 use tracing::trace;
+
 use domain_model::CreateSimulation;
 use simulator_core_api::{SimulationReport, SimulatorApi};
 use simulator_rest_api::endpoints::POST_RUN_SIMULATION;

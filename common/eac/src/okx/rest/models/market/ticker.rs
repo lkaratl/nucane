@@ -1,9 +1,11 @@
-use super::super::Request;
-use crate::enums::InstType;
-use crate::okx::parser::ts_milliseconds;
 use chrono::{DateTime, Utc};
 use http::Method;
 use serde::{Deserialize, Serialize};
+
+use crate::enums::InstType;
+use crate::okx::parser::ts_milliseconds;
+
+use super::super::Request;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]

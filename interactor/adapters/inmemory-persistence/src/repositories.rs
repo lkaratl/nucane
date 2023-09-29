@@ -1,12 +1,13 @@
 use std::cell::RefCell;
 use std::sync::Arc;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 use domain_model::{InstrumentId, Subscriptions};
-use interactor_persistence_api::{SubscriptionRepository};
-use uuid::Uuid;
+use interactor_persistence_api::SubscriptionRepository;
 
 #[derive(Default)]
 pub struct InMemorySubscriptionRepository {

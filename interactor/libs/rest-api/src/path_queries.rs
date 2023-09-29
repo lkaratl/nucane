@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
-use domain_model::{Currency, Exchange, MarketType, Timeframe};
 use serde_inline_default::serde_inline_default;
+
+use domain_model::{Currency, Exchange, MarketType, Timeframe};
 
 #[serde_inline_default]
 #[derive(Debug, Deserialize, Serialize)]

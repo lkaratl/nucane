@@ -33,8 +33,10 @@ mod tests {
 
     mod rest {
         use std::env;
-        use std::sync::{Arc};
+        use std::sync::Arc;
+
         use tracing::debug;
+
         use crate::enums::{Side, TdMode};
         use crate::okx::tests::{init_logger, LOGGING_LEVEL};
         use crate::rest::{CandlesHistoryRequest, OkExRest, PlaceOrderRequest, RateLimitedRestClient, Trigger};
@@ -304,9 +306,9 @@ mod tests {
 
         use serde_json::from_value;
         use tracing::debug;
+
         use crate::enums::{InstType, Side, TdMode};
         use crate::okx::tests::rest::build_private_rest_client;
-
         use crate::rest::{MarkPriceResponse, OrderDetailsResponse, PlaceOrderRequest};
         use crate::rest::Size::Source;
         use crate::websocket::{Channel, Command, Message, OkxWsClient};

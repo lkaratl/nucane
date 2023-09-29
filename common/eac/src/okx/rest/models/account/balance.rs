@@ -1,6 +1,7 @@
-use super::super::Request;
 use http::Method;
 use serde::{Deserialize, Serialize};
+
+use super::super::Request;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BalanceRequest {

@@ -1,3 +1,4 @@
+pub use api::InteractorApi;
+
 mod api;
 
-pub use api::InteractorApi;

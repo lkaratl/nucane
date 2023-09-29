@@ -5,8 +5,8 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use sea_orm::{ActiveValue, ColumnTrait, Condition, ConnectionTrait, EntityTrait, QueryOrder, sea_query};
-use serde_json::json;
 use sea_orm::QueryFilter;
+use serde_json::json;
 
 use domain_model::{Currency, Exchange, MarketType, OrderStatus, OrderType, Side};
 use storage_persistence_api::OrderRepository;

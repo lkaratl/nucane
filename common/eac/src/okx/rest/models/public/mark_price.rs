@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
-use serde::{Deserialize};
+use serde::Deserialize;
+
 use crate::enums::InstType;
 
 #[derive(Deserialize, Debug, Clone)]

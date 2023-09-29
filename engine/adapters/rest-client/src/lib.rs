@@ -1,3 +1,4 @@
+pub use client::EngineRestClient;
+
 mod client;
 
-pub use client::EngineRestClient;

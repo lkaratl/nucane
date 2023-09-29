@@ -1,6 +1,8 @@
 use std::sync::Arc;
+
 use domain_model::{InstrumentId, Timeframe};
 use storage_core_api::StorageApi;
+
 use crate::calculation::moving_average;
 
 pub struct Indicators {

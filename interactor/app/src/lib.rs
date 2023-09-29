@@ -1,7 +1,8 @@
 use std::sync::Arc;
-use tracing::info;
-use engine_rest_client::EngineRestClient;
 
+use tracing::info;
+
+use engine_rest_client::EngineRestClient;
 use interactor_config::CONFIG;
 use interactor_core::Interactor;
 use interactor_exchange_api::ExchangeApi;

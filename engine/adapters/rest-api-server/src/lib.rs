@@ -1,3 +1,4 @@
+pub use server::run;
+
 mod server;
 
-pub use server::run;

@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
+use async_trait::async_trait;
 use chrono::Utc;
 use tracing::info;
 use uuid::Uuid;
-use async_trait::async_trait;
 
-use domain_model::{Action, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction, OrderActionType, OrderMarketType, Side, OrderStatus, OrderType, Tick, Timeframe};
+use domain_model::{Action, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction, OrderActionType, OrderMarketType, OrderStatus, OrderType, Side, Tick, Timeframe};
 use domain_model::Size::Source;
 use strategy_api::{Strategy, StrategyApi, utils};
 

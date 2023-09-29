@@ -1,3 +1,4 @@
+pub use api::RegistryApi;
+
 mod api;
 
-pub use api::RegistryApi;

@@ -1,15 +1,17 @@
 use std::sync::Arc;
 use std::time::Duration;
-use futures::{SinkExt, StreamExt};
+
 use async_broadcast::{broadcast, Receiver, Sender};
+use futures::{SinkExt, StreamExt};
 use futures::stream::{SplitSink, SplitStream};
 use tokio::{select, task};
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
-use tracing::{error, trace, debug, warn, info};
+use tracing::{debug, error, info, trace, warn};
 use tungstenite::Message as WsMessage;
 use url::Url;
+
 use crate::okx::credential::Credential;
 use crate::websocket::{Command, Message};
 use crate::websocket::handler::WsMessageHandler;

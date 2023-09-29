@@ -1,7 +1,9 @@
-use super::super::Request;
-use crate::enums::{Alias, CtType, InstType, InstrumentState, OptType};
 use http::Method;
 use serde::{Deserialize, Serialize};
+
+use crate::enums::{Alias, CtType, InstrumentState, InstType, OptType};
+
+use super::super::Request;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]

@@ -1,8 +1,9 @@
+use anyhow::Result;
+use async_trait::async_trait;
+
 use domain_model::{PluginBinary, PluginId, PluginInfo};
 use registry_blob_api::BlobApi;
 use registry_core_api::RegistryApi;
-use anyhow::Result;
-use async_trait::async_trait;
 
 pub struct Registry<B: BlobApi> {
     plugins_storage: B,

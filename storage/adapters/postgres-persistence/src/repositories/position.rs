@@ -1,14 +1,17 @@
 use std::ops::Deref;
 use std::str::FromStr;
 use std::sync::Arc;
+
+use anyhow::Result;
 use async_trait::async_trait;
 use sea_orm::{ActiveValue, Condition, ConnectionTrait, EntityTrait, sea_query};
-use storage_persistence_api::PositionRepository;
-use crate::entities::position;
-use crate::entities::prelude::Position;
-use anyhow::Result;
 use sea_orm::ColumnTrait;
 use sea_orm::QueryFilter;
+
+use storage_persistence_api::PositionRepository;
+
+use crate::entities::position;
+use crate::entities::prelude::Position;
 
 pub struct PositionPostgresRepository<T: ConnectionTrait> {
     db: Arc<T>,

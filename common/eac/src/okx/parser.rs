@@ -1,9 +1,10 @@
-use chrono::{serde as chrono_serde, DateTime, Utc};
+use std::{fmt::Display, str::FromStr};
+
+use chrono::{DateTime, serde as chrono_serde, Utc};
 use serde::{
     de::{DeserializeOwned, Error as DeError, IntoDeserializer},
     Deserialize, Deserializer,
 };
-use std::{fmt::Display, str::FromStr};
 
 pub fn deserialize_str_opt<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
 where

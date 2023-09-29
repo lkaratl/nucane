@@ -1,3 +1,4 @@
+pub use repositories::InMemorySubscriptionRepository;
+
 mod repositories;
 
-pub use repositories::InMemorySubscriptionRepository;

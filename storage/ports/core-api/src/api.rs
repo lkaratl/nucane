@@ -1,8 +1,9 @@
-use async_trait::async_trait;
-use domain_model::{Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position, Side, Timeframe};
 use anyhow::Result;
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+
+use domain_model::{Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position, Side, Timeframe};
 
 #[async_trait]
 pub trait StorageApi: Send + Sync + 'static {

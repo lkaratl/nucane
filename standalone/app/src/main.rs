@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use tracing_subscriber::{EnvFilter, fmt, Layer};
 use tracing_subscriber::layer::SubscriberExt;
+
 use standalone_config::CONFIG;
 
 fn main() {

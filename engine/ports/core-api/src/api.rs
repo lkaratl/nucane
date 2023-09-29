@@ -1,8 +1,10 @@
 use std::collections::HashMap;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use thiserror::Error;
 use uuid::Uuid;
+
 use domain_model::{Action, DeploymentInfo, DeploymentStatus, NewDeployment, PluginId, Tick};
 use plugin_loader::Plugin;
 

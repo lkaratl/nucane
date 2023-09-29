@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+
 use domain_model::{Currency, Exchange, MarketType, OrderStatus, OrderType, Side, Timeframe};
 
 #[derive(Debug, Deserialize, Serialize)]

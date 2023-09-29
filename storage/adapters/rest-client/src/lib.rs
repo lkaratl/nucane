@@ -1,3 +1,4 @@
+pub use client::StorageRestClient;
+
 mod client;
 
-pub use client::StorageRestClient;

@@ -1,3 +1,4 @@
+pub use repositories::SubscriptionRepository;
+
 mod repositories;
 
-pub use repositories::SubscriptionRepository;

@@ -1,10 +1,12 @@
 use std::collections::HashMap;
-use crate::rest::{OkExRest, Request};
+
 use anyhow::Result;
 use serde::de::DeserializeOwned;
 use tokio::sync::Mutex;
 use tracing::debug;
+
 use crate::OkExError;
+use crate::rest::{OkExRest, Request};
 
 pub struct RateLimitedRestClient {
     client: OkExRest,

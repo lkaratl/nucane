@@ -3,8 +3,8 @@ use std::sync::Once;
 
 use chrono::{TimeZone, Utc};
 use tracing::debug;
-use tracing_subscriber::fmt::SubscriberBuilder;
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::fmt::SubscriberBuilder;
 
 use domain_model::{CreatePosition, CreateSimulation, CreateSimulationDeployment, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, PluginId, Side, Timeframe};
 use simulator_core_api::SimulatorApi;

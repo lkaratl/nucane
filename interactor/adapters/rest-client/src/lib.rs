@@ -1,3 +1,4 @@
+pub use client::InteractorRestClient;
+
 mod client;
 
-pub use client::InteractorRestClient;

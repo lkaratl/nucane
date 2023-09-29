@@ -1,10 +1,10 @@
-use chrono::Utc;
-use uuid::Uuid;
 use async_trait::async_trait;
+use chrono::Utc;
 use tracing::{error, info};
+use uuid::Uuid;
 
-use domain_model::{Action, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction, OrderActionType, OrderMarketType, Side, OrderStatus, OrderType, Tick, Trigger};
-use domain_model::Size::{Source};
+use domain_model::{Action, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction, OrderActionType, OrderMarketType, OrderStatus, OrderType, Side, Tick, Trigger};
+use domain_model::Size::Source;
 use strategy_api::{Strategy, StrategyApi, utils};
 
 #[allow(improper_ctypes_definitions)]

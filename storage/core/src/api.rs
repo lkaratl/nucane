@@ -1,11 +1,14 @@
 use std::sync::Arc;
+
+use anyhow::Result;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+
 use domain_model::{Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position, Side, Timeframe};
-use storage_core_api::{StorageApi, SyncReport};
-use anyhow::Result;
 use interactor_core_api::InteractorApi;
+use storage_core_api::{StorageApi, SyncReport};
 use storage_persistence_api::{CandleRepository, OrderRepository, PositionRepository};
+
 use crate::services::candle::CandleService;
 use crate::services::candle_sync::CandleSyncService;
 use crate::services::order::OrderService;

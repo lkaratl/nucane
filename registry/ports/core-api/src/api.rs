@@ -1,5 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
+
 use domain_model::{PluginBinary, PluginId, PluginInfo};
 
 #[async_trait]

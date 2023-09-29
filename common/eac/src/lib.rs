@@ -1,2 +1,3 @@
-mod okx;
 pub use okx::*;
+
+mod okx;

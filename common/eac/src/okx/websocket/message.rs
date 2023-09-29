@@ -1,6 +1,8 @@
-use super::Channel;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+use super::Channel;
+
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ErrorLiteral {

@@ -1,7 +1,8 @@
-use domain_model::{Action, Candle, InstrumentId, Subscription, Subscriptions, Timeframe};
 use anyhow::Result;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+
+use domain_model::{Action, Candle, InstrumentId, Subscription, Subscriptions, Timeframe};
 
 #[async_trait]
 pub trait InteractorApi: Send + Sync + 'static {

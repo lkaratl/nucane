@@ -6,12 +6,12 @@ use anyhow::Result;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sea_orm::{ActiveValue, ColumnTrait, Condition, ConnectionTrait, EntityTrait, QueryOrder, QuerySelect, QueryTrait, sea_query};
+use sea_orm::QueryFilter;
+
 use storage_persistence_api::CandleRepository;
 
 use crate::entities::{*};
 use crate::entities::prelude::Candle;
-
-use sea_orm::QueryFilter;
 
 pub struct CandlePostgresRepository<T: ConnectionTrait+ Send+ 'static> {
     db: Arc<T>,

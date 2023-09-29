@@ -1,7 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use reqwest::{Client, Url};
-use tracing::{trace};
+use tracing::trace;
+
 use domain_model::{PluginBinary, PluginId, PluginInfo};
 use registry_core_api::RegistryApi;
 use registry_rest_api::endpoints::{DELETE_PLUGINS, GET_PLUGIN_BINARY, GET_PLUGINS_INFO};

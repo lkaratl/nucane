@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use tracing::info;
+
 use engine_rest_client::EngineRestClient;
 use interactor_rest_client::InteractorRestClient;
 use simulator_config::CONFIG;
