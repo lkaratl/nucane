@@ -105,11 +105,11 @@ impl<I: InteractorApi, R: CandleRepository> CandleSyncService<I, R> {
 }
 
 async fn sync_batch<I: InteractorApi, R: CandleRepository>(candle_service: Arc<CandleService<R>>,
-                                      interactor_client: Arc<I>,
-                                      instrument_id: InstrumentId,
-                                      timeframe: Timeframe,
-                                      from: DateTime<Utc>,
-                                      to: DateTime<Utc>) -> Result<SyncReport> {
+                                                           interactor_client: Arc<I>,
+                                                           instrument_id: InstrumentId,
+                                                           timeframe: Timeframe,
+                                                           from: DateTime<Utc>,
+                                                           to: DateTime<Utc>) -> Result<SyncReport> {
     info!("Sync batch from: '{from}', to '{to}'");
     let saved_candles = candle_service.get(
         &instrument_id,

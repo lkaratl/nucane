@@ -20,19 +20,19 @@ pub struct TickHandler<E: EngineApi> {
     engine_client: Arc<E>,
 }
 
-impl <E: EngineApi> TickHandler<E> {
+impl<E: EngineApi> TickHandler<E> {
     pub fn new(engine_client: Arc<E>, currency_pair: CurrencyPair, market_type: MarketType) -> Self {
         Self {
             deviation_percent: 1f64,
             currency_pair,
             market_type,
-            engine_client
+            engine_client,
         }
     }
 }
 
 #[async_trait]
-impl <E: EngineApi>WsMessageHandler for TickHandler<E> {
+impl<E: EngineApi> WsMessageHandler for TickHandler<E> {
     type Type = Tick;
 
     async fn convert_data(&mut self, _arg: Channel, _action: Option<Action>, mut data: Vec<Value>) -> Option<Self::Type> {

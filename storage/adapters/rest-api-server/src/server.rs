@@ -54,7 +54,6 @@ async fn get_candles(Query(query_params): Query<CandlesQuery>, State(storage): S
 
 async fn create_candle(State(storage): State<Arc<dyn StorageApi>>, Json(candle): Json<Candle>) {
     let _ = storage.save_candle(candle).await;
-
 }
 
 async fn get_orders(Query(query_params): Query<OrdersQuery>, State(storage): State<Arc<dyn StorageApi>>) -> Json<Vec<Order>> {

@@ -6,9 +6,9 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "tick")]
 pub struct Model {
     #[sea_orm(
-        primary_key,
-        auto_increment = false,
-        column_type = "Binary(BlobSize::Blob(Some(16)))"
+    primary_key,
+    auto_increment = false,
+    column_type = "Binary(BlobSize::Blob(Some(16)))"
     )]
     pub id: Vec<u8>,
     pub timestamp: DateTimeUtc,

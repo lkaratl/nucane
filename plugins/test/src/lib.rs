@@ -26,8 +26,8 @@ pub struct TestStrategy {
 
 impl Default for TestStrategy {
     fn default() -> Self {
-        utils::init_logger(&format!("{STRATEGY_NAME}-{STRATEGY_VERSION}"),LOGGING_LEVEL);
-        Self{
+        utils::init_logger(&format!("{STRATEGY_NAME}-{STRATEGY_VERSION}"), LOGGING_LEVEL);
+        Self {
             executed: false,
             spot_market_buy: None,
             spot_limit_buy_with_sl_and_tp: None,
@@ -143,7 +143,7 @@ impl TestStrategy {
                     }
                     self.spot_market_buy = None;
                 }
-            }else {
+            } else {
                 error!("Error: {:?}", orders.err());
             }
         }

@@ -10,7 +10,7 @@ use storage_postgres_persistence::repositories::{CandlePostgresRepository, Order
 
 pub async fn run() {
     info!("▶ storage running...");
-    let db =init_db(&CONFIG.database.url, &CONFIG.application.name).await;
+    let db = init_db(&CONFIG.database.url, &CONFIG.application.name).await;
 
     let interactor_client = InteractorRestClient::new(&CONFIG.interactor.url);
     let order_repository = OrderPostgresRepository::new(Arc::clone(&db));

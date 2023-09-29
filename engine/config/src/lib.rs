@@ -27,17 +27,17 @@ pub struct Logging {
 
 #[derive(Deserialize)]
 pub struct Registry {
-    pub url: String
+    pub url: String,
 }
 
 #[derive(Deserialize)]
 pub struct Storage {
-    pub url: String
+    pub url: String,
 }
 
 #[derive(Deserialize)]
 pub struct Interactor {
-    pub url: String
+    pub url: String,
 }
 
 impl Logging {

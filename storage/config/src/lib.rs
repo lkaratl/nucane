@@ -14,12 +14,12 @@ pub struct Config {
 
 #[derive(Deserialize)]
 pub struct Database {
-    pub url: String
+    pub url: String,
 }
 
 #[derive(Deserialize)]
 pub struct Interactor {
-    pub url: String
+    pub url: String,
 }
 
 #[derive(Deserialize)]

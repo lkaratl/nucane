@@ -42,7 +42,7 @@ impl RegistryApi for RegistryRestClient {
     async fn get_plugins_info_by_name(&self, name: &str) -> Vec<PluginInfo> {
         let query = PluginQuery {
             name: Some(name.to_string()),
-            version: None
+            version: None,
         };
         let endpoint = format!("{}{}", self.url, GET_PLUGINS_INFO);
         let mut url = Url::parse(&endpoint).unwrap();

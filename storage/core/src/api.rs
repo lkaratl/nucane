@@ -38,20 +38,20 @@ impl<I: InteractorApi, O: OrderRepository, P: PositionRepository, C: CandleRepos
 }
 
 #[async_trait]
-impl <I: InteractorApi, O: OrderRepository, P: PositionRepository, C: CandleRepository> StorageApi for Storage<I, O, P, C> {
+impl<I: InteractorApi, O: OrderRepository, P: PositionRepository, C: CandleRepository> StorageApi for Storage<I, O, P, C> {
     async fn save_order(&self, order: Order) -> Result<()> {
         self.order_service.save(order).await;
         Ok(())
     }
 
     async fn get_orders(&self, id: Option<String>,
-                       exchange: Option<Exchange>,
-                       market_type: Option<MarketType>,
-                       target: Option<Currency>,
-                       source: Option<Currency>,
-                       status: Option<OrderStatus>,
-                       side: Option<Side>,
-                       order_type: Option<OrderType>) -> Result<Vec<Order>> {
+                        exchange: Option<Exchange>,
+                        market_type: Option<MarketType>,
+                        target: Option<Currency>,
+                        source: Option<Currency>,
+                        status: Option<OrderStatus>,
+                        side: Option<Side>,
+                        order_type: Option<OrderType>) -> Result<Vec<Order>> {
         let orders = self.order_service.get(id, exchange, market_type, target, source, status, side, order_type).await;
         Ok(orders)
     }

@@ -7,9 +7,9 @@ use serde::{
 };
 
 pub fn deserialize_str_opt<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: DeserializeOwned,
+    where
+        D: Deserializer<'de>,
+        T: DeserializeOwned,
 {
     let s = String::deserialize(deserializer)?;
     if s.is_empty() {
@@ -21,10 +21,10 @@ where
 }
 
 pub fn from_str_opt<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: FromStr,
-    T::Err: Display,
+    where
+        D: Deserializer<'de>,
+        T: FromStr,
+        T::Err: Display,
 {
     let s = String::deserialize(deserializer)?;
     if s.is_empty() {
@@ -35,18 +35,18 @@ where
 }
 
 pub fn from_str<'de, D, T>(deserializer: D) -> Result<T, D::Error>
-where
-    D: Deserializer<'de>,
-    T: FromStr,
-    T::Err: Display,
+    where
+        D: Deserializer<'de>,
+        T: FromStr,
+        T::Err: Display,
 {
     let s = String::deserialize(deserializer)?;
     s.parse().map_err(D::Error::custom)
 }
 
 pub fn ts_milliseconds<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
-where
-    D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
     let u: u64 = s.parse().map_err(D::Error::custom)?;

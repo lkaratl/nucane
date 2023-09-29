@@ -23,13 +23,13 @@ pub async fn run() {
 
     let exchanges: Vec<Box<dyn ExchangeApi>> = vec![
         Box::new(OkxExchange::new(CONFIG.eac.demo,
-                         &CONFIG.eac.exchanges.okx.http.url,
-                         &CONFIG.eac.exchanges.okx.ws.url,
-                         &CONFIG.eac.exchanges.okx.auth.key,
-                         &CONFIG.eac.exchanges.okx.auth.secret,
-                         &CONFIG.eac.exchanges.okx.auth.passphrase,
-                         Arc::clone(&engine_client),
-                         Arc::clone(&storage_client),
+                                  &CONFIG.eac.exchanges.okx.http.url,
+                                  &CONFIG.eac.exchanges.okx.ws.url,
+                                  &CONFIG.eac.exchanges.okx.auth.key,
+                                  &CONFIG.eac.exchanges.okx.auth.secret,
+                                  &CONFIG.eac.exchanges.okx.auth.passphrase,
+                                  Arc::clone(&engine_client),
+                                  Arc::clone(&storage_client),
         ))
     ];
     let interactor = Interactor::new(engine_client, storage_client, subscription_repository, exchanges);

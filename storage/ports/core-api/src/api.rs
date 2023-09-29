@@ -11,17 +11,17 @@ pub trait StorageApi: Send + Sync + 'static {
 
     #[allow(clippy::too_many_arguments)]
     async fn get_orders(&self, id: Option<String>,
-                       exchange: Option<Exchange>,
-                       market_type: Option<MarketType>,
-                       target: Option<Currency>,
-                       source: Option<Currency>,
-                       status: Option<OrderStatus>,
-                       side: Option<Side>,
-                       order_type: Option<OrderType>) -> Result<Vec<Order>>;
+                        exchange: Option<Exchange>,
+                        market_type: Option<MarketType>,
+                        target: Option<Currency>,
+                        source: Option<Currency>,
+                        status: Option<OrderStatus>,
+                        side: Option<Side>,
+                        order_type: Option<OrderType>) -> Result<Vec<Order>>;
     async fn save_position(&self, position: Position) -> Result<()>;
     async fn get_positions(&self, exchange: Option<Exchange>,
-                          currency: Option<Currency>,
-                          side: Option<Side>) -> Result<Vec<Position>>;
+                           currency: Option<Currency>,
+                           side: Option<Side>) -> Result<Vec<Position>>;
     async fn save_candle(&self, candle: Candle) -> Result<()>;
     async fn get_candles(&self, instrument_id: &InstrumentId,
                          timeframe: Option<Timeframe>,

@@ -68,7 +68,7 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> Engine<I, R, S> {
         }
     }
 
-    async fn deploy_single(&self, deployment: &NewDeployment)->Result<DeploymentInfo, EngineError> {
+    async fn deploy_single(&self, deployment: &NewDeployment) -> Result<DeploymentInfo, EngineError> {
         let strategy_name = deployment.plugin_id.name.clone();
         let strategy_version = deployment.plugin_id.version;
         let params = deployment.params.clone();

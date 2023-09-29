@@ -7,6 +7,7 @@ pub struct Logger {
     simulation_id: Uuid,
     file_content: Vec<String>,
 }
+
 impl Logger {
     pub fn new(simulation_id: Uuid) -> Self {
         Self {

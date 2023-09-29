@@ -41,7 +41,7 @@ async fn with_tokio_runtime<T: Default>(future: impl Future<Output=T>) -> Result
     tokio::time::timeout(Duration::from_secs(5), future).await
 }
 
-pub struct StrategyApi{
+pub struct StrategyApi {
     pub storage_client: Arc<dyn StorageApi>,
     pub indicators: Indicators,
 }

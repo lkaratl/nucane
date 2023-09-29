@@ -15,7 +15,6 @@ pub trait EngineApi: Send + Sync + 'static {
     async fn get_actions(&self, tick: &Tick) -> Vec<Action>;
     async fn delete_deployment(&self, id: Uuid) -> Option<DeploymentInfo>;
     async fn update_plugin(&self, plugin_id: PluginId);
-
 }
 
 #[derive(Debug)]

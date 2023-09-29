@@ -12,7 +12,7 @@ use storage_core_api::StorageApi;
 pub struct ServiceFacade<E: EngineApi, S: StorageApi> {
     engine_client: Arc<E>,
     storage_client: Arc<S>,
-    exchanges: Vec<Box<dyn ExchangeApi>>
+    exchanges: Vec<Box<dyn ExchangeApi>>,
 }
 
 impl<E: EngineApi, S: StorageApi> ServiceFacade<E, S> {
@@ -20,7 +20,7 @@ impl<E: EngineApi, S: StorageApi> ServiceFacade<E, S> {
         Self {
             engine_client,
             storage_client,
-            exchanges
+            exchanges,
         }
     }
 

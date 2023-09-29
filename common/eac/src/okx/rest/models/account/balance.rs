@@ -10,8 +10,8 @@ pub struct BalanceRequest {
 
 impl BalanceRequest {
     pub fn multiple<S>(currencies: &[S]) -> Self
-    where
-        S: AsRef<str>,
+        where
+            S: AsRef<str>,
     {
         Self {
             ccy: Some(

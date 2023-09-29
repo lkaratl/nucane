@@ -2,6 +2,7 @@ use thiserror::Error;
 use tungstenite::protocol::CloseFrame;
 
 pub type Result<T> = std::result::Result<T, OkExError>;
+
 #[derive(Debug, Error)]
 pub enum OkExError {
     #[error("Cannot deserialize response from {0}")]

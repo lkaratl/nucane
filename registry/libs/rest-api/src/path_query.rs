@@ -8,5 +8,5 @@ pub struct PluginQuery {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AddPluginQuery {
-    pub force: bool
+    pub force: bool,
 }

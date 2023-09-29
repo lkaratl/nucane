@@ -28,8 +28,8 @@ pub struct SimulationE2EStrategy {
 
 impl Default for SimulationE2EStrategy {
     fn default() -> Self {
-        utils::init_logger(&format!("{STRATEGY_NAME}-{STRATEGY_VERSION}"),LOGGING_LEVEL);
-        Self{
+        utils::init_logger(&format!("{STRATEGY_NAME}-{STRATEGY_VERSION}"), LOGGING_LEVEL);
+        Self {
             executed: false,
             order_id: None,
         }
@@ -88,7 +88,7 @@ impl Strategy for SimulationE2EStrategy {
                                 side: Side::Buy,
                                 size: Source(10.0),
                                 stop_loss: None,
-                                take_profit: None
+                                take_profit: None,
                             }
                         ),
                     }

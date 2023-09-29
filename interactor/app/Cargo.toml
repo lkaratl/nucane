@@ -11,7 +11,7 @@ interactor-inmemory-persistence = { workspace = true }
 storage-rest-client = { workspace = true }
 engine-rest-client = { workspace = true }
 interactor-exchange-api = { workspace = true }
-interactor-okx-exchange = { workspace = true}
+interactor-okx-exchange = { workspace = true }
 domain-model = { workspace = true }
 eac = { workspace = true }
 tokio = { workspace = true }

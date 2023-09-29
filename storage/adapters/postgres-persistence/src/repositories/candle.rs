@@ -13,11 +13,11 @@ use storage_persistence_api::CandleRepository;
 use crate::entities::{*};
 use crate::entities::prelude::Candle;
 
-pub struct CandlePostgresRepository<T: ConnectionTrait+ Send+ 'static> {
+pub struct CandlePostgresRepository<T: ConnectionTrait + Send + 'static> {
     db: Arc<T>,
 }
 
-impl<T: ConnectionTrait+ Send + 'static> CandlePostgresRepository<T> {
+impl<T: ConnectionTrait + Send + 'static> CandlePostgresRepository<T> {
     pub fn new(db: Arc<T>) -> Self {
         Self {
             db
@@ -26,7 +26,7 @@ impl<T: ConnectionTrait+ Send + 'static> CandlePostgresRepository<T> {
 }
 
 #[async_trait]
-impl<T: ConnectionTrait + Send+ 'static> CandleRepository for CandlePostgresRepository<T> {
+impl<T: ConnectionTrait + Send + 'static> CandleRepository for CandlePostgresRepository<T> {
     async fn save(&self, candle: domain_model::Candle) -> Result<()> {
         let candle = candle::ActiveModel {
             id: ActiveValue::Set(candle.id),

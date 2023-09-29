@@ -16,7 +16,7 @@ pub struct SubscriptionManager<E: EngineApi, S: StorageApi, R: SubscriptionRepos
 }
 
 impl<E: EngineApi, S: StorageApi, R: SubscriptionRepository> SubscriptionManager<E, S, R> {
-    pub fn new(service_facade: Arc<ServiceFacade<E,S>>, subscription_repository: R) -> Self {
+    pub fn new(service_facade: Arc<ServiceFacade<E, S>>, subscription_repository: R) -> Self {
         Self {
             subscription_repository,
             service_facade,

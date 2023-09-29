@@ -8,7 +8,7 @@ use serde::Deserialize;
 pub struct Config {
     pub logging: Logging,
     pub application: Application,
-    pub engine: Engine
+    pub engine: Engine,
 }
 
 #[derive(Deserialize)]
@@ -25,7 +25,7 @@ pub struct Logging {
 
 #[derive(Deserialize)]
 pub struct Engine {
-    pub url: String
+    pub url: String,
 }
 
 impl Logging {

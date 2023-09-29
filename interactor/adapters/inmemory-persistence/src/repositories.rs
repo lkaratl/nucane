@@ -17,11 +17,11 @@ pub struct InMemorySubscriptionRepository {
 #[async_trait]
 impl SubscriptionRepository for InMemorySubscriptionRepository {
     async fn get_all(&self) -> Vec<Subscriptions> {
-       self.storage
-           .lock()
-           .await
-           .borrow()
-           .clone()
+        self.storage
+            .lock()
+            .await
+            .borrow()
+            .clone()
     }
 
     async fn get_by_deployment(&self, deployment_id: &Uuid) -> Vec<Subscriptions> {

@@ -50,7 +50,7 @@ impl<E: EngineApi, S: StorageApi> OkxExchange<E, S> {
 }
 
 #[async_trait]
-impl <E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E,S> {
+impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
     fn id(&self) -> Exchange {
         Exchange::OKX
     }

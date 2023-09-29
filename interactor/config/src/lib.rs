@@ -33,12 +33,12 @@ pub struct OKX {
 
 #[derive(Deserialize, Clone)]
 pub struct OKXHttp {
-    pub url: String
+    pub url: String,
 }
 
 #[derive(Deserialize, Clone)]
 pub struct OKXWs {
-    pub url: String
+    pub url: String,
 }
 
 #[derive(Deserialize, Clone)]
@@ -62,12 +62,12 @@ pub struct Logging {
 
 #[derive(Deserialize)]
 pub struct Storage {
-    pub url: String
+    pub url: String,
 }
 
 #[derive(Deserialize)]
 pub struct Engine {
-    pub url: String
+    pub url: String,
 }
 
 impl Logging {

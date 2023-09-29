@@ -26,7 +26,7 @@ impl<T: ConnectionTrait> PositionPostgresRepository<T> {
 }
 
 #[async_trait]
-impl<T: ConnectionTrait+Send+'static> PositionRepository for PositionPostgresRepository<T> {
+impl<T: ConnectionTrait + Send + 'static> PositionRepository for PositionPostgresRepository<T> {
     async fn save(&self, position: domain_model::Position) -> Result<()> {
         let exchange = position.exchange.to_string();
         let currency = position.currency.to_string();

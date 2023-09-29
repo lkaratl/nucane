@@ -589,7 +589,7 @@ pub struct CreateSimulationDeployment {
     pub params: HashMap<String, String>,
 }
 
-pub fn convert_to_simulation_deployment(value: CreateSimulationDeployment, ) -> SimulationDeployment {
+pub fn convert_to_simulation_deployment(value: CreateSimulationDeployment) -> SimulationDeployment {
     SimulationDeployment {
         deployment_id: None,
         timeframe: value.timeframe,

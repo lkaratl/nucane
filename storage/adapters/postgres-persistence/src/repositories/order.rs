@@ -27,7 +27,7 @@ impl<T: ConnectionTrait> OrderPostgresRepository<T> {
 }
 
 #[async_trait]
-impl<T: ConnectionTrait+ Send +'static> OrderRepository for OrderPostgresRepository<T> {
+impl<T: ConnectionTrait + Send + 'static> OrderRepository for OrderPostgresRepository<T> {
     async fn save(&self, order: domain_model::Order) -> Result<()> {
         let order = order::ActiveModel {
             id: ActiveValue::Set(order.id),
