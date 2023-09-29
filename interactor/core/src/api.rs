@@ -5,8 +5,10 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use tracing::{debug, trace, warn};
 
-use domain_model::{Action, Candle, InstrumentId, OrderAction, OrderActionType, Subscription, Subscriptions, Timeframe};
-use engine_core_api::api::EngineApi;
+use domain_model::{
+    Action, Candle, InstrumentId, OrderAction, OrderActionType, Subscription, Subscriptions,
+    Timeframe,
+};
 use interactor_core_api::InteractorApi;
 use interactor_exchange_api::ExchangeApi;
 use interactor_persistence_api::SubscriptionRepository;
@@ -15,15 +17,20 @@ use storage_core_api::StorageApi;
 use crate::exchanges::ServiceFacade;
 use crate::services::SubscriptionManager;
 
-pub struct Interactor<E: EngineApi, S: StorageApi, R: SubscriptionRepository> {
-    service_facade: Arc<ServiceFacade<E, S>>,
-    subscription_manager: SubscriptionManager<E, S, R>,
+pub struct Interactor<S: StorageApi, R: SubscriptionRepository> {
+    service_facade: Arc<ServiceFacade<S>>,
+    subscription_manager: SubscriptionManager<S, R>,
 }
 
-impl<E: EngineApi, S: StorageApi, R: SubscriptionRepository> Interactor<E, S, R> {
-    pub fn new(engine_client: Arc<E>, storage_client: Arc<S>, subscription_repository: R, exchanges: Vec<Box<dyn ExchangeApi>>) -> Self {
-        let service_facade = Arc::new(ServiceFacade::new(engine_client, storage_client, exchanges));
-        let subscription_manager = SubscriptionManager::new(Arc::clone(&service_facade), subscription_repository);
+impl<S: StorageApi, R: SubscriptionRepository> Interactor<S, R> {
+    pub fn new(
+        storage_client: Arc<S>,
+        subscription_repository: R,
+        exchanges: Vec<Box<dyn ExchangeApi>>,
+    ) -> Self {
+        let service_facade = Arc::new(ServiceFacade::new(storage_client, exchanges));
+        let subscription_manager =
+            SubscriptionManager::new(Arc::clone(&service_facade), subscription_repository);
         Self {
             service_facade,
             subscription_manager,
@@ -32,7 +39,7 @@ impl<E: EngineApi, S: StorageApi, R: SubscriptionRepository> Interactor<E, S, R>
 }
 
 #[async_trait]
-impl<E: EngineApi, S: StorageApi, R: SubscriptionRepository> InteractorApi for Interactor<E, S, R> {
+impl<S: StorageApi, R: SubscriptionRepository> InteractorApi for Interactor<S, R> {
     async fn subscriptions(&self) -> Result<Vec<Subscriptions>> {
         Ok(self.subscription_manager.subscriptions().await)
     }
@@ -49,28 +56,49 @@ impl<E: EngineApi, S: StorageApi, R: SubscriptionRepository> InteractorApi for I
 
     async fn execute_actions(&self, actions: Vec<Action>) -> Result<()> {
         for action in actions {
-            let simulation_id = match &action { Action::OrderAction(order_action) => order_action.simulation_id };
+            let simulation_id = match &action {
+                Action::OrderAction(order_action) => order_action.simulation_id,
+            };
             if simulation_id.is_none() {
                 debug!("Retrieved new action event");
                 trace!("Action event: {action:?}");
                 match action {
-                    Action::OrderAction(OrderAction { order: OrderActionType::CreateOrder(create_order), exchange, .. }) =>
+                    Action::OrderAction(OrderAction {
+                        order: OrderActionType::CreateOrder(create_order),
+                        exchange,
+                        ..
+                    }) => {
                         self.service_facade
                             .place_order(exchange, create_order)
-                            .await,
-                    action => warn!("Temporary unsupported action: {action:?}")
+                            .await
+                    }
+                    action => warn!("Temporary unsupported action: {action:?}"),
                 }
             }
         }
         Ok(())
     }
 
-    async fn get_candles(&self, instrument_id: &InstrumentId, timeframe: Timeframe, from: Option<DateTime<Utc>>, to: Option<DateTime<Utc>>, limit: Option<u8>) -> Result<Vec<Candle>> {
-        let candles = self.service_facade.candles_history(instrument_id, timeframe, from, to, limit).await;
+    async fn get_candles(
+        &self,
+        instrument_id: &InstrumentId,
+        timeframe: Timeframe,
+        from: Option<DateTime<Utc>>,
+        to: Option<DateTime<Utc>>,
+        limit: Option<u8>,
+    ) -> Result<Vec<Candle>> {
+        let candles = self
+            .service_facade
+            .candles_history(instrument_id, timeframe, from, to, limit)
+            .await;
         Ok(candles)
     }
 
-    async fn get_price(&self, instrument_id: &InstrumentId, timestamp: Option<DateTime<Utc>>) -> Result<f64> {
+    async fn get_price(
+        &self,
+        instrument_id: &InstrumentId,
+        timestamp: Option<DateTime<Utc>>,
+    ) -> Result<f64> {
         let price = self.service_facade.price(instrument_id, timestamp).await;
         Ok(price)
     }

@@ -1,24 +1,29 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use async_trait::async_trait;
 
 use domain_model::{PluginBinary, PluginId, PluginInfo};
+use engine_core_api::api::EngineApi;
 use registry_blob_api::BlobApi;
 use registry_core_api::RegistryApi;
 
-pub struct Registry<B: BlobApi> {
+pub struct Registry<B: BlobApi, E: EngineApi> {
     plugins_storage: B,
+    engine_client: Arc<E>,
 }
 
-impl<B: BlobApi> Registry<B> {
-    pub fn new(plugins_storage: B) -> Self {
+impl<B: BlobApi, E: EngineApi> Registry<B, E> {
+    pub fn new(plugins_storage: B, engine_client: Arc<E>) -> Self {
         Self {
-            plugins_storage
+            plugins_storage,
+            engine_client,
         }
     }
 }
 
 #[async_trait]
-impl<B: BlobApi> RegistryApi for Registry<B> {
+impl<B: BlobApi, E: EngineApi> RegistryApi for Registry<B, E> {
     async fn get_plugins_info(&self) -> Vec<PluginInfo> {
         self.plugins_storage.get_plugins_info().await
     }
@@ -30,12 +35,9 @@ impl<B: BlobApi> RegistryApi for Registry<B> {
     async fn get_plugin_binary(&self, id: PluginId) -> Option<PluginBinary> {
         let binary = self.plugins_storage.get_plugin_binary(id).await;
         if let Some(binary) = binary {
-            plugin_loader::load(&binary)
-                .ok()
-                .map(|plugin|
-                    PluginBinary::new(&plugin.strategy.name(),
-                                      plugin.strategy.version(),
-                                      &binary))
+            plugin_loader::load(&binary).ok().map(|plugin| {
+                PluginBinary::new(&plugin.strategy.name(), plugin.strategy.version(), &binary)
+            })
         } else {
             None
         }
@@ -47,7 +49,11 @@ impl<B: BlobApi> RegistryApi for Registry<B> {
         let version = active_plugin.strategy.version();
         let plugin = PluginBinary::new(name, version, binary);
         let result = self.plugins_storage.add_plugin(plugin, force).await;
-        // synapse::writer(&CONFIG.broker.url).send(&plugin.as_event(PluginEventType::Updated)); // todo use rest client
+        if let Ok(plugin_info) = &result {
+            self.engine_client
+                .update_plugin(plugin_info.id.clone())
+                .await;
+        }
         result
     }
 

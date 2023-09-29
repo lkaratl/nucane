@@ -17,7 +17,8 @@ pub struct InMemoryBlobStorage {
 #[async_trait]
 impl BlobApi for InMemoryBlobStorage {
     async fn get_plugins_info(&self) -> Vec<PluginInfo> {
-        self.plugins.lock()
+        self.plugins
+            .lock()
             .await
             .borrow()
             .iter()
@@ -27,7 +28,8 @@ impl BlobApi for InMemoryBlobStorage {
     }
 
     async fn get_plugins_info_by_name(&self, name: &str) -> Vec<PluginInfo> {
-        self.plugins.lock()
+        self.plugins
+            .lock()
             .await
             .borrow()
             .iter()
@@ -38,7 +40,8 @@ impl BlobApi for InMemoryBlobStorage {
     }
 
     async fn get_plugin_binary(&self, id: PluginId) -> Option<Vec<u8>> {
-        self.plugins.lock()
+        self.plugins
+            .lock()
             .await
             .borrow()
             .iter()
@@ -46,34 +49,38 @@ impl BlobApi for InMemoryBlobStorage {
             .map(|plugin| plugin.binary.clone())
     }
 
+    #[allow(unreachable_code)]
     async fn add_plugin(&self, plugin: PluginBinary, force: bool) -> Result<PluginInfo> {
-        let existing_plugin_index = self.plugins.lock()
+        let existing_plugin_index = self
+            .plugins
+            .lock()
             .await
             .borrow_mut()
             .iter_mut()
             .position(|existing_plugin| existing_plugin.id.eq(&plugin.id));
         if let Some(existing_plugin_index) = existing_plugin_index {
             if force {
-                if let Some(existing_plugin) = self.plugins.lock()
+                if let Some(existing_plugin) = self
+                    .plugins
+                    .lock()
                     .await
                     .borrow_mut()
-                    .get_mut(existing_plugin_index) {
+                    .get_mut(existing_plugin_index)
+                {
                     existing_plugin.binary = plugin.binary;
                     return Ok(existing_plugin.deref().into());
                 }
             } else {
-                return bail!("Plugin with id: '{:?}' already exists in registry. Please use flag 'force=true' to override existing binary", plugin.id); // todo check this unreachable
+                return bail!("Plugin with id: '{:?}' already exists in registry. Please use flag 'force=true' to override existing binary", plugin.id);
             }
         }
-        self.plugins.lock()
-            .await
-            .borrow_mut()
-            .push(plugin.clone());
+        self.plugins.lock().await.borrow_mut().push(plugin.clone());
         Ok(plugin.into())
     }
 
     async fn delete_plugin(&self, id: PluginId) {
-        self.plugins.lock()
+        self.plugins
+            .lock()
             .await
             .borrow_mut()
             .retain(|plugin| !plugin.id.eq(&id));
