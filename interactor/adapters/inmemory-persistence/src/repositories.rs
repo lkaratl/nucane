@@ -17,11 +17,7 @@ pub struct InMemorySubscriptionRepository {
 #[async_trait]
 impl SubscriptionRepository for InMemorySubscriptionRepository {
     async fn get_all(&self) -> Vec<Subscriptions> {
-        self.storage
-            .lock()
-            .await
-            .borrow()
-            .clone()
+        self.storage.lock().await.borrow().clone()
     }
 
     async fn get_by_deployment(&self, deployment_id: &Uuid) -> Vec<Subscriptions> {
@@ -30,7 +26,7 @@ impl SubscriptionRepository for InMemorySubscriptionRepository {
             .await
             .borrow()
             .iter()
-            .filter(|subscription| subscription.deployment_ids.contains(deployment_id))
+            .filter(|subscription| subscription.deployments.contains(deployment_id))
             .cloned()
             .collect()
     }
@@ -45,16 +41,16 @@ impl SubscriptionRepository for InMemorySubscriptionRepository {
             .cloned()
     }
 
-
     async fn save(&self, subscription: &Subscriptions) -> Result<()> {
-        let storage = self.storage
-            .lock()
-            .await;
+        let storage = self.storage.lock().await;
         let mut storage = storage.borrow_mut();
-        let existing_subscription = storage.iter_mut()
+        let existing_subscription = storage
+            .iter_mut()
             .find(|subscription| subscription.instrument_id.eq(&subscription.instrument_id));
         if let Some(existing_subscription) = existing_subscription {
-            existing_subscription.deployment_ids.extend(subscription.deployment_ids.clone());
+            existing_subscription
+                .deployments
+                .extend(subscription.deployments.clone());
         } else {
             storage.push(subscription.clone());
         }

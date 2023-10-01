@@ -36,7 +36,7 @@ impl<S: StorageApi, R: SubscriptionRepository> SubscriptionManager<S, R> {
                     .await;
                 if let Some(mut subscription) = subscription {
                     subscription
-                        .deployment_ids
+                        .deployments
                         .insert(new_subscription.deployment_id);
                 } else {
                     self.service_facade
@@ -50,7 +50,7 @@ impl<S: StorageApi, R: SubscriptionRepository> SubscriptionManager<S, R> {
 
                     let new_subscription = Subscriptions {
                         instrument_id: new_instrument,
-                        deployment_ids: HashSet::from([new_subscription.deployment_id]),
+                        deployments: HashSet::from([new_subscription.deployment_id]),
                     };
                     let _ = self.subscription_repository.save(&new_subscription).await;
                 }
@@ -68,9 +68,7 @@ impl<S: StorageApi, R: SubscriptionRepository> SubscriptionManager<S, R> {
                 .await
                 .into_iter()
                 .map(|mut subscription| {
-                    subscription
-                        .deployment_ids
-                        .retain(|id| !id.eq(&deployment_id));
+                    subscription.deployments.retain(|id| !id.eq(&deployment_id));
                     subscription
                 })
                 .collect();
@@ -81,7 +79,7 @@ impl<S: StorageApi, R: SubscriptionRepository> SubscriptionManager<S, R> {
 
             let service_facade = &self.service_facade;
             for subscription in updated_subscriptions {
-                if subscription.deployment_ids.is_empty() {
+                if subscription.deployments.is_empty() {
                     service_facade
                         .unsubscribe_candles(&subscription.instrument_id)
                         .await;

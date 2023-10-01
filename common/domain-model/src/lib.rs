@@ -43,8 +43,18 @@ pub struct SimulationPosition {
 
 impl From<SimulationPosition> for Position {
     fn from(value: SimulationPosition) -> Self {
-        let side = if value.end >= 0.0 { Side::Buy } else { Side::Sell };
-        Position::new(Some(value.simulation_id), value.exchange, value.currency, side, value.end)
+        let side = if value.end >= 0.0 {
+            Side::Buy
+        } else {
+            Side::Sell
+        };
+        Position::new(
+            Some(value.simulation_id),
+            value.exchange,
+            value.currency,
+            side,
+            value.end,
+        )
     }
 }
 
@@ -75,7 +85,7 @@ impl FromStr for CandleStatus {
         match input {
             "Open" => Ok(CandleStatus::Open),
             "Close" => Ok(CandleStatus::Close),
-            input => bail!("Unknown candle status: {input}")
+            input => bail!("Unknown candle status: {input}"),
         }
     }
 }
@@ -118,7 +128,7 @@ impl FromStr for Timeframe {
             "TwoH" => Ok(Timeframe::TwoH),
             "FourH" => Ok(Timeframe::FourH),
             "OneD" => Ok(Timeframe::OneD),
-            input => bail!("Unknown market type: {input}")
+            input => bail!("Unknown market type: {input}"),
         }
     }
 }
@@ -150,11 +160,13 @@ pub struct Position {
 }
 
 impl Position {
-    pub fn new(simulation_id: Option<Uuid>,
-               exchange: Exchange,
-               currency: Currency,
-               side: Side,
-               size: f64) -> Self {
+    pub fn new(
+        simulation_id: Option<Uuid>,
+        exchange: Exchange,
+        currency: Currency,
+        side: Side,
+        size: f64,
+    ) -> Self {
         let id = {
             let mut id = format!("{exchange}_{currency}");
             if let Some(simulation_id) = simulation_id {
@@ -218,9 +230,7 @@ impl PluginId {
 
 impl From<PluginBinary> for PluginInfo {
     fn from(value: PluginBinary) -> Self {
-        Self {
-            id: value.id,
-        }
+        Self { id: value.id }
     }
 }
 
@@ -258,7 +268,7 @@ pub struct PluginEvent {
 
 #[derive(Eq, PartialEq, Debug, Deserialize, Serialize, Clone)]
 pub enum PluginEventType {
-    Updated
+    Updated,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -289,7 +299,6 @@ pub struct Subscription {
     pub simulation_id: Option<Uuid>,
     pub deployment_id: Uuid,
     pub instruments: Vec<InstrumentId>,
-    pub status: SubscriptionStatus,
 }
 
 impl From<&DeploymentInfo> for Subscription {
@@ -298,26 +307,15 @@ impl From<&DeploymentInfo> for Subscription {
             simulation_id: value.simulation_id,
             deployment_id: value.id,
             instruments: value.subscriptions.clone(),
-            status: SubscriptionStatus::Created,
         }
     }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub enum SubscriptionStatus {
-    Created,
-    Ready,
-    Active,
-    Failed,
-    Deleted,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Subscriptions {
     pub instrument_id: InstrumentId,
-    pub deployment_ids: HashSet<Uuid>,
+    pub deployments: HashSet<Uuid>,
 }
-
 
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Clone)]
 pub struct InstrumentId {
@@ -343,7 +341,7 @@ pub struct Tick {
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Copy, Clone)]
 pub enum Exchange {
-    OKX
+    OKX,
 }
 
 impl fmt::Display for Exchange {
@@ -357,7 +355,7 @@ impl FromStr for Exchange {
     fn from_str(input: &str) -> Result<Exchange, Self::Err> {
         match input {
             "OKX" => Ok(Exchange::OKX),
-            input => bail!("Unknown exchange: {input}")
+            input => bail!("Unknown exchange: {input}"),
         }
     }
 }
@@ -428,7 +426,7 @@ impl FromStr for Currency {
             "JFI" => Ok(Currency::JFI),
             "OKB" => Ok(Currency::OKB),
             "DOGE" => Ok(Currency::DOGE),
-            input => bail!("Unknown currency: {input}")
+            input => bail!("Unknown currency: {input}"),
         }
     }
 }
@@ -451,7 +449,7 @@ impl FromStr for MarketType {
         match input {
             "SPOT" => Ok(MarketType::Spot),
             "MARGIN" => Ok(MarketType::Margin),
-            input => bail!("Unknown market type: {input}")
+            input => bail!("Unknown market type: {input}"),
         }
     }
 }
@@ -459,15 +457,14 @@ impl FromStr for MarketType {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "action")]
 pub enum Action {
-    OrderAction(OrderAction)
+    OrderAction(OrderAction),
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OrderAction {
     pub id: Uuid,
     pub simulation_id: Option<Uuid>,
-    pub strategy_name: String,
-    pub strategy_version: i64,
+    pub plugin_id: PluginId,
     pub timestamp: DateTime<Utc>,
     pub exchange: Exchange,
     pub status: OrderStatus,
@@ -487,7 +484,7 @@ impl OrderStatus {
     pub fn is_finished(&self) -> bool {
         match self {
             OrderStatus::Created | OrderStatus::InProgress => false,
-            OrderStatus::Failed(_) | OrderStatus::Completed | OrderStatus::Canceled => true
+            OrderStatus::Failed(_) | OrderStatus::Completed | OrderStatus::Canceled => true,
         }
     }
 }
@@ -550,7 +547,7 @@ impl FromStr for Side {
         match input {
             "Buy" | "BUY" => Ok(Side::Buy),
             "Sell" | "SELL" => Ok(Side::Sell),
-            input => bail!("Unknown side: {input}")
+            input => bail!("Unknown side: {input}"),
         }
     }
 }
@@ -577,7 +574,7 @@ pub enum MarginMode {
 pub struct CreateSimulation {
     pub start: i64,
     pub end: i64,
-    pub positions: Vec<CreatePosition>,
+    pub positions: Vec<CreateSimulationPosition>,
     pub strategies: Vec<CreateSimulationDeployment>,
 }
 
@@ -600,14 +597,14 @@ pub fn convert_to_simulation_deployment(value: CreateSimulationDeployment) -> Si
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct CreatePosition {
+pub struct CreateSimulationPosition {
     pub exchange: Exchange,
     pub currency: Currency,
     pub side: Side,
     pub size: f64,
 }
 
-pub fn convert(value: CreatePosition, simulation_id: Uuid) -> SimulationPosition {
+pub fn convert(value: CreateSimulationPosition, simulation_id: Uuid) -> SimulationPosition {
     SimulationPosition {
         simulation_id,
         exchange: value.exchange,
@@ -622,10 +619,14 @@ pub fn convert(value: CreatePosition, simulation_id: Uuid) -> SimulationPosition
 impl From<CreateSimulation> for Simulation {
     fn from(value: CreateSimulation) -> Self {
         let simulation_id = Uuid::new_v4();
-        let positions = value.positions.into_iter()
+        let positions = value
+            .positions
+            .into_iter()
             .map(|position| convert(position, simulation_id))
             .collect();
-        let deployments = value.strategies.into_iter()
+        let deployments = value
+            .strategies
+            .into_iter()
             .map(convert_to_simulation_deployment)
             .collect();
 

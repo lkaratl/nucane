@@ -3,10 +3,13 @@ use std::sync::Once;
 
 use chrono::{TimeZone, Utc};
 use tracing::debug;
-use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::SubscriberBuilder;
+use tracing_subscriber::EnvFilter;
 
-use domain_model::{CreatePosition, CreateSimulation, CreateSimulationDeployment, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, PluginId, Side, Timeframe};
+use domain_model::{
+    CreateSimulation, CreateSimulationDeployment, CreateSimulationPosition, Currency, CurrencyPair,
+    Exchange, InstrumentId, MarketType, PluginId, Side, Timeframe,
+};
 use simulator_core_api::SimulatorApi;
 use simulator_rest_client::SimulatorRestClient;
 use storage_core_api::StorageApi;
@@ -31,13 +34,14 @@ fn init() {
 fn init_logger() {
     let subscriber = SubscriberBuilder::default()
         // todo move to config or init on standalone side
-        .with_env_filter(EnvFilter::new("INFO,engine=DEBUG,storage=DEBUG,simulator=DEBUG,interactor=DEBUG"))
+        .with_env_filter(EnvFilter::new(
+            "INFO,engine=DEBUG,storage=DEBUG,simulator=DEBUG,interactor=DEBUG",
+        ))
         .with_file(true)
         .with_line_number(true)
         .finish();
 
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Setting default subscriber failed");
+    tracing::subscriber::set_global_default(subscriber).expect("Setting default subscriber failed");
 }
 
 #[ignore = "run db and broker on ci"]
@@ -59,7 +63,10 @@ async fn test_e2e_candles_sync() {
     let from = Utc.timestamp_millis_opt(1682899200000).unwrap();
     let to = Utc.timestamp_millis_opt(1685577600000).unwrap();
 
-    let reports = storage_client.sync(&instrument_id, &timeframes, from, Some(to)).await.unwrap();
+    let reports = storage_client
+        .sync(&instrument_id, &timeframes, from, Some(to))
+        .await
+        .unwrap();
     debug!("{reports:?}");
     let mut reports_iter = reports.iter();
 
@@ -81,7 +88,10 @@ async fn test_e2e_candles_sync() {
     assert_eq!(report.exists, 0);
     assert_eq!(report.synced, 31);
 
-    let reports = storage_client.sync(&instrument_id, &timeframes, from, Some(to)).await.unwrap();
+    let reports = storage_client
+        .sync(&instrument_id, &timeframes, from, Some(to))
+        .await
+        .unwrap();
     debug!("{reports:?}");
     let mut reports_iter = reports.iter();
 
@@ -110,7 +120,7 @@ async fn test_e2e_simulation() {
     init();
     let simulator_client = SimulatorRestClient::new(SIMULATOR_URL);
 
-    let positions = vec![CreatePosition {
+    let positions = vec![CreateSimulationPosition {
         exchange: Exchange::OKX,
         currency: Currency::USDT,
         side: Side::Buy,
@@ -121,10 +131,7 @@ async fn test_e2e_simulation() {
         simulation_id: None,
         timeframe: Timeframe::FiveM,
         plugin_id,
-        params: HashMap::from([(
-            "test-parameter".to_string(),
-            "test-value".to_string()
-        )]),
+        params: HashMap::from([("test-parameter".to_string(), "test-value".to_string())]),
     };
 
     let new_simulation = CreateSimulation {
@@ -134,7 +141,8 @@ async fn test_e2e_simulation() {
         strategies: vec![strategy],
     };
 
-    let simulation_report = simulator_client.run_simulation(new_simulation)
+    let simulation_report = simulator_client
+        .run_simulation(new_simulation)
         .await
         .unwrap();
 
@@ -149,14 +157,29 @@ async fn test_e2e_simulation() {
     assert_eq!(simulation_report.fees, 0.2);
 
     assert_eq!(simulation_report.assets.len(), 2);
-    assert_eq!(simulation_report.assets.first().unwrap().exchange, Exchange::OKX);
-    assert_eq!(simulation_report.assets.first().unwrap().currency, Currency::USDT);
+    assert_eq!(
+        simulation_report.assets.first().unwrap().exchange,
+        Exchange::OKX
+    );
+    assert_eq!(
+        simulation_report.assets.first().unwrap().currency,
+        Currency::USDT
+    );
     assert_eq!(simulation_report.assets.first().unwrap().start, 5000.0);
     assert_eq!(simulation_report.assets.first().unwrap().end, 3999.8);
-    assert_eq!(simulation_report.assets.first().unwrap().diff, -1000.1999999999998);
+    assert_eq!(
+        simulation_report.assets.first().unwrap().diff,
+        -1000.1999999999998
+    );
     assert_eq!(simulation_report.assets.first().unwrap().fees, 0.2);
-    assert_eq!(simulation_report.assets.get(1).unwrap().exchange, Exchange::OKX);
-    assert_eq!(simulation_report.assets.get(1).unwrap().currency, Currency::BTC);
+    assert_eq!(
+        simulation_report.assets.get(1).unwrap().exchange,
+        Exchange::OKX
+    );
+    assert_eq!(
+        simulation_report.assets.get(1).unwrap().currency,
+        Currency::BTC
+    );
     assert_eq!(simulation_report.assets.get(1).unwrap().start, 0.0);
     assert!(simulation_report.assets.get(1).unwrap().end > 0.036);
     assert!(simulation_report.assets.get(1).unwrap().end < 0.037);
