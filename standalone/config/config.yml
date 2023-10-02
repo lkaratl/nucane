@@ -1,0 +1,14 @@
+logging:
+  level: INFO
+  crates:
+    eac: DEBUG
+    engine: DEBUG
+    storage: DEBUG
+    interactor: DEBUG
+    simulator: DEBUG
+db:
+  version: 13.2.0
+  port: 5432
+  user: postgres
+  password: root
+  persistent: true

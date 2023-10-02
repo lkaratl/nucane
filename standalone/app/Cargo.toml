@@ -1,0 +1,33 @@
+[package]
+name = "standalone-app"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+standalone-config = { workspace = true }
+registry-app = { workspace = true }
+interactor-app = { workspace = true }
+engine-app = { workspace = true }
+storage-app = { workspace = true }
+simulator-app = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-appender = { workspace = true }
+futures = { workspace = true }
+tokio = { workspace = true }
+config = { workspace = true }
+once_cell = { workspace = true }
+serde = { workspace = true }
+anyhow = { workspace = true }
+pg-embed = { workspace = true }
+
+[dev-dependencies]
+domain-model = { workspace = true }
+simulator-rest-api = { workspace = true }
+simulator-rest-client = { workspace = true }
+simulator-core-api = { workspace = true }
+storage-rest-api = { workspace = true }
+storage-rest-client = { workspace = true }
+storage-core-api = { workspace = true }
+reqwest = { workspace = true }
+chrono = { workspace = true }

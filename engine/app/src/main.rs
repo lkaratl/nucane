@@ -1,5 +1,6 @@
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::SubscriberBuilder;
+
 use engine_config::CONFIG;
 
 #[tokio::main]

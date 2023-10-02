@@ -1,9 +1,0 @@
-logging:
-  level: INFO
-  crates:
-    eac: DEBUG
-    engine: DEBUG
-    storage: DEBUG
-    interactor: DEBUG
-    simulator: DEBUG
-

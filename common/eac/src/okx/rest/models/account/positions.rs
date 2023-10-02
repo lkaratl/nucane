@@ -1,9 +1,11 @@
-use super::super::Request;
-use crate::enums::{InstType, MgnMode};
-use crate::okx::parser::ts_milliseconds;
 use chrono::{DateTime, Utc};
 use http::Method;
 use serde::{Deserialize, Serialize};
+
+use crate::enums::{InstType, MgnMode};
+use crate::okx::parser::ts_milliseconds;
+
+use super::super::Request;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PositionsRequest {

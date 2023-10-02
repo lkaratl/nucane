@@ -1,13 +1,11 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::str::FromStr;
 
 use anyhow::{bail, Error};
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-
-use synapse::{Synapse, Topic};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Simulation {
@@ -23,26 +21,11 @@ pub struct Simulation {
     pub active_orders: Vec<Order>,
 }
 
-impl AuditTags for Simulation {
-    fn audit_tags(&self) -> Vec<String> {
-        vec![
-            CommonAuditTags::Simulation.to_string(),
-        ]
-    }
-}
-
-impl Synapse for Simulation {
-    fn topic(&self) -> Topic {
-        Topic::Simulation
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SimulationDeployment {
     pub deployment_id: Option<Uuid>,
     pub timeframe: Timeframe,
-    pub strategy_name: String,
-    pub strategy_version: String,
+    pub plugin_id: PluginId,
     pub params: HashMap<String, String>,
     pub subscriptions: Vec<InstrumentId>,
 }
@@ -60,51 +43,18 @@ pub struct SimulationPosition {
 
 impl From<SimulationPosition> for Position {
     fn from(value: SimulationPosition) -> Self {
-        let side = if value.end >= 0.0 { Side::Buy } else { Side::Sell };
-        Position::new(Some(value.simulation_id), value.exchange, value.currency, side, value.end)
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct AuditEvent {
-    pub id: Uuid,
-    pub timestamp: DateTime<Utc>,
-    pub tags: Vec<String>,
-    pub event: AuditDetails,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub enum AuditDetails {
-    Deployment(Deployment),
-    Action(Action),
-    Order(Order),
-    Position(Position),
-    Simulation(Simulation),
-}
-
-pub trait AuditTags {
-    fn audit_tags(&self) -> Vec<String>;
-}
-
-#[derive(Debug)]
-pub enum CommonAuditTags {
-    Deployment,
-    Action,
-    Order,
-    Position,
-    Created,
-    Deleted,
-    OrderAction,
-    InProgress,
-    Failed,
-    Completed,
-    Canceled,
-    Simulation,
-}
-
-impl fmt::Display for CommonAuditTags {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        let side = if value.end >= 0.0 {
+            Side::Buy
+        } else {
+            Side::Sell
+        };
+        Position::new(
+            Some(value.simulation_id),
+            value.exchange,
+            value.currency,
+            side,
+            value.end,
+        )
     }
 }
 
@@ -123,12 +73,6 @@ pub struct Candle {
     pub source_volume: f64,
 }
 
-impl Synapse for Candle {
-    fn topic(&self) -> Topic {
-        Topic::Candle
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum CandleStatus {
     Open,
@@ -141,7 +85,7 @@ impl FromStr for CandleStatus {
         match input {
             "Open" => Ok(CandleStatus::Open),
             "Close" => Ok(CandleStatus::Close),
-            input => bail!("Unknown candle status: {input}")
+            input => bail!("Unknown candle status: {input}"),
         }
     }
 }
@@ -184,7 +128,7 @@ impl FromStr for Timeframe {
             "TwoH" => Ok(Timeframe::TwoH),
             "FourH" => Ok(Timeframe::FourH),
             "OneD" => Ok(Timeframe::OneD),
-            input => bail!("Unknown market type: {input}")
+            input => bail!("Unknown market type: {input}"),
         }
     }
 }
@@ -216,11 +160,13 @@ pub struct Position {
 }
 
 impl Position {
-    pub fn new(simulation_id: Option<Uuid>,
-               exchange: Exchange,
-               currency: Currency,
-               side: Side,
-               size: f64) -> Self {
+    pub fn new(
+        simulation_id: Option<Uuid>,
+        exchange: Exchange,
+        currency: Currency,
+        side: Side,
+        size: f64,
+    ) -> Self {
         let id = {
             let mut id = format!("{exchange}_{currency}");
             if let Some(simulation_id) = simulation_id {
@@ -236,22 +182,6 @@ impl Position {
             side,
             size,
         }
-    }
-}
-
-impl AuditTags for Position {
-    fn audit_tags(&self) -> Vec<String> {
-        vec![
-            CommonAuditTags::Position.to_string(),
-            self.exchange.to_string(),
-            self.currency.to_string(),
-        ]
-    }
-}
-
-impl Synapse for Position {
-    fn topic(&self) -> Topic {
-        Topic::Position
     }
 }
 
@@ -272,33 +202,60 @@ pub struct Order {
     pub take_profit: Option<Trigger>,
 }
 
-impl Synapse for Order {
-    fn topic(&self) -> Topic {
-        Topic::Order
-    }
-}
-
-impl AuditTags for Order {
-    fn audit_tags(&self) -> Vec<String> {
-        let mut tags = vec![CommonAuditTags::Order.to_string()];
-        tags.push(self.exchange.to_string());
-        tags.push(self.pair.target.to_string());
-        tags.push(self.pair.source.to_string());
-        match self.status {
-            OrderStatus::Created => tags.push(CommonAuditTags::Created.to_string()),
-            OrderStatus::InProgress => tags.push(CommonAuditTags::InProgress.to_string()),
-            OrderStatus::Failed(_) => tags.push(CommonAuditTags::Failed.to_string()),
-            OrderStatus::Completed => tags.push(CommonAuditTags::Completed.to_string()),
-            OrderStatus::Canceled => tags.push(CommonAuditTags::Canceled.to_string()),
-        }
-        tags
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum Size {
     Target(f64),
     Source(f64),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PluginInfo {
+    pub id: PluginId,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct PluginId {
+    pub name: String,
+    pub version: i64,
+}
+
+impl PluginId {
+    pub fn new(name: &str, version: i64) -> Self {
+        Self {
+            name: name.to_string(),
+            version,
+        }
+    }
+}
+
+impl From<PluginBinary> for PluginInfo {
+    fn from(value: PluginBinary) -> Self {
+        Self { id: value.id }
+    }
+}
+
+impl From<&PluginBinary> for PluginInfo {
+    fn from(value: &PluginBinary) -> Self {
+        Self {
+            id: value.id.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct PluginBinary {
+    pub id: PluginId,
+    pub binary: Vec<u8>,
+}
+
+impl PluginBinary {
+    pub fn new(name: &str, version: i64, binary: &[u8]) -> Self {
+        let id = PluginId::new(name, version);
+        Self {
+            id,
+            binary: binary.to_vec(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -309,49 +266,55 @@ pub struct PluginEvent {
     pub strategy_version: String,
 }
 
-impl Synapse for PluginEvent {
-    fn topic(&self) -> Topic {
-        Topic::Plugin
-    }
-}
-
 #[derive(Eq, PartialEq, Debug, Deserialize, Serialize, Clone)]
 pub enum PluginEventType {
-    Updated
+    Updated,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct Deployment {
+pub struct DeploymentInfo {
     pub id: Uuid,
-    pub event: DeploymentEvent,
+    pub status: DeploymentStatus,
     pub simulation_id: Option<Uuid>,
-    pub strategy_name: String,
-    pub strategy_version: String,
+    pub plugin_id: PluginId,
     pub params: HashMap<String, String>,
     pub subscriptions: Vec<InstrumentId>,
 }
 
-impl Synapse for Deployment {
-    fn topic(&self) -> Topic {
-        Topic::Deployment
-    }
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub enum DeploymentStatus {
+    Created,
+    Deleted,
 }
 
-impl AuditTags for Deployment {
-    fn audit_tags(&self) -> Vec<String> {
-        let mut tags = vec![CommonAuditTags::Deployment.to_string()];
-        match self.event {
-            DeploymentEvent::Created => tags.push(CommonAuditTags::Created.to_string()),
-            DeploymentEvent::Deleted => tags.push(CommonAuditTags::Deleted.to_string())
+#[derive(Deserialize, Serialize, Debug)]
+pub struct NewDeployment {
+    pub simulation_id: Option<Uuid>,
+    pub plugin_id: PluginId,
+    pub params: HashMap<String, String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Subscription {
+    pub simulation_id: Option<Uuid>,
+    pub deployment_id: Uuid,
+    pub instruments: Vec<InstrumentId>,
+}
+
+impl From<&DeploymentInfo> for Subscription {
+    fn from(value: &DeploymentInfo) -> Self {
+        Self {
+            simulation_id: value.simulation_id,
+            deployment_id: value.id,
+            instruments: value.subscriptions.clone(),
         }
-        tags
     }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub enum DeploymentEvent {
-    Created,
-    Deleted,
+pub struct Subscriptions {
+    pub instrument_id: InstrumentId,
+    pub deployments: HashSet<Uuid>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Clone)]
@@ -376,15 +339,9 @@ pub struct Tick {
     pub price: f64,
 }
 
-impl Synapse for Tick {
-    fn topic(&self) -> Topic {
-        Topic::Tick
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Copy, Clone)]
 pub enum Exchange {
-    OKX
+    OKX,
 }
 
 impl fmt::Display for Exchange {
@@ -398,7 +355,7 @@ impl FromStr for Exchange {
     fn from_str(input: &str) -> Result<Exchange, Self::Err> {
         match input {
             "OKX" => Ok(Exchange::OKX),
-            input => bail!("Unknown exchange: {input}")
+            input => bail!("Unknown exchange: {input}"),
         }
     }
 }
@@ -469,7 +426,7 @@ impl FromStr for Currency {
             "JFI" => Ok(Currency::JFI),
             "OKB" => Ok(Currency::OKB),
             "DOGE" => Ok(Currency::DOGE),
-            input => bail!("Unknown currency: {input}")
+            input => bail!("Unknown currency: {input}"),
         }
     }
 }
@@ -492,7 +449,7 @@ impl FromStr for MarketType {
         match input {
             "SPOT" => Ok(MarketType::Spot),
             "MARGIN" => Ok(MarketType::Margin),
-            input => bail!("Unknown market type: {input}")
+            input => bail!("Unknown market type: {input}"),
         }
     }
 }
@@ -500,50 +457,14 @@ impl FromStr for MarketType {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "action")]
 pub enum Action {
-    OrderAction(OrderAction)
-}
-
-impl Synapse for Action {
-    fn topic(&self) -> Topic {
-        Topic::Action
-    }
-}
-
-impl AuditTags for Action {
-    fn audit_tags(&self) -> Vec<String> {
-        let mut tags = vec![CommonAuditTags::Action.to_string()];
-        match self {
-            Action::OrderAction(order_action) => {
-                tags.push(CommonAuditTags::OrderAction.to_string());
-                tags.push(order_action.exchange.to_string());
-                match order_action.status {
-                    OrderStatus::Created => tags.push(CommonAuditTags::Created.to_string()),
-                    OrderStatus::InProgress => tags.push(CommonAuditTags::InProgress.to_string()),
-                    OrderStatus::Failed(_) => tags.push(CommonAuditTags::Failed.to_string()),
-                    OrderStatus::Completed => tags.push(CommonAuditTags::Completed.to_string()),
-                    OrderStatus::Canceled => tags.push(CommonAuditTags::Canceled.to_string()),
-                }
-
-                match &order_action.order {
-                    OrderActionType::CreateOrder(create_order) => {
-                        tags.push(create_order.pair.target.to_string());
-                        tags.push(create_order.pair.source.to_string());
-                    }
-                    OrderActionType::PatchOrder => {}
-                    OrderActionType::CancelOrder => {}
-                }
-            }
-        }
-        tags
-    }
+    OrderAction(OrderAction),
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OrderAction {
     pub id: Uuid,
     pub simulation_id: Option<Uuid>,
-    pub strategy_name: String,
-    pub strategy_version: String,
+    pub plugin_id: PluginId,
     pub timestamp: DateTime<Utc>,
     pub exchange: Exchange,
     pub status: OrderStatus,
@@ -563,7 +484,7 @@ impl OrderStatus {
     pub fn is_finished(&self) -> bool {
         match self {
             OrderStatus::Created | OrderStatus::InProgress => false,
-            OrderStatus::Failed(_) | OrderStatus::Completed | OrderStatus::Canceled => true
+            OrderStatus::Failed(_) | OrderStatus::Completed | OrderStatus::Canceled => true,
         }
     }
 }
@@ -626,7 +547,7 @@ impl FromStr for Side {
         match input {
             "Buy" | "BUY" => Ok(Side::Buy),
             "Sell" | "SELL" => Ok(Side::Sell),
-            input => bail!("Unknown side: {input}")
+            input => bail!("Unknown side: {input}"),
         }
     }
 }
@@ -647,4 +568,78 @@ pub enum OrderMarketType {
 pub enum MarginMode {
     Cross,
     Isolated,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateSimulation {
+    pub start: i64,
+    pub end: i64,
+    pub positions: Vec<CreateSimulationPosition>,
+    pub strategies: Vec<CreateSimulationDeployment>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateSimulationDeployment {
+    pub simulation_id: Option<Uuid>,
+    pub timeframe: Timeframe,
+    pub plugin_id: PluginId,
+    pub params: HashMap<String, String>,
+}
+
+pub fn convert_to_simulation_deployment(value: CreateSimulationDeployment) -> SimulationDeployment {
+    SimulationDeployment {
+        deployment_id: None,
+        timeframe: value.timeframe,
+        plugin_id: value.plugin_id,
+        params: value.params,
+        subscriptions: Vec::new(),
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateSimulationPosition {
+    pub exchange: Exchange,
+    pub currency: Currency,
+    pub side: Side,
+    pub size: f64,
+}
+
+pub fn convert(value: CreateSimulationPosition, simulation_id: Uuid) -> SimulationPosition {
+    SimulationPosition {
+        simulation_id,
+        exchange: value.exchange,
+        currency: value.currency,
+        start: value.size,
+        end: value.size,
+        diff: 0.0,
+        fees: 0.0,
+    }
+}
+
+impl From<CreateSimulation> for Simulation {
+    fn from(value: CreateSimulation) -> Self {
+        let simulation_id = Uuid::new_v4();
+        let positions = value
+            .positions
+            .into_iter()
+            .map(|position| convert(position, simulation_id))
+            .collect();
+        let deployments = value
+            .strategies
+            .into_iter()
+            .map(convert_to_simulation_deployment)
+            .collect();
+
+        Self {
+            id: simulation_id,
+            timestamp: Utc::now(),
+            start: Utc.timestamp_millis_opt(value.start).unwrap(),
+            end: Utc.timestamp_millis_opt(value.end).unwrap(),
+            positions,
+            deployments,
+            ticks_len: 0,
+            actions_count: 0,
+            active_orders: Vec::new(),
+        }
+    }
 }

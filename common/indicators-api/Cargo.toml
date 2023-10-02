@@ -5,6 +5,6 @@ edition.workspace = true
 
 [dependencies]
 domain-model = { workspace = true }
-storage-rest-client = { workspace = true }
+storage-core-api = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }

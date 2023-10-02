@@ -1,0 +1,12 @@
+[package]
+name = "interactor-inmemory-persistence"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+domain-model = { workspace = true }
+interactor-persistence-api = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }

@@ -1,6 +1,7 @@
-use crate::okx::parser::ts_milliseconds;
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
+
+use crate::okx::parser::ts_milliseconds;
 
 #[allow(unused)]
 #[derive(Deserialize, Debug, Clone)]

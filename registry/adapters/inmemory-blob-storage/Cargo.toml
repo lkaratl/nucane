@@ -1,0 +1,12 @@
+[package]
+name = "registry-inmemory-blob-storage"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+domain-model = { workspace = true }
+registry-blob-api = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }

@@ -1,40 +1,61 @@
 [workspace]
 members = [
-    "common/eac",
-    "common/synapse",
     "common/domain-model",
-    "common/strategy-api",
-    "common/plugin-loader",
+    "common/eac",
     "common/indicators-api",
-    "standalone",
-    "interactor/app",
-    "interactor/core",
-    "interactor/config",
-    "interactor/rest-api",
-    "interactor/rest-client",
-    "storage/app",
-    "storage/core",
-    "storage/migration",
-    "storage/rest-api",
-    "storage/rest-client",
+    "common/plugin-loader",
+    "common/strategy-api",
+    "engine/config",
     "engine/app",
     "engine/core",
-    "engine/rest-api",
-    "engine/rest-client",
-    "simulator/app",
-    "simulator/core",
-    "simulator/rest-api",
-    "simulator/rest-client",
-    "registry/app",
-    "registry/core",
-    "registry/rest-api",
-    "registry/rest-client",
+    "engine/ports/core-api",
+    "engine/adapters/rest-api-server",
+    "engine/adapters/rest-client",
+    "engine/libs/rest-api",
+    "interactor/config",
+    "interactor/app",
+    "interactor/core",
+    "interactor/ports/core-api",
+    "interactor/ports/exchange-api",
+    "interactor/ports/persistence-api",
+    "interactor/adapters/okx-exchange",
+    "interactor/adapters/rest-api-server",
+    "interactor/adapters/inmemory-persistence",
+    "interactor/adapters/rest-client",
+    "interactor/libs/rest-api",
     "plugins/test",
     "plugins/simulation-e2e",
+    "registry/config",
+    "registry/app",
+    "registry/core",
+    "registry/ports/core-api",
+    "registry/ports/blob-api",
+    "registry/adapters/rest-api-server",
+    "registry/adapters/inmemory-blob-storage",
+    "registry/adapters/rest-client",
+    "registry/libs/rest-api",
+    "simulator/config",
+    "simulator/app",
+    "simulator/core",
+    "simulator/ports/core-api",
+    "simulator/adapters/rest-api-server",
+    "simulator/adapters/rest-client",
+    "simulator/libs/rest-api",
+    "standalone/config",
+    "standalone/app",
+    "storage/config",
+    "storage/app",
+    "storage/core",
+    "storage/ports/core-api",
+    "storage/ports/persistence-api",
+    "storage/adapters/rest-api-server",
+    "storage/adapters/postgres-persistence",
+    "storage/adapters/rest-client",
+    "storage/libs/rest-api",
 ]
 
 [workspace.package]
-version = "0.1.5"
+version = "0.1.7"
 edition = "2021"
 
 [workspace.dependencies]
@@ -43,40 +64,58 @@ eac = { path = "common/eac" }
 indicators-api = { path = "common/indicators-api" }
 plugin-loader = { path = "common/plugin-loader" }
 strategy-api = { path = "common/strategy-api" }
-synapse = { path = "common/synapse" }
 
 engine-config = { path = "engine/config" }
 engine-app = { path = "engine/app" }
 engine-core = { path = "engine/core" }
-engine-rest-api = { path = "engine/rest-api" }
-engine-rest-client = { path = "engine/rest-client" }
+engine-core-api = { path = "engine/ports/core-api" }
+engine-rest-api-server = { path = "engine/adapters/rest-api-server" }
+engine-rest-client = { path = "engine/adapters/rest-client" }
+engine-rest-api = { path = "engine/libs/rest-api" }
 
 interactor-config = { path = "interactor/config" }
 interactor-app = { path = "interactor/app" }
 interactor-core = { path = "interactor/core" }
-interactor-rest-api = { path = "interactor/rest-api" }
-interactor-rest-client = { path = "interactor/rest-client" }
+interactor-core-api = { path = "interactor/ports/core-api" }
+interactor-exchange-api = { path = "interactor/ports/exchange-api" }
+interactor-persistence-api = { path = "interactor/ports/persistence-api" }
+interactor-okx-exchange = { path = "interactor/adapters/okx-exchange" }
+interactor-rest-api-server = { path = "interactor/adapters/rest-api-server" }
+interactor-rest-client = { path = "interactor/adapters/rest-client" }
+interactor-inmemory-persistence = { path = "interactor/adapters/inmemory-persistence" }
+interactor-rest-api = { path = "interactor/libs/rest-api" }
 
 registry-config = { path = "registry/config" }
 registry-app = { path = "registry/app" }
 registry-core = { path = "registry/core" }
-registry-rest-api = { path = "registry/rest-api" }
-registry-rest-client = { path = "registry/rest-client" }
+registry-core-api = { path = "registry/ports/core-api" }
+registry-blob-api = { path = "registry/ports/blob-api" }
+registry-rest-api-server = { path = "registry/adapters/rest-api-server" }
+registry-rest-client = { path = "registry/adapters/rest-client" }
+registry-inmemory-blob-storage = { path = "registry/adapters/inmemory-blob-storage" }
+registry-rest-api = { path = "registry/libs/rest-api" }
 
 simulator-config = { path = "simulator/config" }
 simulator-app = { path = "simulator/app" }
 simulator-core = { path = "simulator/core" }
-simulator-rest-api = { path = "simulator/rest-api" }
-simulator-rest-client = { path = "simulator/rest-client" }
+simulator-core-api = { path = "simulator/ports/core-api" }
+simulator-rest-api-server = { path = "simulator/adapters/rest-api-server" }
+simulator-rest-client = { path = "simulator/adapters/rest-client" }
+simulator-rest-api = { path = "simulator/libs/rest-api" }
+
+standalone-config = { path = "standalone/config" }
 
 storage-config = { path = "storage/config" }
 storage-app = { path = "storage/app" }
-storage-migration = { path = "storage/migration"}
 storage-core = { path = "storage/core" }
-storage-rest-api = { path = "storage/rest-api" }
-storage-rest-client = { path = "storage/rest-client" }
+storage-core-api = { path = "storage/ports/core-api" }
+storage-persistence-api = { path = "storage/ports/persistence-api" }
+storage-rest-api-server = { path = "storage/adapters/rest-api-server" }
+storage-rest-client = { path = "storage/adapters/rest-client" }
+storage-postgres-persistence = { path = "storage/adapters/postgres-persistence" }
+storage-rest-api = { path = "storage/libs/rest-api" }
 
-rdkafka = { version = "0.33.2", features = ["cmake-build"] }
+async-nats = "0.31.0"
 tokio = { version = "1.28", features = ["full"] }
 futures = "0.3.28"
 uuid = { version = "1.3.2", features = ["v4", "serde"] }
@@ -88,7 +127,8 @@ serde_urlencoded = "0.7.1"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 tracing-appender = "0.2.2"
-sea-orm = { version = "0.11.3", features = ["sqlx-mysql", "runtime-async-std-native-tls", "macros"] }
+sea-orm = { version = "0.11.3", features = ["sqlx-postgres", "runtime-async-std-native-tls", "macros"] }
+sea-orm-migration = { version = "0.11.0", features = ["sqlx-postgres", "runtime-async-std-native-tls"] }
 config = { verion = "0.13.3", features = ["yaml"] }
 once_cell = "1.17.1"
 axum = { version = "0.6.18", features = ["macros", "multipart"] }
@@ -112,7 +152,7 @@ base64 = "0.21.0"
 sha2 = "0.10.6"
 hmac = "0.12.1"
 async-std = { version = "1", features = ["attributes", "tokio1"] }
-sea-orm-migration = { version = "0.11.0", features = ["sqlx-mysql", "runtime-async-std-native-tls"] }
 tokio-tungstenite = { version = "0.19.0", features = ["native-tls"] }
 tokio-native-tls = "0.3"
 async-broadcast = "0.5.1"
+pg-embed = "0.6" # newer versions don't support db creation yet

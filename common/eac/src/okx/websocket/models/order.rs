@@ -1,7 +1,8 @@
-use crate::enums::{ExecType, InstType, OrdState, OrdType, TdMode};
-use crate::okx::parser::ts_milliseconds;
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
+
+use crate::enums::{ExecType, InstType, OrdState, OrdType, TdMode};
+use crate::okx::parser::ts_milliseconds;
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]

@@ -8,8 +8,9 @@ use serde::Deserialize;
 pub struct Config {
     pub logging: Logging,
     pub application: Application,
+    pub storage: Storage,
+    pub engine: Engine,
     pub eac: EAC,
-    pub broker: Broker
 }
 
 #[derive(Deserialize)]
@@ -32,12 +33,12 @@ pub struct OKX {
 
 #[derive(Deserialize, Clone)]
 pub struct OKXHttp {
-    pub url: String
+    pub url: String,
 }
 
 #[derive(Deserialize, Clone)]
 pub struct OKXWs {
-    pub url: String
+    pub url: String,
 }
 
 #[derive(Deserialize, Clone)]
@@ -60,8 +61,13 @@ pub struct Logging {
 }
 
 #[derive(Deserialize)]
-pub struct Broker {
-    pub url: String
+pub struct Storage {
+    pub url: String,
+}
+
+#[derive(Deserialize)]
+pub struct Engine {
+    pub url: String,
 }
 
 impl Logging {

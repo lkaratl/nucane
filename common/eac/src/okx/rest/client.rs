@@ -8,9 +8,9 @@ use serde_json::{from_str, to_string as to_jstring};
 use serde_urlencoded::to_string as to_ustring;
 use tracing::{error, trace};
 use url::Url;
-use crate::okx::error::OkExError;
 
 use crate::okx::credential::Credential;
+use crate::okx::error::OkExError;
 
 use super::models::Request;
 

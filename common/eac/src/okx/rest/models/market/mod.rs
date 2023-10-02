@@ -1,3 +1,4 @@
+pub use ticker::*;
+
 mod ticker;
 
-pub use ticker::*;

@@ -4,13 +4,12 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-synapse = { workspace = true }
 interactor-rest-client = { workspace = true }
+storage-postgres-persistence = { workspace = true }
 domain-model = { workspace = true }
 storage-config = { workspace = true }
-storage-migration = { workspace = true }
 storage-core = { workspace = true }
-storage-rest-api = { workspace = true }
+storage-rest-api-server = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

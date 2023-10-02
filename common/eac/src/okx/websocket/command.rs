@@ -1,10 +1,12 @@
-use super::Channel;
-use crate::okx::error::OkExError;
 use chrono::Utc;
 use fehler::throws;
 use serde::{Deserialize, Serialize};
 use url::Url;
+
 use crate::okx::credential::Credential;
+use crate::okx::error::OkExError;
+
+use super::Channel;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "op", content = "args")]
