@@ -1,6 +1,7 @@
-use super::super::Request;
 use http::Method;
 use serde::{Deserialize, Serialize};
+
+use super::super::Request;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BalanceRequest {
@@ -9,8 +10,8 @@ pub struct BalanceRequest {
 
 impl BalanceRequest {
     pub fn multiple<S>(currencies: &[S]) -> Self
-    where
-        S: AsRef<str>,
+        where
+            S: AsRef<str>,
     {
         Self {
             ccy: Some(

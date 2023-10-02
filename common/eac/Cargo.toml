@@ -30,6 +30,7 @@ hyper = { workspace = true }
 tokio-tungstenite = { workspace = true }
 tokio-native-tls = { workspace = true }
 async-broadcast = { workspace = true }
+async-trait = { workspace = true }
 
 [dev-dependencies]
 tracing-subscriber = { workspace = true }

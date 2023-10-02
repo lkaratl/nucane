@@ -1,22 +1,25 @@
 use std::collections::HashMap;
 
+use async_trait::async_trait;
 use chrono::Utc;
 use tracing::info;
 use uuid::Uuid;
-use async_trait::async_trait;
 
-use domain_model::{Action, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction, OrderActionType, OrderMarketType, Side, OrderStatus, OrderType, Tick, Timeframe};
 use domain_model::Size::Source;
-use strategy_api::{Strategy, StrategyApi, utils};
+use domain_model::{
+    Action, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction,
+    OrderActionType, OrderMarketType, OrderStatus, OrderType, PluginId, Side, Tick, Timeframe,
+};
+use strategy_api::{utils, Strategy, StrategyApi};
 
 #[allow(improper_ctypes_definitions)]
 #[no_mangle]
-pub extern fn load() -> Box<dyn Strategy> {
+pub extern "C" fn load() -> Box<dyn Strategy> {
     Box::<SimulationE2EStrategy>::default()
 }
 
 const STRATEGY_NAME: &str = "simulation-e2e";
-const STRATEGY_VERSION: &str = "1.0";
+const STRATEGY_VERSION: i64 = 1;
 const PARAMETER_NAME: &str = "test-parameter";
 const LOGGING_LEVEL: &str = "INFO";
 
@@ -28,8 +31,11 @@ pub struct SimulationE2EStrategy {
 
 impl Default for SimulationE2EStrategy {
     fn default() -> Self {
-        utils::init_logger(&format!("{STRATEGY_NAME}-{STRATEGY_VERSION}"),LOGGING_LEVEL);
-        Self{
+        utils::init_logger(
+            &format!("{STRATEGY_NAME}-{STRATEGY_VERSION}"),
+            LOGGING_LEVEL,
+        );
+        Self {
             executed: false,
             order_id: None,
         }
@@ -46,8 +52,8 @@ impl Strategy for SimulationE2EStrategy {
         STRATEGY_NAME.to_string()
     }
 
-    fn version(&self) -> String {
-        STRATEGY_VERSION.to_string()
+    fn version(&self) -> i64 {
+        STRATEGY_VERSION
     }
 
     fn subscriptions(&self) -> Vec<InstrumentId> {
@@ -65,56 +71,57 @@ impl Strategy for SimulationE2EStrategy {
         if !self.executed {
             self.executed = true;
             self.order_id = Some(utils::string_id());
+            let plugin_id = PluginId::new(&self.name(), self.version());
             return vec![
                 // todo hide it to factory or builder
-                Action::OrderAction(
-                    OrderAction {
-                        id: Uuid::new_v4(),
-                        simulation_id: None,
-                        strategy_name: self.name(),
-                        strategy_version: self.version(),
-                        timestamp: Utc::now(),
-                        status: OrderStatus::Created,
-                        exchange: Exchange::OKX,
-                        order: OrderActionType::CreateOrder(
-                            CreateOrder {
-                                id: self.order_id.clone().unwrap(),
-                                pair: CurrencyPair {
-                                    target: Currency::BTC,
-                                    source: Currency::USDT,
-                                },
-                                market_type: OrderMarketType::Spot,
-                                order_type: OrderType::Limit(tick.price * 0.9),
-                                side: Side::Buy,
-                                size: Source(10.0),
-                                stop_loss: None,
-                                take_profit: None
-                            }
-                        ),
-                    }
-                )
+                Action::OrderAction(OrderAction {
+                    id: Uuid::new_v4(),
+                    simulation_id: None,
+                    plugin_id,
+                    timestamp: Utc::now(),
+                    status: OrderStatus::Created,
+                    exchange: Exchange::OKX,
+                    order: OrderActionType::CreateOrder(CreateOrder {
+                        id: self.order_id.clone().unwrap(),
+                        pair: CurrencyPair {
+                            target: Currency::BTC,
+                            source: Currency::USDT,
+                        },
+                        market_type: OrderMarketType::Spot,
+                        order_type: OrderType::Limit(tick.price * 0.9),
+                        side: Side::Buy,
+                        size: Source(10.0),
+                        stop_loss: None,
+                        take_profit: None,
+                    }),
+                }),
             ];
         } else if self.order_id.is_some() {
-            let orders = api.storage.get_orders(self.order_id.clone(),
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None,
-                                                None).await;
+            let orders = api
+                .storage_client
+                .get_orders(
+                    self.order_id.clone(),
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                )
+                .await;
             if let Ok(orders) = orders {
                 if let Some(order) = orders.first() {
                     if order.status == OrderStatus::Completed {
                         info!("Successfully Completed order with id: {}, market type: {:?}, target currency: {}, source currency: {}, order type: {:?}",
                 order.id, order.market_type, order.pair.target, order.pair.source, order.order_type);
 
-                        let btc_positions = api.storage.get_positions(Some(Exchange::OKX), Some(Currency::BTC), None)
+                        let btc_positions = api
+                            .storage_client
+                            .get_positions(Some(Exchange::OKX), Some(Currency::BTC), None)
                             .await
                             .unwrap();
-                        let btc_position = btc_positions
-                            .first()
-                            .unwrap();
+                        let btc_position = btc_positions.first().unwrap();
                         assert_ne!(btc_position.size, 0.0);
 
                         self.order_id = None;
@@ -130,7 +137,10 @@ impl Strategy for SimulationE2EStrategy {
                             source: Currency::USDT,
                         },
                     };
-                    let moving_average = api.indicators.moving_average(&instrument_id, Timeframe::ThirtyM, 7).await;
+                    let moving_average = api
+                        .indicators
+                        .moving_average(&instrument_id, Timeframe::ThirtyM, 7)
+                        .await;
                     info!("Moving AVG: {}", moving_average);
                 }
             }

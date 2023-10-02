@@ -1,50 +1,31 @@
-use std::{fs, thread};
 use std::path::PathBuf;
-use std::process::Command;
 use std::sync::Arc;
+use std::thread;
 use std::time::Duration;
+
 use pg_embed::pg_enums::PgAuthMethod;
 use pg_embed::pg_fetch::{PgFetchSettings, PostgresVersion};
 use pg_embed::postgres::{PgEmbed, PgSettings};
-
 use tracing::info;
+
 use standalone_config::CONFIG;
 
-const LOCAL_DEV_COMPOSE_FILE_NAME: &str = "docker-compose.localdev.yml";
-
 pub fn run() {
-    info!("===============================");
-    info!("NUCANE services running locally");
-    info!("===============================");
-    run_capability_providers();
     let db = Arc::new(run_db());
     thread::spawn(|| { run_registry() });
     thread::spawn(|| { run_engine() });
     thread::spawn({
-       let db = Arc::clone(&db);
+        let db = Arc::clone(&db);
         || { run_storage(db) }
     });
     thread::spawn(|| { run_simulator() });
     thread::spawn(|| { run_interactor() });
-}
-
-fn run_capability_providers() {
-    fs::write(format!("./{LOCAL_DEV_COMPOSE_FILE_NAME}"), include_str!("../../docker-compose.localdev.yml"))
-        .expect("Error during docker compose file creation");
-    Command::new("docker")
-        .args(["compose", "-f", LOCAL_DEV_COMPOSE_FILE_NAME, "up", "-d"])
-        .output()
-        .expect("Error during database running");
-    fs::remove_file(format!("./{LOCAL_DEV_COMPOSE_FILE_NAME}"))
-        .expect("Error during docker compose file removing");
-    info!("+ capability providers running...");
-    info!("  |- database running...");
-    info!("  L massage-broker running...");
+    info!("{APP_NAME}");
 }
 
 #[tokio::main]
 async fn run_db() -> PgEmbed {
-    info!("+ data base running...");
+    info!("▶ data base running ...");
     let pg_settings = PgSettings {
         database_dir: PathBuf::from("postgres"),
         port: CONFIG.db.port,
@@ -95,3 +76,11 @@ async fn run_simulator() {
 async fn run_interactor() {
     interactor_app::run().await;
 }
+
+const APP_NAME: &str = "
+███╗░░██╗██╗░░░██╗░█████╗░░█████╗░███╗░░██╗███████╗
+████╗░██║██║░░░██║██╔══██╗██╔══██╗████╗░██║██╔════╝
+██╔██╗██║██║░░░██║██║░░╚═╝███████║██╔██╗██║█████╗░░
+██║╚████║██║░░░██║██║░░██╗██╔══██║██║╚████║██╔══╝░░
+██║░╚███║╚██████╔╝╚█████╔╝██║░░██║██║░╚███║███████╗
+╚═╝░░╚══╝░╚═════╝░░╚════╝░╚═╝░░╚═╝╚═╝░░╚══╝╚══════╝";

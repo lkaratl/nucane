@@ -1,10 +1,12 @@
 use std::collections::HashMap;
-use crate::rest::{OkExRest, Request};
+
 use anyhow::Result;
 use serde::de::DeserializeOwned;
 use tokio::sync::Mutex;
 use tracing::debug;
+
 use crate::OkExError;
+use crate::rest::{OkExRest, Request};
 
 pub struct RateLimitedRestClient {
     client: OkExRest,
@@ -19,7 +21,7 @@ impl RateLimitedRestClient {
         }
     }
 
-    pub async fn request<R>(&mut self, request: R) -> Result<R::Response, OkExError>
+    pub async fn request<R>(&self, request: R) -> Result<R::Response, OkExError>
         where
             R: Request,
             R::Response: DeserializeOwned

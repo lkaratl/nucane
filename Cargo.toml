@@ -5,37 +5,53 @@ members = [
     "common/indicators-api",
     "common/plugin-loader",
     "common/strategy-api",
-    "common/synapse",
     "engine/config",
     "engine/app",
     "engine/core",
-    "engine/rest-api",
-    "engine/rest-client",
+    "engine/ports/core-api",
+    "engine/adapters/rest-api-server",
+    "engine/adapters/rest-client",
+    "engine/libs/rest-api",
     "interactor/config",
     "interactor/app",
     "interactor/core",
-    "interactor/rest-api",
-    "interactor/rest-client",
+    "interactor/ports/core-api",
+    "interactor/ports/exchange-api",
+    "interactor/ports/persistence-api",
+    "interactor/adapters/okx-exchange",
+    "interactor/adapters/rest-api-server",
+    "interactor/adapters/inmemory-persistence",
+    "interactor/adapters/rest-client",
+    "interactor/libs/rest-api",
     "plugins/test",
     "plugins/simulation-e2e",
     "registry/config",
     "registry/app",
     "registry/core",
-    "registry/rest-api",
-    "registry/rest-client",
+    "registry/ports/core-api",
+    "registry/ports/blob-api",
+    "registry/adapters/rest-api-server",
+    "registry/adapters/inmemory-blob-storage",
+    "registry/adapters/rest-client",
+    "registry/libs/rest-api",
     "simulator/config",
     "simulator/app",
     "simulator/core",
-    "simulator/rest-api",
-    "simulator/rest-client",
+    "simulator/ports/core-api",
+    "simulator/adapters/rest-api-server",
+    "simulator/adapters/rest-client",
+    "simulator/libs/rest-api",
     "standalone/config",
     "standalone/app",
     "storage/config",
     "storage/app",
     "storage/core",
-    "storage/migration",
-    "storage/rest-api",
-    "storage/rest-client",
+    "storage/ports/core-api",
+    "storage/ports/persistence-api",
+    "storage/adapters/rest-api-server",
+    "storage/adapters/postgres-persistence",
+    "storage/adapters/rest-client",
+    "storage/libs/rest-api",
 ]
 
 [workspace.package]
@@ -48,43 +64,58 @@ eac = { path = "common/eac" }
 indicators-api = { path = "common/indicators-api" }
 plugin-loader = { path = "common/plugin-loader" }
 strategy-api = { path = "common/strategy-api" }
-synapse = { path = "common/synapse" }
 
 engine-config = { path = "engine/config" }
 engine-app = { path = "engine/app" }
 engine-core = { path = "engine/core" }
-engine-rest-api = { path = "engine/rest-api" }
-engine-rest-client = { path = "engine/rest-client" }
+engine-core-api = { path = "engine/ports/core-api" }
+engine-rest-api-server = { path = "engine/adapters/rest-api-server" }
+engine-rest-client = { path = "engine/adapters/rest-client" }
+engine-rest-api = { path = "engine/libs/rest-api" }
 
 interactor-config = { path = "interactor/config" }
 interactor-app = { path = "interactor/app" }
 interactor-core = { path = "interactor/core" }
-interactor-rest-api = { path = "interactor/rest-api" }
-interactor-rest-client = { path = "interactor/rest-client" }
+interactor-core-api = { path = "interactor/ports/core-api" }
+interactor-exchange-api = { path = "interactor/ports/exchange-api" }
+interactor-persistence-api = { path = "interactor/ports/persistence-api" }
+interactor-okx-exchange = { path = "interactor/adapters/okx-exchange" }
+interactor-rest-api-server = { path = "interactor/adapters/rest-api-server" }
+interactor-rest-client = { path = "interactor/adapters/rest-client" }
+interactor-inmemory-persistence = { path = "interactor/adapters/inmemory-persistence" }
+interactor-rest-api = { path = "interactor/libs/rest-api" }
 
 registry-config = { path = "registry/config" }
 registry-app = { path = "registry/app" }
 registry-core = { path = "registry/core" }
-registry-rest-api = { path = "registry/rest-api" }
-registry-rest-client = { path = "registry/rest-client" }
+registry-core-api = { path = "registry/ports/core-api" }
+registry-blob-api = { path = "registry/ports/blob-api" }
+registry-rest-api-server = { path = "registry/adapters/rest-api-server" }
+registry-rest-client = { path = "registry/adapters/rest-client" }
+registry-inmemory-blob-storage = { path = "registry/adapters/inmemory-blob-storage" }
+registry-rest-api = { path = "registry/libs/rest-api" }
 
 simulator-config = { path = "simulator/config" }
 simulator-app = { path = "simulator/app" }
 simulator-core = { path = "simulator/core" }
-simulator-rest-api = { path = "simulator/rest-api" }
-simulator-rest-client = { path = "simulator/rest-client" }
+simulator-core-api = { path = "simulator/ports/core-api" }
+simulator-rest-api-server = { path = "simulator/adapters/rest-api-server" }
+simulator-rest-client = { path = "simulator/adapters/rest-client" }
+simulator-rest-api = { path = "simulator/libs/rest-api" }
 
 standalone-config = { path = "standalone/config" }
 
 storage-config = { path = "storage/config" }
 storage-app = { path = "storage/app" }
-storage-migration = { path = "storage/migration" }
 storage-core = { path = "storage/core" }
-storage-rest-api = { path = "storage/rest-api" }
-storage-rest-client = { path = "storage/rest-client" }
+storage-core-api = { path = "storage/ports/core-api" }
+storage-persistence-api = { path = "storage/ports/persistence-api" }
+storage-rest-api-server = { path = "storage/adapters/rest-api-server" }
+storage-rest-client = { path = "storage/adapters/rest-client" }
+storage-postgres-persistence = { path = "storage/adapters/postgres-persistence" }
+storage-rest-api = { path = "storage/libs/rest-api" }
 
 async-nats = "0.31.0"
-rdkafka = { version = "0.33.2", features = ["cmake-build"] }
 tokio = { version = "1.28", features = ["full"] }
 futures = "0.3.28"
 uuid = { version = "1.3.2", features = ["v4", "serde"] }

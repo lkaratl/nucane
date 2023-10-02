@@ -1,2 +1,8 @@
-pub mod subscription_manager;
-pub mod service;
+pub use api::Interactor;
+pub use exchanges::ServiceFacade;
+pub use services::SubscriptionManager;
+
+mod api;
+mod services;
+mod exchanges;
+

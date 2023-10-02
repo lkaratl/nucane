@@ -1,6 +1,8 @@
-use crate::okx::parser::ts_milliseconds;
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
+
+use crate::okx::parser::ts_milliseconds;
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct LevelInfo(
     #[serde(deserialize_with = "crate::okx::parser::from_str")] pub f64,

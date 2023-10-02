@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+
 use config::{Environment, File, FileFormat};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
@@ -9,17 +10,16 @@ pub struct Config {
     pub application: Application,
     pub database: Database,
     pub interactor: Interactor,
-    pub broker: Broker
 }
 
 #[derive(Deserialize)]
 pub struct Database {
-    pub url: String
+    pub url: String,
 }
 
 #[derive(Deserialize)]
 pub struct Interactor {
-    pub url: String
+    pub url: String,
 }
 
 #[derive(Deserialize)]
@@ -32,11 +32,6 @@ pub struct Application {
 pub struct Logging {
     level: String,
     crates: HashMap<String, String>,
-}
-
-#[derive(Deserialize)]
-pub struct Broker {
-    pub url: String
 }
 
 impl Logging {

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+
 use config::{Environment, File, FileFormat};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
@@ -6,7 +7,7 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct Config {
     pub logging: Logging,
-    pub db: Db
+    pub db: Db,
 }
 
 #[derive(Deserialize)]
@@ -21,7 +22,7 @@ pub struct Db {
     pub port: i16,
     pub user: String,
     pub password: String,
-    pub persistent: bool
+    pub persistent: bool,
 }
 
 impl Logging {

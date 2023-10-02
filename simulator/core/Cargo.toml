@@ -5,8 +5,11 @@ edition.workspace = true
 
 [dependencies]
 simulator-config = { workspace = true }
+simulator-core-api = { workspace = true }
+engine-core-api = { workspace = true }
+storage-core-api = { workspace = true }
+interactor-core-api = { workspace = true }
 domain-model = { workspace = true }
-synapse = { workspace = true }
 engine-rest-api = { workspace = true }
 engine-rest-client = { workspace = true }
 storage-rest-client = { workspace = true }
@@ -20,3 +23,4 @@ serde_json = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 axum = { workspace = true }
+anyhow = { workspace = true }

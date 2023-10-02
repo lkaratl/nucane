@@ -5,6 +5,8 @@ logging:
 application:
   name: interactor
   port: 8083
+storage.url: localhost:8082
+engine.url: localhost:8081
 
 eac:
   demo: true
@@ -18,5 +20,3 @@ eac:
         key: # put value according to eac.demo value
         secret: # put value according to eac.demo value
         passphrase: # put value according to eac.demo value
-        
-nats.url: localhost:4222

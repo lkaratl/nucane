@@ -11,4 +11,4 @@ db:
   port: 5432
   user: postgres
   password: root
-  persistent: false
+  persistent: true

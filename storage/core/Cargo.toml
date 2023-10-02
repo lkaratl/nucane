@@ -4,9 +4,10 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-interactor-rest-client = { workspace = true }
+interactor-core-api = { workspace = true }
+storage-core-api = { workspace = true }
+storage-persistence-api = { workspace = true }
 domain-model = { workspace = true }
-synapse = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
 tracing = { workspace = true }
@@ -16,3 +17,4 @@ chrono = { workspace = true }
 sea-orm = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+async-trait = { workspace = true }

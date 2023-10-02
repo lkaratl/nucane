@@ -25,7 +25,9 @@ pg-embed = { workspace = true }
 domain-model = { workspace = true }
 simulator-rest-api = { workspace = true }
 simulator-rest-client = { workspace = true }
+simulator-core-api = { workspace = true }
 storage-rest-api = { workspace = true }
 storage-rest-client = { workspace = true }
+storage-core-api = { workspace = true }
 reqwest = { workspace = true }
 chrono = { workspace = true }

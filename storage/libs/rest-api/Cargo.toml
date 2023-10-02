@@ -1,0 +1,10 @@
+[package]
+name = "storage-rest-api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+domain-model = { workspace = true }
+storage-core-api = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }
