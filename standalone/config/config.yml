@@ -1,6 +1,7 @@
 logging:
   level: INFO
   crates:
+    standalone: DEBUG
     eac: DEBUG
     engine: DEBUG
     storage: DEBUG
