@@ -11,14 +11,14 @@ use standalone_config::CONFIG;
 
 pub fn run() {
     let db = Arc::new(run_db());
-    thread::spawn(|| run_registry());
-    thread::spawn(|| run_engine());
+    thread::spawn(run_registry);
+    thread::spawn(run_engine);
     thread::spawn({
         let db = Arc::clone(&db);
         || run_storage(db)
     });
-    thread::spawn(|| run_simulator());
-    thread::spawn(|| run_interactor());
+    thread::spawn(run_simulator);
+    thread::spawn(run_interactor);
     debug!(
         " ▸ standalone: Temp data folder: {}",
         env::temp_dir().display()
