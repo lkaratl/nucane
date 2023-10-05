@@ -1,0 +1,9 @@
+[package]
+name = "ui-config"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+config = { workspace = true }
+once_cell = { workspace = true }
+serde = { workspace = true }

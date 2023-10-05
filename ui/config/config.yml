@@ -1,0 +1,8 @@
+logging:
+  level: INFO
+  crates:
+    ui: DEBUG
+application:
+  name: ui
+  port: 8080
+engine.url: localhost:8081

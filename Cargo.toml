@@ -52,6 +52,14 @@ members = [
     "storage/adapters/postgres-persistence",
     "storage/adapters/rest-client",
     "storage/libs/rest-api",
+    "ui/config",
+    "ui/app",
+    "ui/core",
+    "ui/ports/core-api",
+    "ui/ports/chart-builder-api",
+    "ui/adapters/rest-api-server",
+    "ui/adapters/charming-builder",
+    "ui/libs/rest-api"
 ]
 
 [workspace.package]
@@ -114,6 +122,15 @@ storage-rest-api-server = { path = "storage/adapters/rest-api-server" }
 storage-rest-client = { path = "storage/adapters/rest-client" }
 storage-postgres-persistence = { path = "storage/adapters/postgres-persistence" }
 storage-rest-api = { path = "storage/libs/rest-api" }
+
+ui-config = { path = "ui/config" }
+ui-app = { path = "ui/app" }
+ui-core = { path = "ui/core" }
+ui-core-api = { path = "ui/ports/core-api" }
+ui-chart-builder-api = { path = "ui/ports/chart-builder-api" }
+ui-rest-api-server = { path = "ui/adapters/rest-api-server" }
+ui-charming-builder = { path = "ui/adapters/charming-builder" }
+ui-rest-api = { path = "ui/libs/rest-api" }
 
 async-nats = "0.31.0"
 tokio = { version = "1.28", features = ["full"] }
