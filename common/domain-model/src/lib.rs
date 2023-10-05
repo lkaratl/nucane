@@ -16,8 +16,8 @@ pub struct Simulation {
     pub positions: Vec<SimulationPosition>,
     pub deployments: Vec<SimulationDeployment>,
 
-    pub ticks_len: usize,
-    pub actions_count: u16,
+    pub ticks_len: u32,
+    pub actions_count: u32,
     pub active_orders: Vec<Order>,
 }
 

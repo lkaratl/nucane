@@ -8,6 +8,7 @@ use serde::Deserialize;
 pub struct Config {
     pub logging: Logging,
     pub application: Application,
+    pub database: Database,
     pub engine: Engine,
     pub storage: Storage,
     pub interactor: Interactor,
@@ -40,9 +41,17 @@ pub struct Interactor {
     pub url: String,
 }
 
+#[derive(Deserialize)]
+pub struct Database {
+    pub url: String,
+}
+
 impl Logging {
     pub fn levels(&self) -> String {
-        let crate_levels = self.crates.iter().map(|(lib, loglevel)| format!("{lib}={loglevel}"))
+        let crate_levels = self
+            .crates
+            .iter()
+            .map(|(lib, loglevel)| format!("{lib}={loglevel}"))
             .collect::<Vec<_>>()
             .join(",");
         format!("{},{crate_levels}", self.level)
@@ -54,13 +63,20 @@ pub static CONFIG: Lazy<Config> = Lazy::new(Config::load);
 impl Config {
     fn load() -> Self {
         config::Config::builder()
-            .add_source(File::from_str(include_str!("../config.yml"), FileFormat::Yaml))
-            .add_source(Environment::with_prefix("APP")
-                .try_parsing(true)
-                .separator("_"))
-            .add_source(Environment::with_prefix("SIMULATOR")
-                .try_parsing(true)
-                .separator("_"))
+            .add_source(File::from_str(
+                include_str!("../config.yml"),
+                FileFormat::Yaml,
+            ))
+            .add_source(
+                Environment::with_prefix("APP")
+                    .try_parsing(true)
+                    .separator("_"),
+            )
+            .add_source(
+                Environment::with_prefix("SIMULATOR")
+                    .try_parsing(true)
+                    .separator("_"),
+            )
             .build()
             .expect("Error during config creation")
             .try_deserialize()

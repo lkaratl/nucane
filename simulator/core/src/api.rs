@@ -14,18 +14,23 @@ use domain_model::{
 use engine_core_api::api::EngineApi;
 use interactor_core_api::InteractorApi;
 use simulator_core_api::{SimulationReport, SimulatorApi};
+use simulator_persistence_api::SimulationReportRepository;
 use storage_core_api::StorageApi;
 
 use crate::file_logger::Logger;
 
-pub struct Simulator<E: EngineApi, S: StorageApi, I: InteractorApi> {
+pub struct Simulator<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportRepository>
+{
     engine_client: Arc<E>,
     storage_client: Arc<S>,
     interactor_client: Arc<I>,
+    simulation_report_repository: Arc<SR>,
 }
 
 #[async_trait]
-impl<E: EngineApi, S: StorageApi, I: InteractorApi> SimulatorApi for Simulator<E, S, I> {
+impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportRepository> SimulatorApi
+    for Simulator<E, S, I, SR>
+{
     async fn run_simulation(&self, simulation: CreateSimulation) -> Result<SimulationReport> {
         let simulation: Simulation = simulation.into();
         let mut logger = Logger::new(simulation.id);
@@ -35,14 +40,36 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> SimulatorApi for Simulator<E
         logger.save();
         Ok(report)
     }
+
+    async fn get_simulation_report(&self, id: Uuid) -> Result<SimulationReport> {
+        self.simulation_report_repository
+            .get(Some(id))
+            .await
+            .first()
+            .cloned()
+            .ok_or(anyhow::Error::msg("Simulation report not found"))
+    }
+
+    async fn get_simulation_reports(&self) -> Result<Vec<SimulationReport>> {
+        let reports = self.simulation_report_repository.get(None).await;
+        Ok(reports)
+    }
 }
 
-impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
-    pub fn new(engine_client: Arc<E>, storage_client: Arc<S>, interactor_client: Arc<I>) -> Self {
+impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportRepository>
+    Simulator<E, S, I, SR>
+{
+    pub fn new(
+        engine_client: Arc<E>,
+        storage_client: Arc<S>,
+        interactor_client: Arc<I>,
+        simulation_report_repository: Arc<SR>,
+    ) -> Self {
         Self {
             engine_client,
             storage_client,
             interactor_client,
+            simulation_report_repository,
         }
     }
 
@@ -74,6 +101,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
         self.delete_deployments(&simulation.deployments).await;
 
         let report = self.build_report(simulation).await;
+        let _ = self.simulation_report_repository.save(report.clone()).await;
         logger.log(format!("{report:?}"));
         report
     }
@@ -92,7 +120,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
         let positions = &mut simulation.positions;
         let active_orders = &mut simulation.active_orders;
         debug!("Ticks len: {}", ticks.len());
-        simulation.ticks_len += ticks.len();
+        simulation.ticks_len += ticks.len() as u32;
         for tick in &ticks {
             logger.log(format!(
                 "| Tick: {} '{}' {}-{}='{}'",
@@ -249,7 +277,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
                     };
                     let _ = self.storage_client.save_order(order.clone()).await;
                     logger.log(format!("|-> Place Order: {} {:?} {:?} '{}-{}' {} '{:?}', stop-loss: {:?}, take-profit: {:?}, id: '{}'",
-                                           order.exchange, order.market_type, order.order_type, order.pair.target, order.pair.source, order.side, order.size, order.stop_loss, order.take_profit, order.id));
+                                       order.exchange, order.market_type, order.order_type, order.pair.target, order.pair.source, order.side, order.size, order.stop_loss, order.take_profit, order.id));
                     active_orders.push(order);
                 }
                 OrderActionType::PatchOrder => unimplemented!(),

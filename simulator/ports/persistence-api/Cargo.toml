@@ -1,10 +1,11 @@
 [package]
-name = "ui-charming-builder"
+name = "simulator-persistence-api"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-ui-chart-builder-api = { workspace = true }
-charming = { workspace = true }
+simulator-core-api = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true }
 async-trait = { workspace = true }
 chrono = { workspace = true }

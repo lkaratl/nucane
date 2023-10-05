@@ -9,16 +9,18 @@ use domain_model::{CreateSimulation, Order, SimulationDeployment, SimulationPosi
 #[async_trait]
 pub trait SimulatorApi: Send + Sync + 'static {
     async fn run_simulation(&self, simulation: CreateSimulation) -> Result<SimulationReport>;
+    async fn get_simulation_report(&self, id: Uuid) -> Result<SimulationReport>;
+    async fn get_simulation_reports(&self) -> Result<Vec<SimulationReport>>;
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SimulationReport {
     pub simulation_id: Uuid,
     pub start: DateTime<Utc>,
     pub end: DateTime<Utc>,
     pub deployments: Vec<SimulationDeployment>,
-    pub ticks: usize,
-    pub actions: u16,
+    pub ticks: u32,
+    pub actions: u32,
     pub profit: f64,
     pub profit_clear: f64,
     pub fees: f64,

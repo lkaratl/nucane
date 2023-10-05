@@ -10,7 +10,7 @@ use crate::migrations::Migrator;
 pub async fn init_db(url: &str, db_name: &str) -> Arc<DatabaseConnection> {
     let db = Database::connect(format!("{}/postgres", &url))
         .await
-        .expect(" ▸ storage: Error during connecting to database");
+        .expect(" ▸ simulator: Error during connecting to database");
     let _ = db
         .execute_unprepared(&format!("CREATE DATABASE {};", db_name))
         .await
@@ -22,12 +22,12 @@ pub async fn init_db(url: &str, db_name: &str) -> Arc<DatabaseConnection> {
     let db = Arc::new(
         Database::connect(format!("{}/{}", url, db_name))
             .await
-            .unwrap_or_else(|_| {
-                panic!(" ▸ storage: Error during connecting to '{db_name}' database")
-            }),
+            .expect(&format!(
+                " ▸ simulator: Error during connecting to '{db_name}' database"
+            )),
     );
     Migrator::up(db.deref(), None)
         .await
-        .expect(" ▸ storage: Failed apply db migrations");
+        .expect(" ▸ simulator: Failed apply db migrations");
     db
 }

@@ -8,6 +8,9 @@ ui-config = { workspace = true }
 ui-core = { workspace = true }
 ui-rest-api-server = { workspace = true }
 domain-model = { workspace = true }
+simulator-rest-client = { workspace = true }
+storage-rest-client = { workspace = true }
+ui-charming-builder = { workspace = true }
 tokio = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }

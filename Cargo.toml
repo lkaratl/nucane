@@ -38,7 +38,9 @@ members = [
     "simulator/app",
     "simulator/core",
     "simulator/ports/core-api",
+    "simulator/ports/persistence-api",
     "simulator/adapters/rest-api-server",
+    "simulator/adapters/postgres-persistence",
     "simulator/adapters/rest-client",
     "simulator/libs/rest-api",
     "standalone/config",
@@ -107,7 +109,9 @@ simulator-config = { path = "simulator/config" }
 simulator-app = { path = "simulator/app" }
 simulator-core = { path = "simulator/core" }
 simulator-core-api = { path = "simulator/ports/core-api" }
+simulator-persistence-api = { path = "simulator/ports/persistence-api" }
 simulator-rest-api-server = { path = "simulator/adapters/rest-api-server" }
+simulator-postgres-persistence = { path = "simulator/adapters/postgres-persistence" }
 simulator-rest-client = { path = "simulator/adapters/rest-client" }
 simulator-rest-api = { path = "simulator/libs/rest-api" }
 
@@ -173,3 +177,4 @@ tokio-tungstenite = { version = "0.19.0", features = ["native-tls"] }
 tokio-native-tls = "0.3"
 async-broadcast = "0.5.1"
 pg-embed = "0.6" # newer versions don't support db creation yet
+charming = { version = "0.2.4", features = ["ssr"] }

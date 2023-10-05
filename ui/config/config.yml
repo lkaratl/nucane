@@ -5,4 +5,5 @@ logging:
 application:
   name: ui
   port: 8080
-engine.url: localhost:8081
+simulator.url: localhost:8084
+storage.url: localhost:8082

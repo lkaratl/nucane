@@ -12,6 +12,7 @@ engine-rest-client = { workspace = true }
 storage-rest-client = { workspace = true }
 interactor-rest-client = { workspace = true }
 simulator-core = { workspace = true }
+simulator-postgres-persistence = { workspace = true }
 tokio = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }

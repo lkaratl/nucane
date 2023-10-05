@@ -14,6 +14,7 @@ engine-rest-api = { workspace = true }
 engine-rest-client = { workspace = true }
 storage-rest-client = { workspace = true }
 interactor-rest-client = { workspace = true }
+simulator-persistence-api = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
 uuid = { workspace = true }
