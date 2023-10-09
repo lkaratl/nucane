@@ -108,6 +108,7 @@ impl Strategy for SimulationE2EStrategy {
                     None,
                     None,
                     None,
+                    None,
                 )
                 .await;
             if let Ok(orders) = orders {

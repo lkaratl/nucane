@@ -144,7 +144,8 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportReposito
                     tick.price
                 ));
                 simulation.actions_count += 1;
-                self.execute_action(action, active_orders, logger).await;
+                self.execute_action(tick.timestamp, action, active_orders, logger)
+                    .await;
             }
             self.check_active_orders(active_orders, tick, positions, logger)
                 .await;
@@ -253,6 +254,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportReposito
 
     async fn execute_action(
         &self,
+        timestamp: DateTime<Utc>,
         action: &Action,
         active_orders: &mut Vec<Order>,
         logger: &mut Logger,
@@ -262,7 +264,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportReposito
                 OrderActionType::CreateOrder(create_order) => {
                     let order = Order {
                         id: create_order.id.clone(),
-                        timestamp: Utc::now(),
+                        timestamp,
                         simulation_id: order_action.simulation_id,
                         exchange: order_action.exchange,
                         status: OrderStatus::InProgress,

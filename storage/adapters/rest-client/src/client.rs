@@ -4,11 +4,17 @@ use chrono::{DateTime, Utc};
 use reqwest::{Client, Url};
 use serde_urlencoded::to_string;
 use tracing::trace;
+use uuid::Uuid;
 
-use domain_model::{Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position, Side, Timeframe};
+use domain_model::{
+    Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position,
+    Side, Timeframe,
+};
 use storage_core_api::{StorageApi, SyncReport};
-use storage_rest_api::endpoints::{GET_CANDLES, GET_ORDERS, GET_POSITIONS, POST_CANDLES, POST_ORDERS, POST_POSITIONS, POST_SYNC};
-use storage_rest_api::path_queries::{CandlesQuery, CandleSyncQuery, OrdersQuery, PositionsQuery};
+use storage_rest_api::endpoints::{
+    GET_CANDLES, GET_ORDERS, GET_POSITIONS, POST_CANDLES, POST_ORDERS, POST_POSITIONS, POST_SYNC,
+};
+use storage_rest_api::path_queries::{CandleSyncQuery, CandlesQuery, OrdersQuery, PositionsQuery};
 
 pub struct StorageRestClient {
     url: String,
@@ -34,23 +40,25 @@ impl StorageApi for StorageRestClient {
         let endpoint = format!("{}{}", self.url, POST_ORDERS);
         let url = Url::parse(&endpoint)?;
         trace!("Request url: {url:?}");
-        self.client.post(url)
-            .json(&order)
-            .send()
-            .await?;
+        self.client.post(url).json(&order).send().await?;
         Ok(())
     }
 
-    async fn get_orders(&self, id: Option<String>,
-                        exchange: Option<Exchange>,
-                        market_type: Option<MarketType>,
-                        target: Option<Currency>,
-                        source: Option<Currency>,
-                        status: Option<OrderStatus>,
-                        side: Option<Side>,
-                        order_type: Option<OrderType>) -> Result<Vec<Order>> {
+    async fn get_orders(
+        &self,
+        id: Option<String>,
+        simulation_id: Option<Uuid>,
+        exchange: Option<Exchange>,
+        market_type: Option<MarketType>,
+        target: Option<Currency>,
+        source: Option<Currency>,
+        status: Option<OrderStatus>,
+        side: Option<Side>,
+        order_type: Option<OrderType>,
+    ) -> Result<Vec<Order>> {
         let query = OrdersQuery {
             id,
+            simulation_id,
             exchange,
             market_type,
             target,
@@ -64,11 +72,7 @@ impl StorageApi for StorageRestClient {
         let mut url = Url::parse(&endpoint)?;
         url.set_query(Some(&to_string(&query)?));
         trace!("Request url: {url:?}");
-        let result = self.client.get(url)
-            .send()
-            .await?
-            .json()
-            .await?;
+        let result = self.client.get(url).send().await?.json().await?;
         Ok(result)
     }
 
@@ -76,16 +80,16 @@ impl StorageApi for StorageRestClient {
         let endpoint = format!("{}{}", self.url, POST_POSITIONS);
         let url = Url::parse(&endpoint)?;
         trace!("Request url: {url:?}");
-        self.client.post(url)
-            .json(&position)
-            .send()
-            .await?;
+        self.client.post(url).json(&position).send().await?;
         Ok(())
     }
 
-    async fn get_positions(&self, exchange: Option<Exchange>,
-                           currency: Option<Currency>,
-                           side: Option<Side>) -> Result<Vec<Position>> {
+    async fn get_positions(
+        &self,
+        exchange: Option<Exchange>,
+        currency: Option<Currency>,
+        side: Option<Side>,
+    ) -> Result<Vec<Position>> {
         let query = PositionsQuery {
             exchange,
             currency,
@@ -96,11 +100,7 @@ impl StorageApi for StorageRestClient {
         let mut url = Url::parse(&endpoint)?;
         url.set_query(Some(&to_string(&query)?));
         trace!("Request url: {url:?}");
-        let result = self.client.get(url)
-            .send()
-            .await?
-            .json()
-            .await?;
+        let result = self.client.get(url).send().await?.json().await?;
         Ok(result)
     }
 
@@ -108,18 +108,18 @@ impl StorageApi for StorageRestClient {
         let endpoint = format!("{}{}", self.url, POST_CANDLES);
         let url = Url::parse(&endpoint)?;
         trace!("Request url: {url:?}");
-        self.client.post(url)
-            .json(&candle)
-            .send()
-            .await?;
+        self.client.post(url).json(&candle).send().await?;
         Ok(())
     }
 
-    async fn get_candles(&self, instrument_id: &InstrumentId,
-                         timeframe: Option<Timeframe>,
-                         from: Option<DateTime<Utc>>,
-                         to: Option<DateTime<Utc>>,
-                         limit: Option<u64>) -> Result<Vec<Candle>> {
+    async fn get_candles(
+        &self,
+        instrument_id: &InstrumentId,
+        timeframe: Option<Timeframe>,
+        from: Option<DateTime<Utc>>,
+        to: Option<DateTime<Utc>>,
+        limit: Option<u64>,
+    ) -> Result<Vec<Candle>> {
         let query = CandlesQuery {
             exchange: instrument_id.exchange,
             market_type: instrument_id.market_type,
@@ -135,16 +135,19 @@ impl StorageApi for StorageRestClient {
         let mut url = Url::parse(&endpoint)?;
         url.set_query(Some(&to_string(&query)?));
         trace!("Request url: {url:?}");
-        let result = self.client.get(url)
-            .send()
-            .await?
-            .json()
-            .await?;
+        let result = self.client.get(url).send().await?.json().await?;
         Ok(result)
     }
 
-    async fn sync(&self, instrument_id: &InstrumentId, timeframes: &[Timeframe], from: DateTime<Utc>, to: Option<DateTime<Utc>>) -> Result<Vec<SyncReport>> {
-        let timeframes = timeframes.iter()
+    async fn sync(
+        &self,
+        instrument_id: &InstrumentId,
+        timeframes: &[Timeframe],
+        from: DateTime<Utc>,
+        to: Option<DateTime<Utc>>,
+    ) -> Result<Vec<SyncReport>> {
+        let timeframes = timeframes
+            .iter()
             .map(|timeframe| timeframe.to_string())
             .collect::<Vec<_>>()
             .join(",");
@@ -158,7 +161,9 @@ impl StorageApi for StorageRestClient {
         let mut url = Url::parse(&endpoint)?;
         url.set_query(Some(&to_string(&query)?));
         trace!("Request url: {url:?}");
-        let result = self.client.post(url)
+        let result = self
+            .client
+            .post(url)
             .json(instrument_id)
             .send()
             .await?

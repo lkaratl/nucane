@@ -8,6 +8,7 @@ use axum::Router;
 use tracing::error;
 use uuid::Uuid;
 
+use domain_model::{CurrencyPair, InstrumentId};
 use ui_core_api::UiApi;
 use ui_rest_api::endpoints::GET_SIMULATION_CHART;
 use ui_rest_api::path_queries::SimulationChartQuery;
@@ -30,8 +31,16 @@ async fn get_simulation_chart(
     Query(query): Query<SimulationChartQuery>,
     Path(simulation_id): Path<Uuid>,
 ) -> Html<String> {
+    let instrument_id = InstrumentId {
+        exchange: query.exchange,
+        market_type: query.market_type,
+        pair: CurrencyPair {
+            target: query.target,
+            source: query.source,
+        },
+    };
     let chart_html = ui
-        .get_simulation_chart_html(simulation_id, query.timeframe)
+        .get_simulation_chart_html(simulation_id, query.timeframe, instrument_id)
         .await
         .map_err(|err| error!("Error during simulation chart building: '{err}'"))
         .unwrap_or("<p>Error during chart building</p>".to_string());

@@ -109,6 +109,22 @@ pub enum Timeframe {
     OneD,
 }
 
+impl Timeframe {
+    pub fn as_sec(&self) -> i64 {
+        match self {
+            Timeframe::OneS => 1,
+            Timeframe::OneM => 60,
+            Timeframe::FiveM => 300,
+            Timeframe::FifteenM => 900,
+            Timeframe::ThirtyM => 1800,
+            Timeframe::OneH => 3600,
+            Timeframe::TwoH => 7200,
+            Timeframe::FourH => 14400,
+            Timeframe::OneD => 345600,
+        }
+    }
+}
+
 impl fmt::Display for Timeframe {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
