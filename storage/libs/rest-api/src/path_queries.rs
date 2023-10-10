@@ -49,3 +49,12 @@ pub struct CandleSyncQuery {
     pub from: i64,
     pub to: Option<i64>,
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct DrawingQuery {
+    pub simulation_id: Option<Uuid>,
+    pub exchange: Exchange,
+    pub market_type: MarketType,
+    pub target: Currency,
+    pub source: Currency,
+}

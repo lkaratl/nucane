@@ -3,5 +3,7 @@
 pub mod prelude;
 
 pub mod candle;
+pub mod line;
 pub mod order;
+pub mod point;
 pub mod position;

@@ -7,14 +7,18 @@ use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use chrono::{TimeZone, Utc};
-use tracing::error;
+use tracing::{error, info};
 
+use domain_model::drawing::{Line, Point};
 use domain_model::{Candle, CurrencyPair, InstrumentId, Order, Position, Timeframe};
 use storage_core_api::{StorageApi, SyncReport};
 use storage_rest_api::endpoints::{
-    GET_CANDLES, GET_ORDERS, GET_POSITIONS, POST_CANDLES, POST_ORDERS, POST_POSITIONS, POST_SYNC,
+    GET_CANDLES, GET_LINES, GET_ORDERS, GET_POINTS, GET_POSITIONS, POST_CANDLES, POST_LINE,
+    POST_ORDERS, POST_POINT, POST_POSITIONS, POST_SYNC,
 };
-use storage_rest_api::path_queries::{CandleSyncQuery, CandlesQuery, OrdersQuery, PositionsQuery};
+use storage_rest_api::path_queries::{
+    CandleSyncQuery, CandlesQuery, DrawingQuery, OrdersQuery, PositionsQuery,
+};
 
 pub async fn run(port: u16, storage: impl StorageApi) {
     let storage = Arc::new(storage);
@@ -26,6 +30,10 @@ pub async fn run(port: u16, storage: impl StorageApi) {
         .route(GET_POSITIONS, get(get_positions))
         .route(POST_POSITIONS, post(create_position))
         .route(POST_SYNC, post(sync))
+        .route(GET_POINTS, get(get_points))
+        .route(POST_POINT, post(create_point))
+        .route(GET_LINES, get(get_lines))
+        .route(POST_LINE, post(create_line))
         .with_state(storage);
 
     let address = SocketAddr::new(IpAddr::from([0, 0, 0, 0]), port);
@@ -137,4 +145,51 @@ async fn sync(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
     Ok(Json(result))
+}
+
+async fn get_points(
+    Query(query_params): Query<DrawingQuery>,
+    State(storage): State<Arc<dyn StorageApi>>,
+) -> Json<Vec<Point>> {
+    let instrument_id = InstrumentId {
+        exchange: query_params.exchange,
+        market_type: query_params.market_type,
+        pair: CurrencyPair {
+            target: query_params.target,
+            source: query_params.source,
+        },
+    };
+    let result = storage
+        .get_points(&instrument_id, query_params.simulation_id)
+        .await
+        .unwrap();
+    Json(result)
+}
+
+async fn create_point(State(storage): State<Arc<dyn StorageApi>>, Json(point): Json<Point>) {
+    info!("create point handler"); // todo remove
+    let _ = storage.save_point(point).await;
+}
+
+async fn get_lines(
+    Query(query_params): Query<DrawingQuery>,
+    State(storage): State<Arc<dyn StorageApi>>,
+) -> Json<Vec<Line>> {
+    let instrument_id = InstrumentId {
+        exchange: query_params.exchange,
+        market_type: query_params.market_type,
+        pair: CurrencyPair {
+            target: query_params.target,
+            source: query_params.source,
+        },
+    };
+    let result = storage
+        .get_lines(&instrument_id, query_params.simulation_id)
+        .await
+        .unwrap();
+    Json(result)
+}
+
+async fn create_line(State(storage): State<Arc<dyn StorageApi>>, Json(line): Json<Line>) {
+    let _ = storage.save_line(line).await;
 }

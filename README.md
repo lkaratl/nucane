@@ -7,7 +7,6 @@
     </br>
     Please make sure that everything is working properly before using it with a real exchange account.
     If you encounter a problem or have an idea for improvement, feel free to create issue. 
-
   </p>
   <p>
 

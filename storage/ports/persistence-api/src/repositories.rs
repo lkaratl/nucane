@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
+use domain_model::drawing::{Line, Point};
 use domain_model::{
     Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position,
     Side, Timeframe,
@@ -50,4 +51,20 @@ pub trait CandleRepository: Send + Sync + 'static {
         to_timestamp: Option<DateTime<Utc>>,
         limit: Option<u64>,
     ) -> Result<Vec<Candle>>;
+}
+
+#[async_trait]
+pub trait DrawingRepository: Send + Sync + 'static {
+    async fn save_point(&self, point: Point) -> Result<()>;
+    async fn get_points(
+        &self,
+        instrument_id: &InstrumentId,
+        simulation_id: Option<Uuid>,
+    ) -> Result<Vec<Point>>;
+    async fn save_line(&self, line: Line) -> Result<()>;
+    async fn get_lines(
+        &self,
+        instrument_id: &InstrumentId,
+        simulation_id: Option<Uuid>,
+    ) -> Result<Vec<Line>>;
 }

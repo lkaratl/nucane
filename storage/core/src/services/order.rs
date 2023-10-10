@@ -9,7 +9,7 @@ pub struct OrderService<R: OrderRepository> {
 
 impl<R: OrderRepository> OrderService<R> {
     pub fn new(repository: R) -> Self {
-        OrderService { repository }
+        Self { repository }
     }
 
     pub async fn save(&self, order: domain_model::Order) {

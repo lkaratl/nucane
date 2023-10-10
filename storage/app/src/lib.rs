@@ -6,7 +6,10 @@ use interactor_rest_client::InteractorRestClient;
 use storage_config::CONFIG;
 use storage_core::Storage;
 use storage_postgres_persistence::initiator::init_db;
-use storage_postgres_persistence::repositories::{CandlePostgresRepository, OrderPostgresRepository, PositionPostgresRepository};
+use storage_postgres_persistence::repositories::{
+    CandlePostgresRepository, DrawingPostgresRepository, OrderPostgresRepository,
+    PositionPostgresRepository,
+};
 
 pub async fn run() {
     info!("▶ storage running...");
@@ -16,8 +19,14 @@ pub async fn run() {
     let order_repository = OrderPostgresRepository::new(Arc::clone(&db));
     let position_repository = PositionPostgresRepository::new(Arc::clone(&db));
     let candle_repository = CandlePostgresRepository::new(Arc::clone(&db));
+    let drawing_repository = DrawingPostgresRepository::new(Arc::clone(&db));
 
-    let storage = Storage::new(interactor_client, order_repository, position_repository, candle_repository);
+    let storage = Storage::new(
+        interactor_client,
+        order_repository,
+        position_repository,
+        candle_repository,
+        drawing_repository,
+    );
     storage_rest_api_server::run(CONFIG.application.port, storage).await;
 }
-

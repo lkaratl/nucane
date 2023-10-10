@@ -3,18 +3,22 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use reqwest::{Client, Url};
 use serde_urlencoded::to_string;
-use tracing::trace;
+use tracing::{info, trace};
 use uuid::Uuid;
 
+use domain_model::drawing::{Line, Point};
 use domain_model::{
     Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position,
     Side, Timeframe,
 };
 use storage_core_api::{StorageApi, SyncReport};
 use storage_rest_api::endpoints::{
-    GET_CANDLES, GET_ORDERS, GET_POSITIONS, POST_CANDLES, POST_ORDERS, POST_POSITIONS, POST_SYNC,
+    GET_CANDLES, GET_LINES, GET_ORDERS, GET_POINTS, GET_POSITIONS, POST_CANDLES, POST_LINE,
+    POST_ORDERS, POST_POINT, POST_POSITIONS, POST_SYNC,
 };
-use storage_rest_api::path_queries::{CandleSyncQuery, CandlesQuery, OrdersQuery, PositionsQuery};
+use storage_rest_api::path_queries::{
+    CandleSyncQuery, CandlesQuery, DrawingQuery, OrdersQuery, PositionsQuery,
+};
 
 pub struct StorageRestClient {
     url: String,
@@ -169,6 +173,65 @@ impl StorageApi for StorageRestClient {
             .await?
             .json()
             .await?;
+        Ok(result)
+    }
+
+    async fn save_point(&self, point: Point) -> Result<()> {
+        let endpoint = format!("{}{}", self.url, POST_POINT);
+        let url = Url::parse(&endpoint)?;
+        info!("Request url: {url:?}");
+        self.client.post(url).json(&point).send().await?;
+        info!("after point save");
+        Ok(())
+    }
+
+    async fn get_points(
+        &self,
+        instrument_id: &InstrumentId,
+        simulation_id: Option<Uuid>,
+    ) -> Result<Vec<Point>> {
+        let query = DrawingQuery {
+            simulation_id,
+            exchange: instrument_id.exchange,
+            market_type: instrument_id.market_type,
+            target: instrument_id.pair.target,
+            source: instrument_id.pair.source,
+        };
+
+        let endpoint = format!("{}{}", self.url, GET_POINTS);
+        let mut url = Url::parse(&endpoint)?;
+        url.set_query(Some(&to_string(&query)?));
+        trace!("Request url: {url:?}");
+        let result = self.client.get(url).send().await?.json().await?;
+        Ok(result)
+    }
+
+    async fn save_line(&self, line: Line) -> Result<()> {
+        let endpoint = format!("{}{}", self.url, POST_LINE);
+        let url = Url::parse(&endpoint)?;
+        trace!("Request url: {url:?}");
+        self.client.post(url).json(&line).send().await?;
+        Ok(())
+    }
+
+    async fn get_lines(
+        &self,
+        instrument_id: &InstrumentId,
+        simulation_id: Option<Uuid>,
+    ) -> Result<Vec<Line>> {
+        let query = DrawingQuery {
+            simulation_id,
+            exchange: instrument_id.exchange,
+            market_type: instrument_id.market_type,
+            target: instrument_id.pair.target,
+            source: instrument_id.pair.source,
+        };
+
+        let endpoint = format!("{}{}", self.url, GET_LINES);
+        let mut url = Url::parse(&endpoint)?;
+        url.set_query(Some(&to_string(&query)?));
+        trace!("Request url: {url:?}");
+        let result = self.client.get(url).send().await?.json().await?;
         Ok(result)
     }
 }

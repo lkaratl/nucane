@@ -7,6 +7,8 @@ use chrono::{DateTime, Duration, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+pub mod drawing;
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Simulation {
     pub id: Uuid,
@@ -340,10 +342,35 @@ pub struct InstrumentId {
     pub pair: CurrencyPair,
 }
 
+impl InstrumentId {
+    pub fn new(exchange: Exchange, market_type: MarketType, pair: CurrencyPair) -> Self {
+        Self {
+            exchange,
+            market_type,
+            pair,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Clone, Copy)]
 pub struct CurrencyPair {
     pub target: Currency,
     pub source: Currency,
+}
+
+impl CurrencyPair {
+    pub fn new(target: Currency, source: Currency) -> Self {
+        Self { target, source }
+    }
+}
+
+impl From<(Currency, Currency)> for CurrencyPair {
+    fn from(value: (Currency, Currency)) -> Self {
+        Self {
+            target: value.0,
+            source: value.1,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]

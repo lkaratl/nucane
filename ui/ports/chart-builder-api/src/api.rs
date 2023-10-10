@@ -1,7 +1,7 @@
-use std::fmt::Display;
-
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+
+pub use domain_model::drawing::{Color, Coord, Icon, LineStyle};
 
 #[async_trait]
 pub trait ChartBuilderApi: Send + Sync + 'static {
@@ -32,21 +32,6 @@ impl Series {
 pub enum Data {
     CandleStick(Vec<Vec<f64>>),
     Line(f64),
-}
-
-#[derive(Debug)]
-pub struct Coord {
-    pub x: DateTime<Utc>,
-    pub y: f64,
-}
-
-impl From<(DateTime<Utc>, f64)> for Coord {
-    fn from(value: (DateTime<Utc>, f64)) -> Self {
-        Self {
-            x: value.0,
-            y: value.1,
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -101,33 +86,4 @@ impl Line {
             end,
         }
     }
-}
-
-#[derive(Debug)]
-pub enum Icon {
-    Arrow,
-    Pin,
-    Circle,
-}
-
-#[derive(Debug)]
-pub enum Color {
-    Green,
-    Red,
-}
-
-impl ToString for Color {
-    fn to_string(&self) -> String {
-        match self {
-            Color::Green => "#00FF09".to_string(),
-            Color::Red => "#FF0000".to_string(),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum LineStyle {
-    Solid,
-    Dotted,
-    Dashed,
 }

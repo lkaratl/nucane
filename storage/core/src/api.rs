@@ -5,35 +5,51 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
+use domain_model::drawing::{Line, Point};
 use domain_model::{
     Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position,
     Side, Timeframe,
 };
 use interactor_core_api::InteractorApi;
 use storage_core_api::{StorageApi, SyncReport};
-use storage_persistence_api::{CandleRepository, OrderRepository, PositionRepository};
+use storage_persistence_api::{
+    CandleRepository, DrawingRepository, OrderRepository, PositionRepository,
+};
 
 use crate::services::candle::CandleService;
 use crate::services::candle_sync::CandleSyncService;
+use crate::services::drawing::DrawingService;
 use crate::services::order::OrderService;
 use crate::services::position::PositionService;
 
-pub struct Storage<I: InteractorApi, O: OrderRepository, P: PositionRepository, C: CandleRepository>
-{
+pub struct Storage<
+    I: InteractorApi,
+    O: OrderRepository,
+    P: PositionRepository,
+    C: CandleRepository,
+    D: DrawingRepository,
+> {
     order_service: OrderService<O>,
     position_service: PositionService<P>,
     candle_service: Arc<CandleService<C>>,
     candle_sync_service: CandleSyncService<I, C>,
+    drawing_service: DrawingService<D>,
 }
 
-impl<I: InteractorApi, O: OrderRepository, P: PositionRepository, C: CandleRepository>
-    Storage<I, O, P, C>
+impl<
+        I: InteractorApi,
+        O: OrderRepository,
+        P: PositionRepository,
+        C: CandleRepository,
+        D: DrawingRepository,
+    > Storage<I, O, P, C, D>
 {
     pub fn new(
         interactor_client: I,
         order_repository: O,
         position_repository: P,
         candle_repository: C,
+        drawing_repository: D,
     ) -> Self {
         let interactor_client = Arc::new(interactor_client);
         let order_service = OrderService::new(order_repository);
@@ -41,18 +57,25 @@ impl<I: InteractorApi, O: OrderRepository, P: PositionRepository, C: CandleRepos
         let candle_service = Arc::new(CandleService::new(candle_repository));
         let candle_sync_service =
             CandleSyncService::new(Arc::clone(&candle_service), interactor_client);
+        let drawing_service = DrawingService::new(drawing_repository);
         Self {
             order_service,
             position_service,
             candle_service,
             candle_sync_service,
+            drawing_service,
         }
     }
 }
 
 #[async_trait]
-impl<I: InteractorApi, O: OrderRepository, P: PositionRepository, C: CandleRepository> StorageApi
-    for Storage<I, O, P, C>
+impl<
+        I: InteractorApi,
+        O: OrderRepository,
+        P: PositionRepository,
+        C: CandleRepository,
+        D: DrawingRepository,
+    > StorageApi for Storage<I, O, P, C, D>
 {
     async fn save_order(&self, order: Order) -> Result<()> {
         self.order_service.save(order).await;
@@ -133,5 +156,39 @@ impl<I: InteractorApi, O: OrderRepository, P: PositionRepository, C: CandleRepos
         self.candle_sync_service
             .sync(instrument_id, timeframes, from, to)
             .await
+    }
+
+    async fn save_point(&self, point: Point) -> Result<()> {
+        self.drawing_service.save_point(point).await;
+        Ok(())
+    }
+
+    async fn get_points(
+        &self,
+        instrument_id: &InstrumentId,
+        simulation_id: Option<Uuid>,
+    ) -> Result<Vec<Point>> {
+        let points = self
+            .drawing_service
+            .get_points(instrument_id, simulation_id)
+            .await;
+        Ok(points)
+    }
+
+    async fn save_line(&self, line: Line) -> Result<()> {
+        self.drawing_service.save_line(line).await;
+        Ok(())
+    }
+
+    async fn get_lines(
+        &self,
+        instrument_id: &InstrumentId,
+        simulation_id: Option<Uuid>,
+    ) -> Result<Vec<Line>> {
+        let lines = self
+            .drawing_service
+            .get_lines(instrument_id, simulation_id)
+            .await;
+        Ok(lines)
     }
 }
