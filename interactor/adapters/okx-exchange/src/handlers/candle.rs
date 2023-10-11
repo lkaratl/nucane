@@ -4,7 +4,9 @@ use async_trait::async_trait;
 use serde_json::{from_value, Value};
 use tracing::trace;
 
-use domain_model::{Candle, CandleStatus, CurrencyPair, Exchange, InstrumentId, MarketType, Timeframe};
+use domain_model::{
+    Candle, CandleStatus, CurrencyPair, Exchange, InstrumentId, MarketType, Timeframe,
+};
 use eac::rest::CandleResponse;
 use eac::websocket::{Action, Channel, WsMessageHandler};
 use storage_core_api::StorageApi;
@@ -16,7 +18,11 @@ pub struct CandleHandler<S: StorageApi> {
 }
 
 impl<S: StorageApi> CandleHandler<S> {
-    pub fn new(currency_pair: CurrencyPair, market_type: MarketType, storage_client: Arc<S>) -> Self {
+    pub fn new(
+        currency_pair: CurrencyPair,
+        market_type: MarketType,
+        storage_client: Arc<S>,
+    ) -> Self {
         Self {
             currency_pair,
             market_type,
@@ -29,7 +35,12 @@ impl<S: StorageApi> CandleHandler<S> {
 impl<S: StorageApi> WsMessageHandler for CandleHandler<S> {
     type Type = Vec<Candle>;
 
-    async fn convert_data(&mut self, arg: Channel, _action: Option<Action>, data: Vec<Value>) -> Option<Self::Type> {
+    async fn convert_data(
+        &mut self,
+        arg: Channel,
+        _action: Option<Action>,
+        data: Vec<Value>,
+    ) -> Option<Self::Type> {
         trace!("Retrieved massage with raw payload: {:?}", &data);
         let mut candles = Vec::new();
         for item in data {
@@ -43,16 +54,23 @@ impl<S: StorageApi> WsMessageHandler for CandleHandler<S> {
                 Channel::Candle2H { .. } => Timeframe::TwoH,
                 Channel::Candle4H { .. } => Timeframe::FourH,
                 Channel::Candle1D { .. } => Timeframe::OneD,
-                channel => panic!("Error during timeframe parsing for candle, unexpected channel: {channel:?}")
+                channel => panic!(
+                    "Error during timeframe parsing for candle, unexpected channel: {channel:?}"
+                ),
             };
-            let id = format!("{}_{}_{}_{}_{}_{}", Exchange::OKX, self.market_type,
-                             self.currency_pair.target,
-                             self.currency_pair.source,
-                             timeframe, candle_message.0.timestamp_millis());
+            let id = format!(
+                "{}_{}_{}_{}_{}_{}",
+                Exchange::OKX,
+                self.market_type,
+                self.currency_pair.target,
+                self.currency_pair.source,
+                timeframe,
+                candle_message.0.timestamp_millis()
+            );
             let status = match candle_message.8.as_str() {
                 "0" => CandleStatus::Open,
                 "1" => CandleStatus::Close,
-                status => panic!("Error during candle status parsing, unexpected status: {status}")
+                status => panic!("Error during candle status parsing, unexpected status: {status}"),
             };
             let instrument_id = InstrumentId {
                 exchange: Exchange::OKX,
@@ -79,7 +97,7 @@ impl<S: StorageApi> WsMessageHandler for CandleHandler<S> {
 
     async fn handle(&mut self, message: Self::Type) {
         for candle in message {
-            let _ = self.storage_client.save_candle(candle).await;
+            self.storage_client.save_candle(candle).await.unwrap();
         }
     }
 }

@@ -102,11 +102,11 @@ impl<T: ConnectionTrait + Send + 'static> DrawingRepository for DrawingPostgresR
         instrument_id: &domain_model::InstrumentId,
     ) -> Result<Vec<domain_model::drawing::Line>> {
         let condition = Condition::all()
-            .add(point::Column::DeploymentId.eq(deployment_id))
-            .add(point::Column::Exchange.eq(instrument_id.exchange.to_string()))
-            .add(point::Column::Pair.contains(&instrument_id.pair.target.to_string())) // todo pair flatten in db model
-            .add(point::Column::Pair.contains(&instrument_id.pair.source.to_string()))
-            .add(point::Column::MarketType.eq(instrument_id.market_type.to_string()));
+            .add(line::Column::DeploymentId.eq(deployment_id))
+            .add(line::Column::Exchange.eq(instrument_id.exchange.to_string()))
+            .add(line::Column::Pair.contains(&instrument_id.pair.target.to_string())) // todo pair flatten in db model
+            .add(line::Column::Pair.contains(&instrument_id.pair.source.to_string()))
+            .add(line::Column::MarketType.eq(instrument_id.market_type.to_string()));
         let result = line::Entity::find()
             .filter(condition)
             .all(self.db.deref())

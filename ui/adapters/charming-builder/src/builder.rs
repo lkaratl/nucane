@@ -78,12 +78,12 @@ fn build_base_chart() -> Chart {
         .data_zoom(DataZoom::new().type_(DataZoomType::Inside))
 }
 
-fn add_legend(chart: Chart, series: &Vec<Series>, points: &Vec<Point>, lines: &Vec<Line>) -> Chart {
+fn add_legend(chart: Chart, series: &[Series], points: &[Point], lines: &[Line]) -> Chart {
     let legend = generate_legend(series, points, lines);
     chart.legend(Legend::new().inactive_color("#777").data(legend))
 }
 
-fn generate_legend(series: &Vec<Series>, points: &Vec<Point>, lines: &Vec<Line>) -> Vec<String> {
+fn generate_legend(series: &[Series], points: &[Point], lines: &[Line]) -> Vec<String> {
     let mut legend = Vec::new();
     series
         .iter()
@@ -149,6 +149,7 @@ fn add_points(mut chart: Chart, points: Vec<Point>) -> Chart {
     chart
 }
 
+#[allow(clippy::unnecessary_unwrap)]
 fn add_lines(mut chart: Chart, lines: Vec<Line>) -> Chart {
     for line in lines {
         let mut mark_line = charming::series::Line::new()

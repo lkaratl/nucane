@@ -1,14 +1,17 @@
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 
-use axum::{Json, Router};
 use axum::extract::{Query, State};
 use axum::routing::{delete, get, post};
+use axum::{Json, Router};
 use chrono::{TimeZone, Utc};
 
 use domain_model::{Action, Candle, CurrencyPair, InstrumentId, Subscription, Subscriptions};
 use interactor_core_api::InteractorApi;
-use interactor_rest_api::endpoints::{DELETE_UNSUBSCRIBE, GET_CANDLES, GET_PRICE, GET_SUBSCRIPTIONS, POST_EXECUTE_ACTIONS, POST_SUBSCRIBE};
+use interactor_rest_api::endpoints::{
+    DELETE_UNSUBSCRIBE, GET_CANDLES, GET_PRICE, GET_SUBSCRIPTIONS, POST_EXECUTE_ACTIONS,
+    POST_SUBSCRIBE,
+};
 use interactor_rest_api::path_queries::{CandlesQuery, PriceQuery};
 
 pub async fn run(port: u16, interactor: impl InteractorApi) {
@@ -29,25 +32,38 @@ pub async fn run(port: u16, interactor: impl InteractorApi) {
         .unwrap();
 }
 
-async fn subscriptions(State(interactor): State<Arc<dyn InteractorApi>>) -> Json<Vec<Subscriptions>> {
+async fn subscriptions(
+    State(interactor): State<Arc<dyn InteractorApi>>,
+) -> Json<Vec<Subscriptions>> {
     let subscriptions = interactor.subscriptions().await.unwrap();
     Json(subscriptions)
 }
 
-async fn subscribe(State(interactor): State<Arc<dyn InteractorApi>>, Json(subscription): Json<Subscription>) {
-    let _ = interactor.subscribe(subscription).await;
+async fn subscribe(
+    State(interactor): State<Arc<dyn InteractorApi>>,
+    Json(subscription): Json<Subscription>,
+) {
+    interactor.subscribe(subscription).await.unwrap();
 }
 
-async fn unsubscribe(State(interactor): State<Arc<dyn InteractorApi>>, Json(subscription): Json<Subscription>) {
-    let _ = interactor.unsubscribe(subscription).await;
+async fn unsubscribe(
+    State(interactor): State<Arc<dyn InteractorApi>>,
+    Json(subscription): Json<Subscription>,
+) {
+    interactor.unsubscribe(subscription).await.unwrap();
 }
 
-async fn execute_action(State(interactor): State<Arc<dyn InteractorApi>>, Json(actions): Json<Vec<Action>>) {
-    let _ = interactor.execute_actions(actions).await;
+async fn execute_action(
+    State(interactor): State<Arc<dyn InteractorApi>>,
+    Json(actions): Json<Vec<Action>>,
+) {
+    interactor.execute_actions(actions).await.unwrap();
 }
 
-async fn get_candles(Query(query_params): Query<CandlesQuery>,
-                     State(interactor): State<Arc<dyn InteractorApi>>) -> Json<Vec<Candle>> {
+async fn get_candles(
+    Query(query_params): Query<CandlesQuery>,
+    State(interactor): State<Arc<dyn InteractorApi>>,
+) -> Json<Vec<Candle>> {
     let instrument_id = InstrumentId {
         exchange: query_params.exchange,
         market_type: query_params.market_type,
@@ -57,17 +73,27 @@ async fn get_candles(Query(query_params): Query<CandlesQuery>,
         },
     };
     let timeframe = query_params.timeframe;
-    let from = query_params.from.map(|millis| Utc.timestamp_millis_opt(millis).unwrap());
-    let to = query_params.to.map(|millis| Utc.timestamp_millis_opt(millis).unwrap());
+    let from = query_params
+        .from
+        .map(|millis| Utc.timestamp_millis_opt(millis).unwrap());
+    let to = query_params
+        .to
+        .map(|millis| Utc.timestamp_millis_opt(millis).unwrap());
     let limit = Some(query_params.limit);
 
-    let result = interactor.get_candles(&instrument_id, timeframe, from, to, limit).await.unwrap();
+    let result = interactor
+        .get_candles(&instrument_id, timeframe, from, to, limit)
+        .await
+        .unwrap();
     Json(result)
 }
 
-async fn get_price(Query(query_params): Query<PriceQuery>,
-                   State(interactor): State<Arc<dyn InteractorApi>>) -> Json<f64> {
-    let timestamp = query_params.timestamp
+async fn get_price(
+    Query(query_params): Query<PriceQuery>,
+    State(interactor): State<Arc<dyn InteractorApi>>,
+) -> Json<f64> {
+    let timestamp = query_params
+        .timestamp
         .map(|millis| Utc.timestamp_millis_opt(millis).unwrap());
     let instrument_id = InstrumentId {
         exchange: query_params.exchange,
@@ -77,6 +103,9 @@ async fn get_price(Query(query_params): Query<PriceQuery>,
             source: query_params.source,
         },
     };
-    let price = interactor.get_price(&instrument_id, timestamp).await.unwrap();
+    let price = interactor
+        .get_price(&instrument_id, timestamp)
+        .await
+        .unwrap();
     Json(price)
 }

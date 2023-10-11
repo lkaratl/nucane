@@ -72,7 +72,7 @@ async fn get_candles(
 }
 
 async fn create_candle(State(storage): State<Arc<dyn StorageApi>>, Json(candle): Json<Candle>) {
-    let _ = storage.save_candle(candle).await;
+    storage.save_candle(candle).await.unwrap();
 }
 
 async fn get_orders(
@@ -97,7 +97,7 @@ async fn get_orders(
 }
 
 async fn create_order(State(storage): State<Arc<dyn StorageApi>>, Json(order): Json<Order>) {
-    let _ = storage.save_order(order).await;
+    storage.save_order(order).await.unwrap();
 }
 
 async fn get_positions(
@@ -119,7 +119,7 @@ async fn create_position(
     State(storage): State<Arc<dyn StorageApi>>,
     Json(position): Json<Position>,
 ) {
-    let _ = storage.save_position(position).await;
+    storage.save_position(position).await.unwrap();
 }
 
 async fn sync(
@@ -190,5 +190,5 @@ async fn get_lines(
 }
 
 async fn create_line(State(storage): State<Arc<dyn StorageApi>>, Json(line): Json<Line>) {
-    let _ = storage.save_line(line).await;
+    storage.save_line(line).await.unwrap();
 }

@@ -52,7 +52,10 @@ impl<S: StorageApi, R: SubscriptionRepository> SubscriptionManager<S, R> {
                         instrument_id: new_instrument,
                         deployments: HashSet::from([new_subscription.deployment_id]),
                     };
-                    let _ = self.subscription_repository.save(&new_subscription).await;
+                    self.subscription_repository
+                        .save(&new_subscription)
+                        .await
+                        .unwrap();
                 }
             }
         }
@@ -72,10 +75,10 @@ impl<S: StorageApi, R: SubscriptionRepository> SubscriptionManager<S, R> {
                     subscription
                 })
                 .collect();
-            let _ = self
-                .subscription_repository
+            self.subscription_repository
                 .save_many(&updated_subscriptions)
-                .await;
+                .await
+                .unwrap();
 
             let service_facade = &self.service_facade;
             for subscription in updated_subscriptions {
@@ -86,10 +89,10 @@ impl<S: StorageApi, R: SubscriptionRepository> SubscriptionManager<S, R> {
                     service_facade
                         .unsubscribe_ticks(&subscription.instrument_id)
                         .await;
-                    let _ = self
-                        .subscription_repository
+                    self.subscription_repository
                         .delete(&subscription.instrument_id)
-                        .await;
+                        .await
+                        .unwrap();
                 }
             }
         }

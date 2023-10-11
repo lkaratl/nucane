@@ -5,7 +5,6 @@ use chrono::{TimeZone, Utc};
 use tracing::debug;
 use tracing_subscriber::fmt::SubscriberBuilder;
 use tracing_subscriber::EnvFilter;
-use tracing_subscriber::EnvFilter;
 
 use domain_model::{
     CreateSimulation, CreateSimulationDeployment, CreateSimulationPosition, Currency, CurrencyPair,

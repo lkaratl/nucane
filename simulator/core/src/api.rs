@@ -101,7 +101,10 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportReposito
         self.delete_deployments(&simulation.deployments).await;
 
         let report = self.build_report(simulation).await;
-        let _ = self.simulation_report_repository.save(report.clone()).await;
+        self.simulation_report_repository
+            .save(report.clone())
+            .await
+            .unwrap();
         logger.log(format!("{report:?}"));
         report
     }
@@ -277,7 +280,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportReposito
                         stop_loss: create_order.stop_loss.clone(),
                         take_profit: create_order.take_profit.clone(),
                     };
-                    let _ = self.storage_client.save_order(order.clone()).await;
+                    self.storage_client.save_order(order.clone()).await.unwrap();
                     logger.log(format!("|-> Place Order: {} {:?} {:?} '{}-{}' {} '{:?}', stop-loss: {:?}, take-profit: {:?}, id: '{}'",
                                        order.exchange, order.market_type, order.order_type, order.pair.target, order.pair.source, order.side, order.size, order.stop_loss, order.take_profit, order.id));
                     active_orders.push(order);
@@ -291,7 +294,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportReposito
     async fn create_positions(&self, simulation: &Simulation) {
         for position in simulation.positions.clone().iter() {
             let position = Position::from(position.clone());
-            let _ = self.storage_client.save_position(position).await;
+            self.storage_client.save_position(position).await.unwrap();
         }
     }
 
@@ -579,7 +582,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportReposito
         }
         order.avg_price = quote;
         order.status = OrderStatus::Completed;
-        let _ = self.storage_client.save_order(order.clone()).await;
+        self.storage_client.save_order(order.clone()).await.unwrap();
     }
 
     async fn get_ticks(
@@ -638,10 +641,10 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportReposito
     ) {
         let source_position = source_position.expect("No source asset to execute order");
         source_position.end -= source_size;
-        let _ = self
-            .storage_client
+        self.storage_client
             .save_position(Position::from(source_position.clone()))
-            .await;
+            .await
+            .unwrap();
         logger.log(format!(
             "|--> Update position: {} {} '{} | -{}'",
             source_position.exchange, source_position.currency, source_position.end, source_size
@@ -651,10 +654,10 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportReposito
         let fee = calculate_fee_size(target_size, fee_percent);
         target_position.end += target_size - fee;
         target_position.fees += fee;
-        let _ = self
-            .storage_client
+        self.storage_client
             .save_position(Position::from(target_position.clone()))
-            .await;
+            .await
+            .unwrap();
         logger.log(format!(
             "|--> Update position: {} {} '{} | +{} | -{}'",
             target_position.exchange,
