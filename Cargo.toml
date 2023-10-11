@@ -23,8 +23,7 @@ members = [
     "interactor/adapters/inmemory-persistence",
     "interactor/adapters/rest-client",
     "interactor/libs/rest-api",
-    "plugins/test",
-    "plugins/simulation-e2e",
+    "plugins/e2e",
     "registry/config",
     "registry/app",
     "registry/core",
@@ -38,7 +37,9 @@ members = [
     "simulator/app",
     "simulator/core",
     "simulator/ports/core-api",
+    "simulator/ports/persistence-api",
     "simulator/adapters/rest-api-server",
+    "simulator/adapters/postgres-persistence",
     "simulator/adapters/rest-client",
     "simulator/libs/rest-api",
     "standalone/config",
@@ -52,6 +53,14 @@ members = [
     "storage/adapters/postgres-persistence",
     "storage/adapters/rest-client",
     "storage/libs/rest-api",
+    "ui/config",
+    "ui/app",
+    "ui/core",
+    "ui/ports/core-api",
+    "ui/ports/chart-builder-api",
+    "ui/adapters/rest-api-server",
+    "ui/adapters/charming-builder",
+    "ui/libs/rest-api"
 ]
 
 [workspace.package]
@@ -99,7 +108,9 @@ simulator-config = { path = "simulator/config" }
 simulator-app = { path = "simulator/app" }
 simulator-core = { path = "simulator/core" }
 simulator-core-api = { path = "simulator/ports/core-api" }
+simulator-persistence-api = { path = "simulator/ports/persistence-api" }
 simulator-rest-api-server = { path = "simulator/adapters/rest-api-server" }
+simulator-postgres-persistence = { path = "simulator/adapters/postgres-persistence" }
 simulator-rest-client = { path = "simulator/adapters/rest-client" }
 simulator-rest-api = { path = "simulator/libs/rest-api" }
 
@@ -115,7 +126,15 @@ storage-rest-client = { path = "storage/adapters/rest-client" }
 storage-postgres-persistence = { path = "storage/adapters/postgres-persistence" }
 storage-rest-api = { path = "storage/libs/rest-api" }
 
-async-nats = "0.31.0"
+ui-config = { path = "ui/config" }
+ui-app = { path = "ui/app" }
+ui-core = { path = "ui/core" }
+ui-core-api = { path = "ui/ports/core-api" }
+ui-chart-builder-api = { path = "ui/ports/chart-builder-api" }
+ui-rest-api-server = { path = "ui/adapters/rest-api-server" }
+ui-charming-builder = { path = "ui/adapters/charming-builder" }
+ui-rest-api = { path = "ui/libs/rest-api" }
+
 tokio = { version = "1.28", features = ["full"] }
 futures = "0.3.28"
 uuid = { version = "1.3.2", features = ["v4", "serde"] }
@@ -132,9 +151,10 @@ sea-orm-migration = { version = "0.11.0", features = ["sqlx-postgres", "runtime-
 config = { verion = "0.13.3", features = ["yaml"] }
 once_cell = "1.17.1"
 axum = { version = "0.6.18", features = ["macros", "multipart"] }
-hyper = { version = "1.0.0-rc.3", features = ["full"] }
+hyper = { version = "1.0.0-rc.4", features = ["full"] }
 anyhow = "1.0.71"
 reqwest = { version = "0.11", features = ["json"] }
+surf = "2.3.2"
 async-trait = "0.1.68"
 nanoid = "0.4.0"
 libloading = "0.8"
@@ -156,3 +176,4 @@ tokio-tungstenite = { version = "0.19.0", features = ["native-tls"] }
 tokio-native-tls = "0.3"
 async-broadcast = "0.5.1"
 pg-embed = "0.6" # newer versions don't support db creation yet
+charming = { version = "0.2.4", features = ["ssr"] }

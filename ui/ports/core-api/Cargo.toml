@@ -1,0 +1,10 @@
+[package]
+name = "ui-core-api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+domain-model = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+uuid = { workspace = true }

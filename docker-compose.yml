@@ -83,6 +83,19 @@ services:
       - tailscale
       - db
     restart: unless-stopped
+  ui:
+    image: ui:${TAG}
+    environment:
+      UI_SIMULATOR_URL: interactor:8084
+      UI_STORAGE_URL: storage:8082
+    networks:
+      tailscale_network:
+        ipv4_address: 172.${SUBNET_ID}.0.7
+      db_network:
+    depends_on:
+      - tailscale
+      - db
+    restart: unless-stopped
 
   # capability providers
   tailscale:

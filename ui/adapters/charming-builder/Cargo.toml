@@ -1,0 +1,10 @@
+[package]
+name = "ui-charming-builder"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ui-chart-builder-api = { workspace = true }
+charming = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }

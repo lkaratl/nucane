@@ -98,10 +98,10 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> Engine<I, R, S> {
         let deployment_info: DeploymentInfo = (&deployment).into();
         self.runtime.deploy(deployment).await;
         self.sync_data(&deployment_info.subscriptions).await;
-        let _ = self
-            .interactor_client
+        self.interactor_client
             .subscribe((&deployment_info).into())
-            .await;
+            .await
+            .unwrap();
         Ok(deployment_info)
     }
 }
@@ -127,10 +127,10 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> EngineApi for Engine<I, R,
     async fn get_actions(&self, tick: &Tick) -> Vec<Action> {
         let actions = self.runtime.get_actions(tick).await;
         if !actions.is_empty() {
-            let _ = self
-                .interactor_client
+            self.interactor_client
                 .execute_actions(actions.clone())
-                .await;
+                .await
+                .unwrap();
         }
         actions
     }
@@ -152,7 +152,7 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> EngineApi for Engine<I, R,
                 plugin_id: plugin_id.clone(),
                 params: deployment.params.clone(),
             };
-            let _ = self.deploy_single(&new_deployment).await.unwrap();
+            self.deploy_single(&new_deployment).await.unwrap();
         }
     }
 }

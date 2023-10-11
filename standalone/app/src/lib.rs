@@ -19,6 +19,7 @@ pub fn run() {
     });
     thread::spawn(run_simulator);
     thread::spawn(run_interactor);
+    thread::spawn(run_ui);
     debug!(
         " ▸ standalone: Temp data folder: {}",
         env::temp_dir().display()
@@ -77,6 +78,11 @@ async fn run_simulator() {
 #[tokio::main]
 async fn run_interactor() {
     interactor_app::run().await;
+}
+
+#[tokio::main]
+async fn run_ui() {
+    ui_app::run().await;
 }
 
 const APP_NAME: &str = "

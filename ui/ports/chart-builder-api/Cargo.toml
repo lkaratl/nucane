@@ -1,0 +1,9 @@
+[package]
+name = "ui-chart-builder-api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+domain-model = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }

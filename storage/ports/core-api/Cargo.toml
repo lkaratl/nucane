@@ -9,3 +9,4 @@ anyhow = { workspace = true }
 chrono = { workspace = true }
 async-trait = { workspace = true }
 serde = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }

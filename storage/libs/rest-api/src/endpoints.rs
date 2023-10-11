@@ -5,3 +5,7 @@ pub const POST_ORDERS: &str = "/api/v1/storage/orders";
 pub const GET_POSITIONS: &str = "/api/v1/storage/positions";
 pub const POST_POSITIONS: &str = "/api/v1/storage/positions";
 pub const POST_SYNC: &str = "/api/v1/storage/sync";
+pub const GET_POINTS: &str = "/api/v1/storage/drawing/points";
+pub const POST_POINT: &str = "/api/v1/storage/drawing/points";
+pub const GET_LINES: &str = "/api/v1/storage/drawing/lines";
+pub const POST_LINE: &str = "/api/v1/storage/drawing/lines";

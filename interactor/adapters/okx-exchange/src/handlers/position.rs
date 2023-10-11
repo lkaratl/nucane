@@ -29,7 +29,12 @@ impl<S: StorageApi> PositionHandler<S> {
 impl<S: StorageApi> WsMessageHandler for PositionHandler<S> {
     type Type = Vec<Position>;
 
-    async fn convert_data(&mut self, _arg: Channel, _action: Option<Action>, data: Vec<Value>) -> Option<Self::Type> {
+    async fn convert_data(
+        &mut self,
+        _arg: Channel,
+        _action: Option<Action>,
+        data: Vec<Value>,
+    ) -> Option<Self::Type> {
         trace!("Retrieved massage with raw payload: {:?}", &data);
         let mut new_positions = Vec::new();
         for item in data {
@@ -51,7 +56,7 @@ impl<S: StorageApi> WsMessageHandler for PositionHandler<S> {
 
     async fn handle(&mut self, message: Self::Type) {
         for position in message {
-            let _ = self.storage_client.save_position(position).await;
+            self.storage_client.save_position(position).await.unwrap();
         }
     }
 }

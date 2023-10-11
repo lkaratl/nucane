@@ -6,7 +6,10 @@ use chrono::Utc;
 use serde_json::{from_value, Value};
 use tracing::trace;
 
-use domain_model::{Currency, CurrencyPair, Exchange, MarginMode, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Trigger};
+use domain_model::{
+    Currency, CurrencyPair, Exchange, MarginMode, Order, OrderMarketType, OrderStatus, OrderType,
+    Side, Size, Trigger,
+};
 use eac::enums;
 use eac::enums::{OrdState, OrdType, TdMode};
 use eac::rest::OrderDetailsResponse;
@@ -19,9 +22,7 @@ pub struct OrderHandler<S: StorageApi> {
 
 impl<S: StorageApi> OrderHandler<S> {
     pub fn new(storage_client: Arc<S>) -> Self {
-        Self {
-            storage_client,
-        }
+        Self { storage_client }
     }
 }
 
@@ -29,7 +30,12 @@ impl<S: StorageApi> OrderHandler<S> {
 impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
     type Type = Vec<Order>;
 
-    async fn convert_data(&mut self, _arg: Channel, _action: Option<Action>, data: Vec<Value>) -> Option<Self::Type> {
+    async fn convert_data(
+        &mut self,
+        _arg: Channel,
+        _action: Option<Action>,
+        data: Vec<Value>,
+    ) -> Option<Self::Type> {
         trace!("Retrieved massage with raw payload: {:?}", &data);
         let mut orders = Vec::new();
         for item in data {
@@ -39,7 +45,7 @@ impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
                     OrdState::Canceled => OrderStatus::Canceled,
                     OrdState::Live => OrderStatus::InProgress,
                     OrdState::PartiallyFilled => OrderStatus::InProgress,
-                    OrdState::Filled => OrderStatus::Completed
+                    OrdState::Filled => OrderStatus::Completed,
                 };
                 let pair = {
                     let mut inst_id = order_details.inst_id.split('-');
@@ -52,39 +58,45 @@ impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
                     match order_details.td_mode {
                         TdMode::Cross => OrderMarketType::Margin(MarginMode::Cross),
                         TdMode::Isolated => OrderMarketType::Margin(MarginMode::Isolated),
-                        TdMode::Cash => OrderMarketType::Spot
+                        TdMode::Cash => OrderMarketType::Spot,
                     }
                 };
                 let side = match order_details.side {
                     enums::Side::Buy => Side::Buy,
-                    enums::Side::Sell => Side::Sell
+                    enums::Side::Sell => Side::Sell,
                 };
                 let order_type = match order_details.ord_type {
                     OrdType::Market => OrderType::Market,
                     OrdType::Limit => OrderType::Limit(order_details.px.unwrap()),
-                    order_type => panic!("Unsupported order type: {order_type:?}")
+                    order_type => panic!("Unsupported order type: {order_type:?}"),
                 };
                 let size = match order_details.ord_type {
                     OrdType::Market => match order_details.tgt_ccy.as_str() {
                         "quote_ccy" => Size::Source(order_details.sz),
                         "base_ccy" => Size::Target(order_details.sz),
-                        _ => panic!("Empty target currency")
-                    }
+                        _ => panic!("Empty target currency"),
+                    },
                     OrdType::Limit => Size::Target(order_details.sz),
-                    order_type => panic!("Unsupported order type: {order_type:?}")
+                    order_type => panic!("Unsupported order type: {order_type:?}"),
                 };
-                let stop_loss = if order_details.sl_trigger_px.is_some() &&
-                    order_details.sl_ord_px.is_some() {
-                    Trigger::new(order_details.sl_trigger_px.unwrap(), order_details.sl_ord_px.unwrap())
-                } else {
-                    None
-                };
-                let take_profit = if order_details.tp_trigger_px.is_some() &&
-                    order_details.tp_ord_px.is_some() {
-                    Trigger::new(order_details.tp_trigger_px.unwrap(), order_details.tp_ord_px.unwrap())
-                } else {
-                    None
-                };
+                let stop_loss =
+                    if order_details.sl_trigger_px.is_some() && order_details.sl_ord_px.is_some() {
+                        Trigger::new(
+                            order_details.sl_trigger_px.unwrap(),
+                            order_details.sl_ord_px.unwrap(),
+                        )
+                    } else {
+                        None
+                    };
+                let take_profit =
+                    if order_details.tp_trigger_px.is_some() && order_details.tp_ord_px.is_some() {
+                        Trigger::new(
+                            order_details.tp_trigger_px.unwrap(),
+                            order_details.tp_ord_px.unwrap(),
+                        )
+                    } else {
+                        None
+                    };
                 let order = Order {
                     id: order_details.cl_ord_id,
                     timestamp: Utc::now(),
@@ -108,7 +120,7 @@ impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
 
     async fn handle(&mut self, message: Self::Type) {
         for order in message {
-            let _ = self.storage_client.save_order(order).await;
+            self.storage_client.save_order(order).await.unwrap();
         }
     }
 }

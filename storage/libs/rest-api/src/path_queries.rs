@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use domain_model::{Currency, Exchange, MarketType, OrderStatus, OrderType, Side, Timeframe};
 
@@ -17,6 +18,7 @@ pub struct CandlesQuery {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OrdersQuery {
     pub id: Option<String>,
+    pub simulation_id: Option<Uuid>,
     pub exchange: Option<Exchange>,
     pub market_type: Option<MarketType>,
     // todo not convenient to pass Margin(Cross)
@@ -46,4 +48,13 @@ pub struct CandleSyncQuery {
     pub timeframes: String,
     pub from: i64,
     pub to: Option<i64>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct DrawingQuery {
+    pub deployment_id: Uuid,
+    pub exchange: Exchange,
+    pub market_type: MarketType,
+    pub target: Currency,
+    pub source: Currency,
 }

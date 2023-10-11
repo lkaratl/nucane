@@ -4,15 +4,18 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use sea_orm::{ActiveValue, ColumnTrait, Condition, ConnectionTrait, EntityTrait, QueryOrder, sea_query};
 use sea_orm::QueryFilter;
+use sea_orm::{
+    sea_query, ActiveValue, ColumnTrait, Condition, ConnectionTrait, EntityTrait, QueryOrder,
+};
 use serde_json::json;
+use uuid::Uuid;
 
 use domain_model::{Currency, Exchange, MarketType, OrderStatus, OrderType, Side};
 use storage_persistence_api::OrderRepository;
 
-use crate::entities::{*};
 use crate::entities::prelude::Order;
+use crate::entities::*;
 
 pub struct OrderPostgresRepository<T: ConnectionTrait> {
     db: Arc<T>,
@@ -20,9 +23,7 @@ pub struct OrderPostgresRepository<T: ConnectionTrait> {
 
 impl<T: ConnectionTrait> OrderPostgresRepository<T> {
     pub fn new(db: Arc<T>) -> Self {
-        Self {
-            db
-        }
+        Self { db }
     }
 }
 
@@ -54,23 +55,39 @@ impl<T: ConnectionTrait + Send + 'static> OrderRepository for OrderPostgresRepos
                         order::Column::AvgPrice,
                         order::Column::StopLoss,
                         order::Column::TakeProfit,
-                    ]).to_owned()
+                    ])
+                    .to_owned(),
             )
             .exec(self.db.deref())
             .await?;
         Ok(())
     }
 
-    async fn get(&self, id: Option<String>, exchange: Option<Exchange>, market_type: Option<MarketType>, target: Option<Currency>, source: Option<Currency>, status: Option<OrderStatus>, side: Option<Side>, order_type: Option<OrderType>) -> Result<Vec<domain_model::Order>> {
+    async fn get(
+        &self,
+        id: Option<String>,
+        simulation_id: Option<Uuid>,
+        exchange: Option<Exchange>,
+        market_type: Option<MarketType>,
+        target: Option<Currency>,
+        source: Option<Currency>,
+        status: Option<OrderStatus>,
+        side: Option<Side>,
+        order_type: Option<OrderType>,
+    ) -> Result<Vec<domain_model::Order>> {
         let mut condition = Condition::all();
         if let Some(id) = id {
             condition = condition.add(order::Column::Id.eq(id));
+        }
+        if let Some(simulation_id) = simulation_id {
+            condition = condition.add(order::Column::SimulationId.eq(simulation_id));
         }
         if let Some(exchange) = exchange {
             condition = condition.add(order::Column::Exchange.eq(exchange.to_string()));
         }
         if let Some(target) = target {
-            condition = condition.add(order::Column::Pair.contains(&target.to_string())); // todo make pair flatten
+            condition = condition.add(order::Column::Pair.contains(&target.to_string()));
+            // todo make pair flatten
         }
         if let Some(source) = source {
             condition = condition.add(order::Column::Pair.contains(&source.to_string()));
@@ -79,7 +96,8 @@ impl<T: ConnectionTrait + Send + 'static> OrderRepository for OrderPostgresRepos
             condition = condition.add(order::Column::MarketType.eq(market_type.to_string()));
         }
         if let Some(status) = status {
-            condition = condition.add(order::Column::Status.contains(&serde_json::to_string(&status).unwrap()));
+            condition = condition
+                .add(order::Column::Status.contains(&serde_json::to_string(&status).unwrap()));
         }
         if let Some(side) = side {
             condition = condition.add(order::Column::Side.eq(side.to_string()));
@@ -93,24 +111,26 @@ impl<T: ConnectionTrait + Send + 'static> OrderRepository for OrderPostgresRepos
             .all(self.db.deref())
             .await?
             .into_iter()
-            .map(|model| {
-                domain_model::Order {
-                    id: model.id,
-                    timestamp: model.timestamp.and_utc(),
-                    simulation_id: model.simulation_id,
-                    status: serde_json::from_value(model.status).unwrap(),
-                    exchange: Exchange::from_str(&model.exchange).unwrap(),
-                    pair: serde_json::from_str(&model.pair).unwrap(),
-                    market_type: serde_json::from_value(model.market_type).unwrap(),
-                    order_type: serde_json::from_value(model.order_type).unwrap(),
-                    side: Side::from_str(&model.side).unwrap(),
-                    size: serde_json::from_value(model.size).unwrap(),
-                    avg_price: model.avg_price,
-                    stop_loss: model.stop_loss.map(|sl| serde_json::from_value(sl).unwrap()),
-                    take_profit: model.take_profit.map(|tp| serde_json::from_value(tp).unwrap()),
-                }
-            }).collect();
+            .map(|model| domain_model::Order {
+                id: model.id,
+                timestamp: model.timestamp.and_utc(),
+                simulation_id: model.simulation_id,
+                status: serde_json::from_value(model.status).unwrap(),
+                exchange: Exchange::from_str(&model.exchange).unwrap(),
+                pair: serde_json::from_str(&model.pair).unwrap(),
+                market_type: serde_json::from_value(model.market_type).unwrap(),
+                order_type: serde_json::from_value(model.order_type).unwrap(),
+                side: Side::from_str(&model.side).unwrap(),
+                size: serde_json::from_value(model.size).unwrap(),
+                avg_price: model.avg_price,
+                stop_loss: model
+                    .stop_loss
+                    .map(|sl| serde_json::from_value(sl).unwrap()),
+                take_profit: model
+                    .take_profit
+                    .map(|tp| serde_json::from_value(tp).unwrap()),
+            })
+            .collect();
         Ok(result)
     }
 }
-

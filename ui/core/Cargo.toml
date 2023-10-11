@@ -1,0 +1,15 @@
+[package]
+name = "ui-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ui-core-api = { workspace = true }
+simulator-core-api = { workspace = true }
+storage-core-api = { workspace = true }
+ui-chart-builder-api = { workspace = true }
+domain-model = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }

@@ -104,7 +104,7 @@ impl<S: StorageApi> ServiceFacade<S> {
             create_order.id, create_order.market_type, create_order.pair.target, create_order.pair.source, create_order.order_type, create_order.stop_loss, create_order.take_profit);
         let exchange = self.get_exchange(exchange);
         let order = exchange.place_order(&create_order).await;
-        let _ = self.storage_client.save_order(order).await;
+        self.storage_client.save_order(order).await.unwrap();
     }
 
     pub async fn candles_history(

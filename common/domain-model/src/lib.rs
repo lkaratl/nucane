@@ -7,6 +7,8 @@ use chrono::{DateTime, Duration, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+pub mod drawing;
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Simulation {
     pub id: Uuid,
@@ -16,8 +18,8 @@ pub struct Simulation {
     pub positions: Vec<SimulationPosition>,
     pub deployments: Vec<SimulationDeployment>,
 
-    pub ticks_len: usize,
-    pub actions_count: u16,
+    pub ticks_len: u32,
+    pub actions_count: u32,
     pub active_orders: Vec<Order>,
 }
 
@@ -107,6 +109,22 @@ pub enum Timeframe {
     TwoH,
     FourH,
     OneD,
+}
+
+impl Timeframe {
+    pub fn as_sec(&self) -> i64 {
+        match self {
+            Timeframe::OneS => 1,
+            Timeframe::OneM => 60,
+            Timeframe::FiveM => 300,
+            Timeframe::FifteenM => 900,
+            Timeframe::ThirtyM => 1800,
+            Timeframe::OneH => 3600,
+            Timeframe::TwoH => 7200,
+            Timeframe::FourH => 14400,
+            Timeframe::OneD => 345600,
+        }
+    }
 }
 
 impl fmt::Display for Timeframe {
@@ -324,10 +342,35 @@ pub struct InstrumentId {
     pub pair: CurrencyPair,
 }
 
+impl InstrumentId {
+    pub fn new(exchange: Exchange, market_type: MarketType, pair: CurrencyPair) -> Self {
+        Self {
+            exchange,
+            market_type,
+            pair,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Clone, Copy)]
 pub struct CurrencyPair {
     pub target: Currency,
     pub source: Currency,
+}
+
+impl CurrencyPair {
+    pub fn new(target: Currency, source: Currency) -> Self {
+        Self { target, source }
+    }
+}
+
+impl From<(Currency, Currency)> for CurrencyPair {
+    fn from(value: (Currency, Currency)) -> Self {
+        Self {
+            target: value.0,
+            source: value.1,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]

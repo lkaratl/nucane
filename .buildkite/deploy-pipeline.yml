@@ -42,7 +42,9 @@ steps:
       - "docker load -i ./target/deploy/interactor.tar"
       - "docker load -i ./target/deploy/registry.tar"
       - "docker load -i ./target/deploy/simulator.tar"
-      - "buildkite-agent meta-data set 'tag' \"$(docker load -i ./target/deploy/storage.tar | awk -F':' '{print $$NF}')\""
+      - "docker load -i ./target/deploy/storage.tar"
+      - "docker load -i ./target/deploy/ui.tar"
+      - "buildkite-agent meta-data set 'tag' \"$(docker load -i ./target/deploy/engine.tar | awk -F':' '{print $$NF}')\""
     plugins:
       - "uber-workflow/run-without-clone": ~
   - wait: ~

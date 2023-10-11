@@ -25,6 +25,7 @@ steps:
       - "target/release/registry-app"
       - "target/release/simulator-app"
       - "target/release/storage-app"
+      - "target/release/ui-app"
       - "target/release/*.so"
     plugins:
       - nienbo/cache#v2.4.14:
@@ -77,6 +78,10 @@ steps:
         commands:
           - "buildkite-agent artifact download 'target/release/storage-app' ."
           - "docker build -t storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=storage-app\" ."
+      - label: ":package: ui"
+        commands:
+          - "buildkite-agent artifact download 'target/release/ui-app' ."
+          - "docker build -t ui:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER --build-arg=\"EXECUTABLE_FILE=ui-app\" ."
   - wait: ~
   - key: "prepare_sync"
     label: ":vertical_traffic_light: $BUILDKITE_BRANCH#$BUILDKITE_BUILD_NUMBER"
@@ -162,5 +167,20 @@ steps:
           - "rm ./target/release/storage.tar"
           - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/storage.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "docker image rm storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+        plugins:
+          - "uber-workflow/run-without-clone": ~
+      - label: ":card_index_dividers: ui"
+        commands:
+          - "sleep 6"
+          - "echo 'Upload binary'"
+          - "buildkite-agent artifact download 'target/release/ui-app' ."
+          - "rclone sync ./target/release/ui-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/ui-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "echo 'Upload image'"
+          - "docker save -o ./target/release/ui.tar ui:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+          - "rclone sync ./target/release/ui.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
+          - "rm ./target/release/ui.tar"
+          - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/ui.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
+          - "docker image rm ui:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
         plugins:
           - "uber-workflow/run-without-clone": ~

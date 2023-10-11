@@ -14,18 +14,23 @@ use domain_model::{
 use engine_core_api::api::EngineApi;
 use interactor_core_api::InteractorApi;
 use simulator_core_api::{SimulationReport, SimulatorApi};
+use simulator_persistence_api::SimulationReportRepository;
 use storage_core_api::StorageApi;
 
 use crate::file_logger::Logger;
 
-pub struct Simulator<E: EngineApi, S: StorageApi, I: InteractorApi> {
+pub struct Simulator<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportRepository>
+{
     engine_client: Arc<E>,
     storage_client: Arc<S>,
     interactor_client: Arc<I>,
+    simulation_report_repository: Arc<SR>,
 }
 
 #[async_trait]
-impl<E: EngineApi, S: StorageApi, I: InteractorApi> SimulatorApi for Simulator<E, S, I> {
+impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportRepository> SimulatorApi
+    for Simulator<E, S, I, SR>
+{
     async fn run_simulation(&self, simulation: CreateSimulation) -> Result<SimulationReport> {
         let simulation: Simulation = simulation.into();
         let mut logger = Logger::new(simulation.id);
@@ -35,14 +40,36 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> SimulatorApi for Simulator<E
         logger.save();
         Ok(report)
     }
+
+    async fn get_simulation_report(&self, id: Uuid) -> Result<SimulationReport> {
+        self.simulation_report_repository
+            .get(Some(id))
+            .await
+            .first()
+            .cloned()
+            .ok_or(anyhow::Error::msg("Simulation report not found"))
+    }
+
+    async fn get_simulation_reports(&self) -> Result<Vec<SimulationReport>> {
+        let reports = self.simulation_report_repository.get(None).await;
+        Ok(reports)
+    }
 }
 
-impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
-    pub fn new(engine_client: Arc<E>, storage_client: Arc<S>, interactor_client: Arc<I>) -> Self {
+impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportRepository>
+    Simulator<E, S, I, SR>
+{
+    pub fn new(
+        engine_client: Arc<E>,
+        storage_client: Arc<S>,
+        interactor_client: Arc<I>,
+        simulation_report_repository: Arc<SR>,
+    ) -> Self {
         Self {
             engine_client,
             storage_client,
             interactor_client,
+            simulation_report_repository,
         }
     }
 
@@ -74,6 +101,10 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
         self.delete_deployments(&simulation.deployments).await;
 
         let report = self.build_report(simulation).await;
+        self.simulation_report_repository
+            .save(report.clone())
+            .await
+            .unwrap();
         logger.log(format!("{report:?}"));
         report
     }
@@ -92,7 +123,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
         let positions = &mut simulation.positions;
         let active_orders = &mut simulation.active_orders;
         debug!("Ticks len: {}", ticks.len());
-        simulation.ticks_len += ticks.len();
+        simulation.ticks_len += ticks.len() as u32;
         for tick in &ticks {
             logger.log(format!(
                 "| Tick: {} '{}' {}-{}='{}'",
@@ -116,7 +147,8 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
                     tick.price
                 ));
                 simulation.actions_count += 1;
-                self.execute_action(action, active_orders, logger).await;
+                self.execute_action(tick.timestamp, action, active_orders, logger)
+                    .await;
             }
             self.check_active_orders(active_orders, tick, positions, logger)
                 .await;
@@ -225,6 +257,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
 
     async fn execute_action(
         &self,
+        timestamp: DateTime<Utc>,
         action: &Action,
         active_orders: &mut Vec<Order>,
         logger: &mut Logger,
@@ -234,7 +267,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
                 OrderActionType::CreateOrder(create_order) => {
                     let order = Order {
                         id: create_order.id.clone(),
-                        timestamp: Utc::now(),
+                        timestamp,
                         simulation_id: order_action.simulation_id,
                         exchange: order_action.exchange,
                         status: OrderStatus::InProgress,
@@ -247,9 +280,9 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
                         stop_loss: create_order.stop_loss.clone(),
                         take_profit: create_order.take_profit.clone(),
                     };
-                    let _ = self.storage_client.save_order(order.clone()).await;
+                    self.storage_client.save_order(order.clone()).await.unwrap();
                     logger.log(format!("|-> Place Order: {} {:?} {:?} '{}-{}' {} '{:?}', stop-loss: {:?}, take-profit: {:?}, id: '{}'",
-                                           order.exchange, order.market_type, order.order_type, order.pair.target, order.pair.source, order.side, order.size, order.stop_loss, order.take_profit, order.id));
+                                       order.exchange, order.market_type, order.order_type, order.pair.target, order.pair.source, order.side, order.size, order.stop_loss, order.take_profit, order.id));
                     active_orders.push(order);
                 }
                 OrderActionType::PatchOrder => unimplemented!(),
@@ -261,7 +294,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
     async fn create_positions(&self, simulation: &Simulation) {
         for position in simulation.positions.clone().iter() {
             let position = Position::from(position.clone());
-            let _ = self.storage_client.save_position(position).await;
+            self.storage_client.save_position(position).await.unwrap();
         }
     }
 
@@ -549,7 +582,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
         }
         order.avg_price = quote;
         order.status = OrderStatus::Completed;
-        let _ = self.storage_client.save_order(order.clone()).await;
+        self.storage_client.save_order(order.clone()).await.unwrap();
     }
 
     async fn get_ticks(
@@ -608,10 +641,10 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
     ) {
         let source_position = source_position.expect("No source asset to execute order");
         source_position.end -= source_size;
-        let _ = self
-            .storage_client
+        self.storage_client
             .save_position(Position::from(source_position.clone()))
-            .await;
+            .await
+            .unwrap();
         logger.log(format!(
             "|--> Update position: {} {} '{} | -{}'",
             source_position.exchange, source_position.currency, source_position.end, source_size
@@ -621,10 +654,10 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi> Simulator<E, S, I> {
         let fee = calculate_fee_size(target_size, fee_percent);
         target_position.end += target_size - fee;
         target_position.fees += fee;
-        let _ = self
-            .storage_client
+        self.storage_client
             .save_position(Position::from(target_position.clone()))
-            .await;
+            .await
+            .unwrap();
         logger.log(format!(
             "|--> Update position: {} {} '{} | +{} | -{}'",
             target_position.exchange,

@@ -1,0 +1,9 @@
+logging:
+  level: INFO
+  crates:
+    ui: DEBUG
+application:
+  name: ui
+  port: 8080
+simulator.url: localhost:8084
+storage.url: localhost:8082
