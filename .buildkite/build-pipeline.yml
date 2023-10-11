@@ -177,7 +177,7 @@ steps:
           - "rclone sync ./target/release/ui-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
           - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/ui-app drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
           - "echo 'Upload image'"
-          - "docker save -o ./target/release/ui.tar storage:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
+          - "docker save -o ./target/release/ui.tar ui:$BUILDKITE_BRANCH-$BUILDKITE_BUILD_NUMBER"
           - "rclone sync ./target/release/ui.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER"
           - "rm ./target/release/ui.tar"
           - "rclone copy --update drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/$BUILDKITE_BUILD_NUMBER/ui.tar drive:/Managed/Nucane/nucane/build/$BUILDKITE_BRANCH/latest"
