@@ -7,8 +7,10 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    pub instrument_id: Json,
-    pub simulation_id: Option<Uuid>,
+    pub deployment_id: Uuid,
+    pub exchange: String,
+    pub pair: String,
+    pub market_type: String,
     pub label: String,
     pub style: Option<Json>,
     pub color: Option<Json>,

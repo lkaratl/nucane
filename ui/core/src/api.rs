@@ -1,4 +1,3 @@
-use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -7,10 +6,10 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use domain_model::{Candle, InstrumentId, Order, OrderStatus, Side, Timeframe};
+use domain_model::{Candle, InstrumentId, Order, OrderStatus, OrderType, Side, Timeframe};
 use simulator_core_api::SimulatorApi;
 use storage_core_api::StorageApi;
-use ui_chart_builder_api::{ChartBuilderApi, Color, Data, Icon, Line, LineStyle, Point, Series};
+use ui_chart_builder_api::{ChartBuilderApi, Color, Data, Icon, Line, Point, Series};
 use ui_core_api::UiApi;
 
 pub struct Ui<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> {
@@ -54,7 +53,24 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
         candles
     }
 
-    async fn get_points(&self, simulation_id: Uuid, timeframe: Timeframe) -> Vec<Point> {
+    async fn get_points(
+        &self,
+        simulation_id: Uuid,
+        deployment_id: Uuid,
+        instrument_id: &InstrumentId,
+        timeframe: Timeframe,
+    ) -> Vec<Point> {
+        let mut points = Vec::new();
+        points.extend(self.get_order_points(simulation_id).await);
+        points.extend(self.get_custom_points(deployment_id, instrument_id).await);
+
+        points
+            .iter_mut()
+            .for_each(|point| point.coord.x = align_timestamp(point.coord.x, timeframe));
+        points
+    }
+
+    async fn get_order_points(&self, simulation_id: Uuid) -> Vec<Point> {
         self.storage_client
             .get_orders(
                 None,
@@ -75,23 +91,56 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
                     Side::Buy => "Buy",
                     Side::Sell => "Sell",
                 };
-                let color = match order.side {
-                    Side::Buy => Color::Green,
-                    Side::Sell => Color::Red,
-                };
-                let x = align_timestamp(order.timestamp, timeframe);
-                let info = order_to_info(&order);
                 let icon = match order.status {
                     OrderStatus::Completed => Icon::Arrow,
                     _ => Icon::Circle,
                 };
-                Point::new(
-                    name,
-                    icon.into(),
-                    Some(color),
-                    info.into(),
-                    (x, order.avg_price).into(),
-                )
+                let color = match order.side {
+                    Side::Buy => Color::Green,
+                    Side::Sell => Color::Red,
+                };
+                let info = order_to_info(&order);
+                let x = order.timestamp;
+                let y = if let OrderType::Limit(limit) = order.order_type {
+                    limit
+                } else {
+                    order.avg_price
+                };
+                Point::new(name, icon.into(), Some(color), info.into(), (x, y).into())
+            })
+            .collect()
+    }
+
+    async fn get_custom_points(
+        &self,
+        deployment_id: Uuid,
+        instrument_id: &InstrumentId,
+    ) -> Vec<Point> {
+        self.storage_client
+            .get_points(deployment_id, instrument_id)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|point| point.into())
+            .collect()
+    }
+
+    async fn get_custom_lines(
+        &self,
+        deployment_id: Uuid,
+        instrument_id: &InstrumentId,
+        timeframe: Timeframe,
+    ) -> Vec<Line> {
+        self.storage_client
+            .get_lines(deployment_id, instrument_id)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(Line::from)
+            .map(|mut line| {
+                line.start.x = align_timestamp(line.start.x, timeframe);
+                line.end.x = align_timestamp(line.end.x, timeframe);
+                line
             })
             .collect()
     }
@@ -102,6 +151,7 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> UiApi for Ui<S, R, C> {
     async fn get_simulation_chart_html(
         &self,
         simulation_id: Uuid,
+        deployment_id: Uuid,
         timeframe: Option<Timeframe>,
         instrument_id: InstrumentId,
     ) -> Result<String> {
@@ -127,14 +177,12 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> UiApi for Ui<S, R, C> {
                     .collect(),
             ),
         );
-        let points: Vec<_> = self.get_points(simulation_id, timeframe).await;
-        let lines: Vec<Line> = vec![Line::new(
-            "Debug",
-            LineStyle::Dashed.into(),
-            Color::Red.into(), // todo remove before merge
-            (DateTime::from_str("2023-06-15 16:00:00 UTC").unwrap(), 0.29).into(),
-            (DateTime::from_str("2023-06-20 16:00:00 UTC").unwrap(), 0.3).into(),
-        )];
+        let points: Vec<_> = self
+            .get_points(simulation_id, deployment_id, &instrument_id, timeframe)
+            .await;
+        let lines = self
+            .get_custom_lines(deployment_id, &instrument_id, timeframe)
+            .await;
         let title = format!(
             "{}/{}",
             instrument_id.pair.target, instrument_id.pair.source

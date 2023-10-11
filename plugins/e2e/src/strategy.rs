@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use chrono::{Duration, Utc};
 use tracing::info;
 use uuid::Uuid;
@@ -31,27 +33,21 @@ impl Default for E2EStrategy {
             &format!("{}-{}", strategy.name(), strategy.version()),
             "INFO",
         );
-        info!("Create strategy");
         strategy
     }
 }
 
 impl E2EStrategy {
     pub async fn handle_tick(&mut self, tick: &Tick, api: &StrategyApi) -> Vec<Action> {
-        info!("handle"); // todo remove
         if !self.executed_once {
             self.executed_once = true;
+            info!("Create actions");
 
-            // info!("check indicators");
-            // self.check_indicators(tick, api).await;
-
-            info!("create drawings"); // todo remove
+            self.check_indicators(tick, api).await;
             self.create_drawings(tick, api).await;
-
-            info!("create order actions"); // todo remove
             self.create_order_actions(tick)
         } else {
-            info!("check orders"); // todo remove
+            info!("Check orders");
             self.check_orders(api).await;
             Vec::new()
         }
@@ -77,27 +73,27 @@ impl E2EStrategy {
     async fn create_drawings(&self, tick: &Tick, api: &StrategyApi) {
         let point = Point::new(
             tick.instrument_id.clone(),
-            tick.simulation_id,
+            Uuid::from_str("9f8c8645-6352-4e59-a6a0-8ebfcfd97606").unwrap(), // todo remove this hot fix
             "Check Point",
             Icon::Circle.into(),
             Color::Green.into(),
             "This point created only for test purposes"
                 .to_string()
                 .into(),
-            (tick.timestamp, tick.price).into(),
+            (tick.timestamp + Duration::days(1), tick.price).into(),
         );
-        let _ = api.storage_client.save_point(point).await;
+        api.storage_client.save_point(point).await.unwrap();
 
         let line = Line::new(
             tick.instrument_id.clone(),
-            tick.simulation_id,
+            Uuid::from_str("9f8c8645-6352-4e59-a6a0-8ebfcfd97606").unwrap(), // todo remove this hot fix
             "Check Line",
             LineStyle::Dashed.into(),
             Color::Green.into(),
-            (tick.timestamp - Duration::hours(4), tick.price * 0.9).into(),
             (tick.timestamp, tick.price).into(),
+            (tick.timestamp + Duration::days(1), tick.price * 1.1).into(),
         );
-        let _ = api.storage_client.save_line(line).await;
+        api.storage_client.save_line(line).await.unwrap();
     }
 
     fn create_order_actions(&mut self, tick: &Tick) -> Vec<Action> {

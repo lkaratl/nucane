@@ -6,12 +6,11 @@ use axum::response::Html;
 use axum::routing::get;
 use axum::Router;
 use tracing::error;
-use uuid::Uuid;
 
 use domain_model::{CurrencyPair, InstrumentId};
 use ui_core_api::UiApi;
 use ui_rest_api::endpoints::GET_SIMULATION_CHART;
-use ui_rest_api::path_queries::SimulationChartQuery;
+use ui_rest_api::path::{SimulationChartParams, SimulationChartQuery};
 
 pub async fn run(port: u16, ui: impl UiApi) {
     let ui = Arc::new(ui);
@@ -29,7 +28,7 @@ pub async fn run(port: u16, ui: impl UiApi) {
 async fn get_simulation_chart(
     State(ui): State<Arc<dyn UiApi>>,
     Query(query): Query<SimulationChartQuery>,
-    Path(simulation_id): Path<Uuid>,
+    Path(params): Path<SimulationChartParams>,
 ) -> Html<String> {
     let instrument_id = InstrumentId {
         exchange: query.exchange,
@@ -40,7 +39,12 @@ async fn get_simulation_chart(
         },
     };
     let chart_html = ui
-        .get_simulation_chart_html(simulation_id, query.timeframe, instrument_id)
+        .get_simulation_chart_html(
+            params.simulation_id,
+            params.deployment_id,
+            query.timeframe,
+            instrument_id,
+        )
         .await
         .map_err(|err| error!("Error during simulation chart building: '{err}'"))
         .unwrap_or("<p>Error during chart building</p>".to_string());

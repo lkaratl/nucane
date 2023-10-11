@@ -7,7 +7,7 @@ use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use chrono::{TimeZone, Utc};
-use tracing::{error, info};
+use tracing::error;
 
 use domain_model::drawing::{Line, Point};
 use domain_model::{Candle, CurrencyPair, InstrumentId, Order, Position, Timeframe};
@@ -160,15 +160,14 @@ async fn get_points(
         },
     };
     let result = storage
-        .get_points(&instrument_id, query_params.simulation_id)
+        .get_points(query_params.deployment_id, &instrument_id)
         .await
         .unwrap();
     Json(result)
 }
 
 async fn create_point(State(storage): State<Arc<dyn StorageApi>>, Json(point): Json<Point>) {
-    info!("create point handler"); // todo remove
-    let _ = storage.save_point(point).await;
+    storage.save_point(point).await.unwrap();
 }
 
 async fn get_lines(
@@ -184,7 +183,7 @@ async fn get_lines(
         },
     };
     let result = storage
-        .get_lines(&instrument_id, query_params.simulation_id)
+        .get_lines(query_params.deployment_id, &instrument_id)
         .await
         .unwrap();
     Json(result)

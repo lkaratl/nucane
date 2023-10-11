@@ -22,11 +22,11 @@ impl<R: DrawingRepository> DrawingService<R> {
 
     pub async fn get_points(
         &self,
+        deployment_id: Uuid,
         instrument_id: &InstrumentId,
-        simulation_id: Option<Uuid>,
     ) -> Vec<Point> {
         self.repository
-            .get_points(instrument_id, simulation_id)
+            .get_points(deployment_id, instrument_id)
             .await
             .unwrap()
     }
@@ -38,13 +38,9 @@ impl<R: DrawingRepository> DrawingService<R> {
             .expect("Error during line saving");
     }
 
-    pub async fn get_lines(
-        &self,
-        instrument_id: &InstrumentId,
-        simulation_id: Option<Uuid>,
-    ) -> Vec<Line> {
+    pub async fn get_lines(&self, deployment_id: Uuid, instrument_id: &InstrumentId) -> Vec<Line> {
         self.repository
-            .get_lines(instrument_id, simulation_id)
+            .get_lines(deployment_id, instrument_id)
             .await
             .unwrap()
     }

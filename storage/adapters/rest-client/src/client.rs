@@ -1,9 +1,10 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use reqwest::{Client, Url};
+use reqwest::Url;
 use serde_urlencoded::to_string;
-use tracing::{info, trace};
+use surf::{Client, Config};
+use tracing::trace;
 use uuid::Uuid;
 
 use domain_model::drawing::{Line, Point};
@@ -33,7 +34,7 @@ impl StorageRestClient {
         }
         Self {
             url,
-            client: Client::new(),
+            client: Config::new().try_into().unwrap(),
         }
     }
 }
@@ -42,9 +43,13 @@ impl StorageRestClient {
 impl StorageApi for StorageRestClient {
     async fn save_order(&self, order: Order) -> Result<()> {
         let endpoint = format!("{}{}", self.url, POST_ORDERS);
-        let url = Url::parse(&endpoint)?;
-        trace!("Request url: {url:?}");
-        self.client.post(url).json(&order).send().await?;
+        trace!("Request: POST '{endpoint}'");
+        self.client
+            .post(endpoint)
+            .body_json(&order)
+            .unwrap()
+            .await
+            .unwrap();
         Ok(())
     }
 
@@ -73,18 +78,29 @@ impl StorageApi for StorageRestClient {
         };
 
         let endpoint = format!("{}{}", self.url, GET_ORDERS);
-        let mut url = Url::parse(&endpoint)?;
-        url.set_query(Some(&to_string(&query)?));
-        trace!("Request url: {url:?}");
-        let result = self.client.get(url).send().await?.json().await?;
+        let mut endpoint = Url::parse(&endpoint)?;
+        endpoint.set_query(Some(&to_string(&query)?));
+        trace!("Request: GET '{endpoint}'");
+        let result = self
+            .client
+            .get(endpoint)
+            .await
+            .unwrap()
+            .body_json()
+            .await
+            .unwrap();
         Ok(result)
     }
 
     async fn save_position(&self, position: Position) -> Result<()> {
         let endpoint = format!("{}{}", self.url, POST_POSITIONS);
-        let url = Url::parse(&endpoint)?;
-        trace!("Request url: {url:?}");
-        self.client.post(url).json(&position).send().await?;
+        trace!("Request: POST '{endpoint}'");
+        self.client
+            .post(endpoint)
+            .body_json(&position)
+            .unwrap()
+            .await
+            .unwrap();
         Ok(())
     }
 
@@ -99,20 +115,30 @@ impl StorageApi for StorageRestClient {
             currency,
             side,
         };
-
         let endpoint = format!("{}{}", self.url, GET_POSITIONS);
-        let mut url = Url::parse(&endpoint)?;
-        url.set_query(Some(&to_string(&query)?));
-        trace!("Request url: {url:?}");
-        let result = self.client.get(url).send().await?.json().await?;
+        let mut endpoint = Url::parse(&endpoint)?;
+        endpoint.set_query(Some(&to_string(&query)?));
+        trace!("Request: GET '{endpoint}'");
+        let result = self
+            .client
+            .get(endpoint)
+            .await
+            .unwrap()
+            .body_json()
+            .await
+            .unwrap();
         Ok(result)
     }
 
     async fn save_candle(&self, candle: Candle) -> Result<()> {
         let endpoint = format!("{}{}", self.url, POST_CANDLES);
-        let url = Url::parse(&endpoint)?;
-        trace!("Request url: {url:?}");
-        self.client.post(url).json(&candle).send().await?;
+        trace!("Request: POST '{endpoint}'");
+        self.client
+            .post(endpoint)
+            .body_json(&candle)
+            .unwrap()
+            .await
+            .unwrap();
         Ok(())
     }
 
@@ -134,12 +160,18 @@ impl StorageApi for StorageRestClient {
             to: to.map(|timestamp| timestamp.timestamp_millis()),
             limit,
         };
-
         let endpoint = format!("{}{}", self.url, GET_CANDLES);
-        let mut url = Url::parse(&endpoint)?;
-        url.set_query(Some(&to_string(&query)?));
-        trace!("Request url: {url:?}");
-        let result = self.client.get(url).send().await?.json().await?;
+        let mut endpoint = Url::parse(&endpoint)?;
+        endpoint.set_query(Some(&to_string(&query)?));
+        trace!("Request: GET '{endpoint}'");
+        let result = self
+            .client
+            .get(endpoint)
+            .await
+            .unwrap()
+            .body_json()
+            .await
+            .unwrap();
         Ok(result)
     }
 
@@ -162,76 +194,98 @@ impl StorageApi for StorageRestClient {
         };
 
         let endpoint = format!("{}{}", self.url, POST_SYNC);
-        let mut url = Url::parse(&endpoint)?;
-        url.set_query(Some(&to_string(&query)?));
-        trace!("Request url: {url:?}");
+        let mut endpoint = Url::parse(&endpoint)?;
+        endpoint.set_query(Some(&to_string(&query)?));
+        trace!("Request: POST '{endpoint}'");
         let result = self
             .client
-            .post(url)
-            .json(instrument_id)
-            .send()
-            .await?
-            .json()
-            .await?;
+            .post(endpoint)
+            .body_json(instrument_id)
+            .unwrap()
+            .await
+            .unwrap()
+            .body_json()
+            .await
+            .unwrap();
         Ok(result)
     }
 
     async fn save_point(&self, point: Point) -> Result<()> {
         let endpoint = format!("{}{}", self.url, POST_POINT);
-        let url = Url::parse(&endpoint)?;
-        info!("Request url: {url:?}");
-        self.client.post(url).json(&point).send().await?;
-        info!("after point save");
+        let endpoint = Url::parse(&endpoint)?;
+        trace!("Request: POST '{endpoint}'");
+        self.client
+            .post(endpoint)
+            .body_json(&point)
+            .unwrap()
+            .await
+            .unwrap();
         Ok(())
     }
 
     async fn get_points(
         &self,
+        deployment_id: Uuid,
         instrument_id: &InstrumentId,
-        simulation_id: Option<Uuid>,
     ) -> Result<Vec<Point>> {
         let query = DrawingQuery {
-            simulation_id,
+            deployment_id,
             exchange: instrument_id.exchange,
             market_type: instrument_id.market_type,
             target: instrument_id.pair.target,
             source: instrument_id.pair.source,
         };
-
         let endpoint = format!("{}{}", self.url, GET_POINTS);
-        let mut url = Url::parse(&endpoint)?;
-        url.set_query(Some(&to_string(&query)?));
-        trace!("Request url: {url:?}");
-        let result = self.client.get(url).send().await?.json().await?;
+        let mut endpoint = Url::parse(&endpoint)?;
+        endpoint.set_query(Some(&to_string(&query)?));
+        trace!("Request: GET '{endpoint}'");
+        let result = self
+            .client
+            .get(endpoint)
+            .await
+            .unwrap()
+            .body_json()
+            .await
+            .unwrap();
         Ok(result)
     }
 
     async fn save_line(&self, line: Line) -> Result<()> {
         let endpoint = format!("{}{}", self.url, POST_LINE);
-        let url = Url::parse(&endpoint)?;
-        trace!("Request url: {url:?}");
-        self.client.post(url).json(&line).send().await?;
+        trace!("Request: POST '{endpoint}'");
+        self.client
+            .post(endpoint)
+            .body_json(&line)
+            .unwrap()
+            .await
+            .unwrap();
         Ok(())
     }
 
     async fn get_lines(
         &self,
+        deployment_id: Uuid,
         instrument_id: &InstrumentId,
-        simulation_id: Option<Uuid>,
     ) -> Result<Vec<Line>> {
         let query = DrawingQuery {
-            simulation_id,
+            deployment_id,
             exchange: instrument_id.exchange,
             market_type: instrument_id.market_type,
             target: instrument_id.pair.target,
             source: instrument_id.pair.source,
         };
-
         let endpoint = format!("{}{}", self.url, GET_LINES);
-        let mut url = Url::parse(&endpoint)?;
-        url.set_query(Some(&to_string(&query)?));
-        trace!("Request url: {url:?}");
-        let result = self.client.get(url).send().await?.json().await?;
+        let mut endpoint = Url::parse(&endpoint)?;
+        endpoint.set_query(Some(&to_string(&query)?));
+        trace!("Request: GET '{endpoint}'");
+        let result = self
+            .client
+            .get(endpoint)
+            .await
+            .unwrap()
+            .body_json()
+            .await
+            .unwrap();
         Ok(result)
     }
 }

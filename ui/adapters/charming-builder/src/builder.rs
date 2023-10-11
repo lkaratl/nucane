@@ -106,9 +106,6 @@ fn add_series(mut chart: Chart, series: Vec<Series>) -> Chart {
     for s in series {
         let s = match s.data {
             Data::CandleStick(data) => Candlestick::new().name(s.label).data(data),
-            _ => {
-                panic!("unsupported series type")
-            } // todo remove before merge
         };
         chart = chart.series(s)
     }

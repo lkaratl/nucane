@@ -76,8 +76,10 @@ impl MigrationTrait for Migration {
                     .table(Point::Table)
                     .if_not_exists()
                     .col(ColumnDef::new(Point::Id).uuid().not_null().primary_key())
-                    .col(ColumnDef::new(Point::InstrumentId).json().not_null())
-                    .col(ColumnDef::new(Point::SimulationId).uuid())
+                    .col(ColumnDef::new(Point::DeploymentId).uuid().not_null())
+                    .col(ColumnDef::new(Point::Exchange).string().not_null())
+                    .col(ColumnDef::new(Point::Pair).string().not_null())
+                    .col(ColumnDef::new(Point::MarketType).string().not_null())
                     .col(ColumnDef::new(Point::Label).string().not_null())
                     .col(ColumnDef::new(Point::Icon).json())
                     .col(ColumnDef::new(Point::Color).json())
@@ -93,8 +95,10 @@ impl MigrationTrait for Migration {
                     .table(Line::Table)
                     .if_not_exists()
                     .col(ColumnDef::new(Line::Id).uuid().not_null().primary_key())
-                    .col(ColumnDef::new(Line::InstrumentId).json().not_null())
-                    .col(ColumnDef::new(Line::SimulationId).uuid())
+                    .col(ColumnDef::new(Line::DeploymentId).uuid().not_null())
+                    .col(ColumnDef::new(Line::Exchange).string().not_null())
+                    .col(ColumnDef::new(Line::Pair).string().not_null())
+                    .col(ColumnDef::new(Line::MarketType).string().not_null())
                     .col(ColumnDef::new(Line::Label).string().not_null())
                     .col(ColumnDef::new(Line::Style).json())
                     .col(ColumnDef::new(Line::Color).json())
@@ -183,8 +187,10 @@ enum Candle {
 enum Point {
     Table,
     Id,
-    InstrumentId,
-    SimulationId,
+    DeploymentId,
+    Exchange,
+    Pair,
+    MarketType,
     Label,
     Icon,
     Color,
@@ -196,8 +202,10 @@ enum Point {
 enum Line {
     Table,
     Id,
-    InstrumentId,
-    SimulationId,
+    DeploymentId,
+    Exchange,
+    Pair,
+    MarketType,
     Label,
     Style,
     Color,

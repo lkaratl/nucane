@@ -52,7 +52,7 @@ pub struct CandleSyncQuery {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct DrawingQuery {
-    pub simulation_id: Option<Uuid>,
+    pub deployment_id: Uuid,
     pub exchange: Exchange,
     pub market_type: MarketType,
     pub target: Currency,

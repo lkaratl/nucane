@@ -22,8 +22,8 @@ impl From<(DateTime<Utc>, f64)> for Coord {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Point {
     pub id: Uuid,
+    pub deployment_id: Uuid,
     pub instrument_id: InstrumentId,
-    pub simulation_id: Option<Uuid>,
     pub label: String,
     pub icon: Option<Icon>,
     pub color: Option<Color>,
@@ -34,7 +34,7 @@ pub struct Point {
 impl Point {
     pub fn new(
         instrument_id: InstrumentId,
-        simulation_id: Option<Uuid>,
+        deployment_id: Uuid,
         label: &str,
         icon: Option<Icon>,
         color: Option<Color>,
@@ -44,7 +44,7 @@ impl Point {
         Self {
             id: Uuid::new_v4(),
             instrument_id,
-            simulation_id,
+            deployment_id,
             label: label.to_string(),
             icon,
             color,
@@ -57,8 +57,8 @@ impl Point {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Line {
     pub id: Uuid,
+    pub deployment_id: Uuid,
     pub instrument_id: InstrumentId,
-    pub simulation_id: Option<Uuid>,
     pub label: String,
     pub style: Option<LineStyle>,
     pub color: Option<Color>,
@@ -69,7 +69,7 @@ pub struct Line {
 impl Line {
     pub fn new(
         instrument_id: InstrumentId,
-        simulation_id: Option<Uuid>,
+        deployment_id: Uuid,
         label: &str,
         style: Option<LineStyle>,
         color: Option<Color>,
@@ -79,7 +79,7 @@ impl Line {
         Self {
             id: Uuid::new_v4(),
             instrument_id,
-            simulation_id,
+            deployment_id,
             label: label.to_string(),
             style,
             color,

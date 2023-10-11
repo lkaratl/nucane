@@ -1,4 +1,5 @@
 use std::ops::Deref;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -8,7 +9,6 @@ use sea_orm::{ActiveValue, ColumnTrait, Condition, ConnectionTrait, EntityTrait}
 use serde_json::json;
 use uuid::Uuid;
 
-use domain_model::InstrumentId;
 use storage_persistence_api::DrawingRepository;
 
 use crate::entities::prelude::{Line, Point};
@@ -29,8 +29,10 @@ impl<T: ConnectionTrait + Send + 'static> DrawingRepository for DrawingPostgresR
     async fn save_point(&self, point: domain_model::drawing::Point) -> Result<()> {
         let point = point::ActiveModel {
             id: ActiveValue::Set(point.id),
-            instrument_id: ActiveValue::Set(json!(point.instrument_id)),
-            simulation_id: ActiveValue::Set(point.simulation_id),
+            deployment_id: ActiveValue::Set(point.deployment_id),
+            pair: ActiveValue::Set(serde_json::to_string(&point.instrument_id.pair)?),
+            exchange: ActiveValue::Set(point.instrument_id.exchange.to_string()),
+            market_type: ActiveValue::Set(point.instrument_id.market_type.to_string()),
             label: ActiveValue::Set(point.label),
             icon: ActiveValue::Set(point.icon.map(|icon| json!(icon))),
             color: ActiveValue::Set(point.color.map(|color| json!(color))),
@@ -43,14 +45,15 @@ impl<T: ConnectionTrait + Send + 'static> DrawingRepository for DrawingPostgresR
 
     async fn get_points(
         &self,
-        instrument_id: &InstrumentId,
-        simulation_id: Option<Uuid>,
+        deployment_id: Uuid,
+        instrument_id: &domain_model::InstrumentId,
     ) -> Result<Vec<domain_model::drawing::Point>> {
-        let mut condition =
-            Condition::all().add(point::Column::InstrumentId.eq(json!(instrument_id)));
-        if let Some(simulation_id) = simulation_id {
-            condition = condition.add(point::Column::SimulationId.eq(simulation_id));
-        }
+        let condition = Condition::all()
+            .add(point::Column::DeploymentId.eq(deployment_id))
+            .add(point::Column::Exchange.eq(instrument_id.exchange.to_string()))
+            .add(point::Column::Pair.contains(&instrument_id.pair.target.to_string())) // todo pair flatten in db model
+            .add(point::Column::Pair.contains(&instrument_id.pair.source.to_string()))
+            .add(point::Column::MarketType.eq(instrument_id.market_type.to_string()));
         let result = point::Entity::find()
             .filter(condition)
             .all(self.db.deref())
@@ -58,8 +61,12 @@ impl<T: ConnectionTrait + Send + 'static> DrawingRepository for DrawingPostgresR
             .into_iter()
             .map(|model| domain_model::drawing::Point {
                 id: model.id,
-                instrument_id: serde_json::from_value(model.instrument_id).unwrap(),
-                simulation_id: model.simulation_id,
+                deployment_id: model.deployment_id,
+                instrument_id: domain_model::InstrumentId {
+                    exchange: domain_model::Exchange::from_str(&model.exchange).unwrap(),
+                    market_type: domain_model::MarketType::from_str(&model.market_type).unwrap(),
+                    pair: serde_json::from_str(&model.pair).unwrap(),
+                },
                 label: model.label,
                 icon: model.icon.map(|icon| serde_json::from_value(icon).unwrap()),
                 color: model
@@ -75,8 +82,10 @@ impl<T: ConnectionTrait + Send + 'static> DrawingRepository for DrawingPostgresR
     async fn save_line(&self, line: domain_model::drawing::Line) -> Result<()> {
         let line = line::ActiveModel {
             id: ActiveValue::Set(line.id),
-            instrument_id: ActiveValue::Set(json!(line.instrument_id)),
-            simulation_id: ActiveValue::Set(line.simulation_id),
+            deployment_id: ActiveValue::Set(line.deployment_id),
+            pair: ActiveValue::Set(serde_json::to_string(&line.instrument_id.pair)?),
+            exchange: ActiveValue::Set(line.instrument_id.exchange.to_string()),
+            market_type: ActiveValue::Set(line.instrument_id.market_type.to_string()),
             label: ActiveValue::Set(line.label),
             style: ActiveValue::Set(line.style.map(|style| json!(style))),
             color: ActiveValue::Set(line.color.map(|color| json!(color))),
@@ -89,14 +98,15 @@ impl<T: ConnectionTrait + Send + 'static> DrawingRepository for DrawingPostgresR
 
     async fn get_lines(
         &self,
-        instrument_id: &InstrumentId,
-        simulation_id: Option<Uuid>,
+        deployment_id: Uuid,
+        instrument_id: &domain_model::InstrumentId,
     ) -> Result<Vec<domain_model::drawing::Line>> {
-        let mut condition =
-            Condition::all().add(point::Column::InstrumentId.eq(json!(instrument_id)));
-        if let Some(simulation_id) = simulation_id {
-            condition = condition.add(point::Column::SimulationId.eq(simulation_id));
-        }
+        let condition = Condition::all()
+            .add(point::Column::DeploymentId.eq(deployment_id))
+            .add(point::Column::Exchange.eq(instrument_id.exchange.to_string()))
+            .add(point::Column::Pair.contains(&instrument_id.pair.target.to_string())) // todo pair flatten in db model
+            .add(point::Column::Pair.contains(&instrument_id.pair.source.to_string()))
+            .add(point::Column::MarketType.eq(instrument_id.market_type.to_string()));
         let result = line::Entity::find()
             .filter(condition)
             .all(self.db.deref())
@@ -104,8 +114,12 @@ impl<T: ConnectionTrait + Send + 'static> DrawingRepository for DrawingPostgresR
             .into_iter()
             .map(|model| domain_model::drawing::Line {
                 id: model.id,
-                instrument_id: serde_json::from_value(model.instrument_id).unwrap(),
-                simulation_id: model.simulation_id,
+                deployment_id: model.deployment_id,
+                instrument_id: domain_model::InstrumentId {
+                    exchange: domain_model::Exchange::from_str(&model.exchange).unwrap(),
+                    market_type: domain_model::MarketType::from_str(&model.market_type).unwrap(),
+                    pair: serde_json::from_str(&model.pair).unwrap(),
+                },
                 label: model.label,
                 style: model
                     .style

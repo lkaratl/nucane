@@ -31,7 +31,6 @@ impl Series {
 
 pub enum Data {
     CandleStick(Vec<Vec<f64>>),
-    Line(f64),
 }
 
 #[derive(Debug)]
@@ -61,6 +60,18 @@ impl Point {
     }
 }
 
+impl From<domain_model::drawing::Point> for Point {
+    fn from(value: domain_model::drawing::Point) -> Self {
+        Self {
+            label: value.label,
+            icon: value.icon,
+            color: value.color,
+            text: value.text,
+            coord: value.coord,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Line {
     pub label: String,
@@ -84,6 +95,18 @@ impl Line {
             color,
             start,
             end,
+        }
+    }
+}
+
+impl From<domain_model::drawing::Line> for Line {
+    fn from(value: domain_model::drawing::Line) -> Self {
+        Self {
+            label: value.label,
+            color: value.color,
+            style: value.style,
+            start: value.start,
+            end: value.end,
         }
     }
 }

@@ -1,2 +1,2 @@
 pub mod endpoints;
-pub mod path_queries;
+pub mod path;

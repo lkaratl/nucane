@@ -165,12 +165,12 @@ impl<
 
     async fn get_points(
         &self,
+        deployment_id: Uuid,
         instrument_id: &InstrumentId,
-        simulation_id: Option<Uuid>,
     ) -> Result<Vec<Point>> {
         let points = self
             .drawing_service
-            .get_points(instrument_id, simulation_id)
+            .get_points(deployment_id, instrument_id)
             .await;
         Ok(points)
     }
@@ -182,12 +182,12 @@ impl<
 
     async fn get_lines(
         &self,
+        deployment_id: Uuid,
         instrument_id: &InstrumentId,
-        simulation_id: Option<Uuid>,
     ) -> Result<Vec<Line>> {
         let lines = self
             .drawing_service
-            .get_lines(instrument_id, simulation_id)
+            .get_lines(deployment_id, instrument_id)
             .await;
         Ok(lines)
     }
