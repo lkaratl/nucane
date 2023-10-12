@@ -1,16 +1,16 @@
-use std::str::FromStr;
+use std::sync::Arc;
 
 use chrono::{Duration, Utc};
 use tracing::info;
 use uuid::Uuid;
 
-use domain_model::drawing::{Color, Icon, Line, LineStyle, Point};
+use domain_model::drawing::{Color, Icon, LineStyle};
 use domain_model::Size::Source;
 use domain_model::{
     Action, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction,
     OrderActionType, OrderMarketType, OrderStatus, OrderType, Side, Tick, Timeframe, Trigger,
 };
-use plugin_api::{utils, PluginApi, PluginInternalApi};
+use plugin_api::{utils, Line, PluginApi, PluginInternalApi, Point};
 
 #[derive(Clone)]
 pub struct E2EStrategy {
@@ -37,13 +37,17 @@ impl Default for E2EStrategy {
 }
 
 impl E2EStrategy {
-    pub async fn handle_tick(&mut self, tick: &Tick, api: &PluginInternalApi) -> Vec<Action> {
+    pub async fn handle_tick(
+        &mut self,
+        tick: &Tick,
+        api: Arc<dyn PluginInternalApi>,
+    ) -> Vec<Action> {
         if !self.executed_once {
             self.executed_once = true;
             info!("Create actions");
 
-            self.check_indicators(tick, api).await;
-            self.create_drawings(tick, api).await;
+            self.check_indicators(tick, api.clone()).await;
+            self.create_drawings(tick, api.clone()).await;
             self.create_order_actions(tick)
         } else {
             info!("Check orders");
@@ -52,27 +56,27 @@ impl E2EStrategy {
         }
     }
 
-    async fn check_indicators(&self, tick: &Tick, api: &PluginInternalApi) {
+    async fn check_indicators(&self, tick: &Tick, api: Arc<dyn PluginInternalApi>) {
         self.check_moving_avg(tick.instrument_id.pair, api).await;
     }
 
-    async fn check_moving_avg(&self, pair: CurrencyPair, api: &PluginInternalApi) {
+    async fn check_moving_avg(&self, pair: CurrencyPair, api: Arc<dyn PluginInternalApi>) {
         let instrument_id = InstrumentId {
             exchange: Exchange::OKX,
             market_type: MarketType::Spot,
             pair,
         };
+
         let moving_average = api
-            .indicators
-            .moving_average(&instrument_id, Timeframe::ThirtyM, 7)
+            .indicators()
+            .moving_avg(&instrument_id, Timeframe::OneH, 7)
             .await;
         info!("Moving AVG: {}", moving_average);
     }
 
-    async fn create_drawings(&self, tick: &Tick, api: &PluginInternalApi) {
+    async fn create_drawings(&self, tick: &Tick, api: Arc<dyn PluginInternalApi>) {
         let point = Point::new(
             tick.instrument_id.clone(),
-            Uuid::from_str("9f8c8645-6352-4e59-a6a0-8ebfcfd97606").unwrap(), // todo remove this hot fix
             "Check Point",
             Icon::Circle.into(),
             Color::Green.into(),
@@ -81,18 +85,17 @@ impl E2EStrategy {
                 .into(),
             (tick.timestamp + Duration::days(1), tick.price).into(),
         );
-        api.storage_client.save_point(point).await.unwrap();
+        api.drawings().save_point(point).await;
 
         let line = Line::new(
             tick.instrument_id.clone(),
-            Uuid::from_str("9f8c8645-6352-4e59-a6a0-8ebfcfd97606").unwrap(), // todo remove this hot fix
             "Check Line",
             LineStyle::Dashed.into(),
             Color::Green.into(),
             (tick.timestamp, tick.price).into(),
             (tick.timestamp + Duration::days(1), tick.price * 1.1).into(),
         );
-        api.storage_client.save_line(line).await.unwrap();
+        api.drawings().save_line(line).await;
     }
 
     fn create_order_actions(&mut self, tick: &Tick) -> Vec<Action> {
@@ -204,132 +207,82 @@ impl E2EStrategy {
         })
     }
 
-    async fn check_orders(&mut self, api: &PluginInternalApi) {
-        self.check_limit_order(api).await;
-        self.check_limit_order_with_sl_tp(api).await;
-        self.check_market_order(api).await;
+    async fn check_orders(&mut self, api: Arc<dyn PluginInternalApi>) {
+        self.check_limit_order(api.clone()).await;
+        self.check_limit_order_with_sl_tp(api.clone()).await;
+        self.check_market_order(api.clone()).await;
     }
 
-    async fn check_limit_order(&mut self, api: &PluginInternalApi) {
-        if self.limit_order_id.is_some() {
-            let orders = api
-                .storage_client
-                .get_orders(
-                    self.limit_order_id.clone(),
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                )
-                .await;
-            if let Ok(orders) = orders {
-                if let Some(limit_order) = orders.first() {
-                    if limit_order.status == OrderStatus::Completed {
-                        info!("Successfully complete limit order with id: {}, market type: {:?}, target currency: {}, source currency: {}, order type: {:?}",
+    async fn check_limit_order(&mut self, api: Arc<dyn PluginInternalApi>) {
+        if let Some(limit_order_id) = &self.limit_order_id {
+            let limit_order = api.orders().get_order_by_id(limit_order_id).await;
+            if let Some(limit_order) = limit_order {
+                if limit_order.status == OrderStatus::Completed {
+                    info!("Successfully complete limit order with id: {}, market type: {:?}, target currency: {}, source currency: {}, order type: {:?}",
                             limit_order.id, limit_order.market_type, limit_order.pair.target, limit_order.pair.source, limit_order.order_type);
-                        let positions = api
-                            .storage_client
-                            .get_positions(Some(Exchange::OKX), Some(limit_order.pair.target), None)
-                            .await
-                            .unwrap();
-                        let position = positions.first().unwrap();
-                        assert_ne!(position.size, 0.0);
-                        self.limit_order_id = None;
-                    } else if limit_order.status == OrderStatus::InProgress {
-                        info!("Limit order with id: {} InProgress", limit_order.id);
-                    }
+                    let position = api
+                        .positions()
+                        .get_position(limit_order.exchange, limit_order.pair.target)
+                        .await;
+                    assert!(position.is_some());
+                    assert_ne!(position.unwrap().size, 0.0);
+                    self.limit_order_id = None;
+                } else if limit_order.status == OrderStatus::InProgress {
+                    info!("Limit order with id: {} InProgress", limit_order.id);
                 }
             }
         }
     }
 
-    async fn check_limit_order_with_sl_tp(&mut self, api: &PluginInternalApi) {
-        if self.limit_order_with_sl_tp_id.is_some() {
-            let orders = api
-                .storage_client
-                .get_orders(
-                    self.limit_order_with_sl_tp_id.clone(),
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                )
+    async fn check_limit_order_with_sl_tp(&mut self, api: Arc<dyn PluginInternalApi>) {
+        if let Some(limit_order_with_sl_tp_id) = &self.limit_order_with_sl_tp_id {
+            let limit_order_with_sl_tp = api
+                .orders()
+                .get_order_by_id(limit_order_with_sl_tp_id)
                 .await;
-            if let Ok(orders) = orders {
-                if let Some(limit_order_with_tp_sl) = orders.first() {
-                    assert!(limit_order_with_tp_sl.stop_loss.is_some());
-                    assert!(limit_order_with_tp_sl.take_profit.is_some());
+            if let Some(limit_order_with_sl_tp) = limit_order_with_sl_tp {
+                assert!(limit_order_with_sl_tp.stop_loss.is_some());
+                assert!(limit_order_with_sl_tp.take_profit.is_some());
 
-                    if limit_order_with_tp_sl.status == OrderStatus::Completed {
-                        info!("Successfully complete limit order with SL and TP with id: {}, market type: {:?}, target currency: {}, source currency: {}, order type: {:?}",
-                            limit_order_with_tp_sl.id, limit_order_with_tp_sl.market_type, limit_order_with_tp_sl.pair.target, limit_order_with_tp_sl.pair.source, limit_order_with_tp_sl.order_type);
-                        let positions = api
-                            .storage_client
-                            .get_positions(
-                                Some(Exchange::OKX),
-                                Some(limit_order_with_tp_sl.pair.target),
-                                None,
-                            )
-                            .await
-                            .unwrap();
-                        let position = positions.first().unwrap();
-                        assert_ne!(position.size, 0.0);
-                        self.limit_order_id = None;
-                    } else if limit_order_with_tp_sl.status == OrderStatus::InProgress {
-                        info!(
-                            "Limit order with SL and TP with id: {} InProgress",
-                            limit_order_with_tp_sl.id
-                        );
-                    }
+                if limit_order_with_sl_tp.status == OrderStatus::Completed {
+                    info!("Successfully complete limit order with SL and TP with id: {}, market type: {:?}, target currency: {}, source currency: {}, order type: {:?}",
+                            limit_order_with_sl_tp.id, limit_order_with_sl_tp.market_type, limit_order_with_sl_tp.pair.target, limit_order_with_sl_tp.pair.source, limit_order_with_sl_tp.order_type);
+                    let position = api
+                        .positions()
+                        .get_position(
+                            limit_order_with_sl_tp.exchange,
+                            limit_order_with_sl_tp.pair.target,
+                        )
+                        .await;
+                    assert!(position.is_some());
+                    assert_ne!(position.unwrap().size, 0.0);
+                    self.limit_order_id = None;
+                } else if limit_order_with_sl_tp.status == OrderStatus::InProgress {
+                    info!(
+                        "Limit order with SL and TP with id: {} InProgress",
+                        limit_order_with_sl_tp.id
+                    );
                 }
             }
         }
     }
 
-    async fn check_market_order(&mut self, api: &PluginInternalApi) {
-        if self.market_order_id.is_some() {
-            let orders = api
-                .storage_client
-                .get_orders(
-                    self.market_order_id.clone(),
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                )
-                .await;
-            if let Ok(orders) = orders {
-                if let Some(market_order) = orders.first() {
-                    if market_order.status == OrderStatus::Completed {
-                        info!("Successfully complete market order with id: {}, market type: {:?}, target currency: {}, source currency: {}",
+    async fn check_market_order(&mut self, api: Arc<dyn PluginInternalApi>) {
+        if let Some(market_order_id) = &self.market_order_id {
+            let market_order = api.orders().get_order_by_id(market_order_id).await;
+            if let Some(market_order) = market_order {
+                if market_order.status == OrderStatus::Completed {
+                    info!("Successfully complete market order with id: {}, market type: {:?}, target currency: {}, source currency: {}",
                             market_order.id, market_order.market_type, market_order.pair.target, market_order.pair.source);
-                        let positions = api
-                            .storage_client
-                            .get_positions(
-                                Some(Exchange::OKX),
-                                Some(market_order.pair.target),
-                                None,
-                            )
-                            .await
-                            .unwrap();
-                        let position = positions.first().unwrap();
-                        assert_ne!(position.size, 0.0);
-                        self.market_order_id = None;
-                    } else if market_order.status == OrderStatus::InProgress {
-                        info!("Market order with id: {} InProgress", market_order.id);
-                    }
+                    let position = api
+                        .positions()
+                        .get_position(market_order.exchange, market_order.pair.target)
+                        .await;
+                    assert!(position.is_some());
+                    assert_ne!(position.unwrap().size, 0.0);
+                    self.market_order_id = None;
+                } else if market_order.status == OrderStatus::InProgress {
+                    info!("Market order with id: {} InProgress", market_order.id);
                 }
             }
         }

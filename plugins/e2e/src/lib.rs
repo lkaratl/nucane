@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use async_trait::async_trait;
 
@@ -44,7 +45,7 @@ impl PluginApi for E2EStrategy {
         }]
     }
 
-    async fn on_tick(&mut self, tick: &Tick, api: &PluginInternalApi) -> Vec<Action> {
+    async fn on_tick(&mut self, tick: &Tick, api: Arc<dyn PluginInternalApi>) -> Vec<Action> {
         self.handle_tick(tick, api).await
     }
 }

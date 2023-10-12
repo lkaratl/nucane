@@ -15,6 +15,7 @@ indicators-api = { workspace = true }
 plugin-api = { workspace = true }
 registry-rest-client = { workspace = true }
 plugin-loader = { workspace = true }
+engine-plugin-internals = { workspace = true }
 tokio = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }

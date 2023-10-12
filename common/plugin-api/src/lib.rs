@@ -1,5 +1,4 @@
-pub use api::PluginApi;
-pub use api::PluginInternalApi;
+pub use api::*;
 
 mod api;
 pub mod utils;

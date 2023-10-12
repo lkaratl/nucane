@@ -5,31 +5,36 @@ use storage_core_api::StorageApi;
 
 use crate::calculation::moving_average;
 
-pub struct Indicators {
-    storage_client: Arc<dyn StorageApi>,
+pub struct Indicators<S: StorageApi> {
+    storage_client: Arc<S>,
 }
 
-impl Indicators {
-    pub fn new(storage_client: Arc<dyn StorageApi>) -> Self {
-        Self {
-            storage_client
-        }
+impl<S: StorageApi> Indicators<S> {
+    pub fn new(storage_client: Arc<S>) -> Self {
+        Self { storage_client }
     }
 
-    pub async fn moving_average(&self, instrument_id: &InstrumentId, timeframe: Timeframe, length: usize) -> f64 {
-        let candles = self.storage_client.get_candles(instrument_id,
-                                                      Some(timeframe),
-                                                      None,
-                                                      None,
-                                                      Some(length as u64))
+    pub async fn moving_average(
+        &self,
+        instrument_id: &InstrumentId,
+        timeframe: Timeframe,
+        length: u16,
+    ) -> f64 {
+        let candles = self
+            .storage_client
+            .get_candles(
+                instrument_id,
+                Some(timeframe),
+                None,
+                None,
+                Some(length as u64),
+            )
             .await
             .unwrap();
-        let values: Vec<_> = candles.into_iter()
+        let values: Vec<_> = candles
+            .into_iter()
             .map(|candle| candle.close_price)
             .collect();
-        *moving_average(&values, length)
-            .unwrap()
-            .first()
-            .unwrap()
+        *moving_average(&values, length).unwrap().first().unwrap()
     }
 }

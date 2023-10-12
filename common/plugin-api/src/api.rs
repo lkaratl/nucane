@@ -8,9 +8,10 @@ use tokio::time::error::Elapsed;
 use tracing::Level;
 use tracing::{error, span};
 
-use domain_model::{Action, InstrumentId, PluginId, Tick};
-use indicators_api::Indicators;
-use storage_core_api::StorageApi;
+use domain_model::drawing::{Color, Coord, Icon, LineStyle};
+use domain_model::{
+    Action, Currency, Exchange, InstrumentId, Order, PluginId, Position, Tick, Timeframe,
+};
 
 #[async_trait]
 pub trait PluginApi: Send + Sync {
@@ -21,7 +22,7 @@ pub trait PluginApi: Send + Sync {
         Vec::new()
     }
     // todo create common indicators enum
-    fn on_tick_sync(&mut self, tick: &Tick, api: &PluginInternalApi) -> Vec<Action> {
+    fn on_tick_sync(&mut self, tick: &Tick, api: Arc<dyn PluginInternalApi>) -> Vec<Action> {
         let tick_id = format!(
             "{} '{}' {}-{}='{}'",
             tick.instrument_id.exchange,
@@ -52,7 +53,7 @@ pub trait PluginApi: Send + Sync {
         }
     }
 
-    async fn on_tick(&mut self, tick: &Tick, api: &PluginInternalApi) -> Vec<Action>;
+    async fn on_tick(&mut self, tick: &Tick, api: Arc<dyn PluginInternalApi>) -> Vec<Action>;
 }
 
 #[tokio::main]
@@ -60,16 +61,103 @@ async fn with_tokio_runtime<T: Default>(future: impl Future<Output = T>) -> Resu
     tokio::time::timeout(Duration::from_secs(60), future).await
 }
 
-pub struct PluginInternalApi {
-    pub storage_client: Arc<dyn StorageApi>,
-    pub indicators: Indicators,
+pub trait PluginInternalApi: Send + Sync {
+    fn state(&self) -> Arc<dyn StateInternalApi>;
+    fn actions(&self) -> Arc<dyn ActionsInternalApi>;
+    fn orders(&self) -> Arc<dyn OrdersInternalApi>;
+    fn positions(&self) -> Arc<dyn PositionsInternalApi>;
+    fn indicators(&self) -> Arc<dyn IndicatorsInternalApi>;
+    fn drawings(&self) -> Arc<dyn DrawingsInternalApi>;
 }
 
-impl PluginInternalApi {
-    pub fn new(storage_client: Arc<dyn StorageApi>) -> Self {
+#[async_trait]
+pub trait StateInternalApi: Send + Sync {}
+
+#[async_trait]
+pub trait ActionsInternalApi: Send + Sync {}
+
+#[async_trait]
+pub trait OrdersInternalApi: Send + Sync {
+    async fn get_order_by_id(&self, id: &str) -> Option<Order>;
+}
+
+#[async_trait]
+pub trait PositionsInternalApi: Send + Sync {
+    async fn get_position(&self, exchange: Exchange, currency: Currency) -> Option<Position>;
+}
+
+#[async_trait]
+pub trait IndicatorsInternalApi: Send + Sync {
+    async fn moving_avg(
+        &self,
+        instrument_id: &InstrumentId,
+        timeframe: Timeframe,
+        length: u16,
+    ) -> f64;
+}
+
+#[async_trait]
+pub trait DrawingsInternalApi: Send + Sync {
+    async fn save_point(&self, point: Point);
+    async fn save_line(&self, line: Line);
+}
+
+#[derive(Debug)]
+pub struct Point {
+    pub instrument_id: InstrumentId,
+    pub label: String,
+    pub icon: Option<Icon>,
+    pub color: Option<Color>,
+    pub text: Option<String>,
+    pub coord: Coord,
+}
+
+impl Point {
+    pub fn new(
+        instrument_id: InstrumentId,
+        label: &str,
+        icon: Option<Icon>,
+        color: Option<Color>,
+        text: Option<String>,
+        coord: Coord,
+    ) -> Self {
         Self {
-            storage_client: Arc::clone(&storage_client),
-            indicators: Indicators::new(storage_client),
+            instrument_id,
+            label: label.to_string(),
+            icon,
+            color,
+            text,
+            coord,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Line {
+    pub instrument_id: InstrumentId,
+    pub label: String,
+    pub style: Option<LineStyle>,
+    pub color: Option<Color>,
+    pub start: Coord,
+    pub end: Coord,
+}
+
+impl Line {
+    pub fn new(
+        instrument_id: InstrumentId,
+        label: &str,
+        style: Option<LineStyle>,
+        color: Option<Color>,
+        start: Coord,
+        end: Coord,
+    ) -> Self {
+        Self {
+            instrument_id,
+            label: label.to_string(),
+            style,
+            color,
+            start,
+            end,
         }
     }
 }

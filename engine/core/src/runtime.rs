@@ -6,19 +6,20 @@ use uuid::Uuid;
 
 use domain_model::{Action, DeploymentInfo, Tick};
 use engine_core_api::api::Deployment;
-use plugin_api::{PluginApi, PluginInternalApi};
+use engine_plugin_internals::api::DefaultPluginInternals;
+use plugin_api::PluginApi;
 use storage_core_api::StorageApi;
 
-pub struct Runtime {
+pub struct Runtime<S: StorageApi> {
     deployments: Arc<RwLock<Vec<Deployment>>>,
-    api: PluginInternalApi,
+    storage_client: Arc<S>,
 }
 
-impl Runtime {
-    pub fn new<S: StorageApi>(storage_client: Arc<S>) -> Self {
+impl<S: StorageApi> Runtime<S> {
+    pub fn new(storage_client: Arc<S>) -> Self {
         Self {
             deployments: Default::default(),
-            api: PluginInternalApi::new(storage_client),
+            storage_client,
         }
     }
 
@@ -65,7 +66,8 @@ impl Runtime {
                     plugin.id().name,
                     plugin.id().version
                 );
-                let mut actions = plugin.on_tick_sync(tick, &self.api);
+                let plugin_internal_api = self.build_plugin_internal_api(deployment.id);
+                let mut actions = plugin.on_tick_sync(tick, plugin_internal_api);
                 actions.iter_mut().for_each(|action| match action {
                     Action::OrderAction(order_action) => {
                         order_action.simulation_id = deployment.simulation_id
@@ -75,6 +77,11 @@ impl Runtime {
             }
         }
         result
+    }
+
+    fn build_plugin_internal_api(&self, deployment_id: Uuid) -> Arc<DefaultPluginInternals<S>> {
+        let storage_client = Arc::clone(&self.storage_client);
+        Arc::new(DefaultPluginInternals::new(deployment_id, storage_client))
     }
 }
 

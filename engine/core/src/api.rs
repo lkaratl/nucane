@@ -23,7 +23,7 @@ pub struct Engine<I: InteractorApi, R: RegistryApi, S: StorageApi> {
     interactor_client: Arc<I>,
     registry_client: Arc<R>,
     storage_client: Arc<S>,
-    runtime: Runtime,
+    runtime: Runtime<S>,
 }
 
 impl<I: InteractorApi, R: RegistryApi, S: StorageApi> Engine<I, R, S> {
