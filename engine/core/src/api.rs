@@ -53,7 +53,7 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> Engine<I, R, S> {
             error!("Error during plugin loading: {err}");
             PluginLoadingError
         })?;
-        plugin.strategy.tune(params);
+        plugin.api.configure(params);
         Ok(plugin)
     }
 

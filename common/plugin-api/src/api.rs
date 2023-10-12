@@ -8,18 +8,20 @@ use tokio::time::error::Elapsed;
 use tracing::Level;
 use tracing::{error, span};
 
-use domain_model::{Action, InstrumentId, Tick};
+use domain_model::{Action, InstrumentId, PluginId, Tick};
 use indicators_api::Indicators;
 use storage_core_api::StorageApi;
 
 #[async_trait]
-pub trait Strategy: Send + Sync {
-    fn tune(&mut self, _: &HashMap<String, String>) {}
-    fn name(&self) -> String;
-    fn version(&self) -> i64;
-    fn subscriptions(&self) -> Vec<InstrumentId>;
-
-    fn on_tick_sync(&mut self, tick: &Tick, api: &StrategyApi) -> Vec<Action> {
+pub trait PluginApi: Send + Sync {
+    fn id(&self) -> PluginId;
+    fn configure(&mut self, _config: &HashMap<String, String>) {}
+    fn instruments(&self) -> Vec<InstrumentId>;
+    fn indicators(&self) -> Vec<()> {
+        Vec::new()
+    }
+    // todo create common indicators enum
+    fn on_tick_sync(&mut self, tick: &Tick, api: &PluginInternalApi) -> Vec<Action> {
         let tick_id = format!(
             "{} '{}' {}-{}='{}'",
             tick.instrument_id.exchange,
@@ -31,8 +33,8 @@ pub trait Strategy: Send + Sync {
         let _span = span!(
             Level::INFO,
             "strategy",
-            name = self.name(),
-            version = self.version(),
+            name = self.id().name,
+            version = self.id().version,
             tick_id
         )
         .entered();
@@ -42,15 +44,15 @@ pub trait Strategy: Send + Sync {
             Err(error) => {
                 error!(
                     "Timeout during tick processing, strategy: '{}:{}'. Error: '{error}'",
-                    self.name(),
-                    self.version()
+                    self.id().name,
+                    self.id().version
                 );
                 Vec::new()
             }
         }
     }
 
-    async fn on_tick(&mut self, tick: &Tick, api: &StrategyApi) -> Vec<Action>;
+    async fn on_tick(&mut self, tick: &Tick, api: &PluginInternalApi) -> Vec<Action>;
 }
 
 #[tokio::main]
@@ -58,12 +60,12 @@ async fn with_tokio_runtime<T: Default>(future: impl Future<Output = T>) -> Resu
     tokio::time::timeout(Duration::from_secs(60), future).await
 }
 
-pub struct StrategyApi {
+pub struct PluginInternalApi {
     pub storage_client: Arc<dyn StorageApi>,
     pub indicators: Indicators,
 }
 
-impl StrategyApi {
+impl PluginInternalApi {
     pub fn new(storage_client: Arc<dyn StorageApi>) -> Self {
         Self {
             storage_client: Arc::clone(&storage_client),

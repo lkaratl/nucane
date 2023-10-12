@@ -8,10 +8,9 @@ use domain_model::drawing::{Color, Icon, Line, LineStyle, Point};
 use domain_model::Size::Source;
 use domain_model::{
     Action, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction,
-    OrderActionType, OrderMarketType, OrderStatus, OrderType, PluginId, Side, Tick, Timeframe,
-    Trigger,
+    OrderActionType, OrderMarketType, OrderStatus, OrderType, Side, Tick, Timeframe, Trigger,
 };
-use strategy_api::{utils, Strategy, StrategyApi};
+use plugin_api::{utils, PluginApi, PluginInternalApi};
 
 #[derive(Clone)]
 pub struct E2EStrategy {
@@ -30,7 +29,7 @@ impl Default for E2EStrategy {
             market_order_id: None,
         };
         utils::init_logger(
-            &format!("{}-{}", strategy.name(), strategy.version()),
+            &format!("{}-{}", strategy.id().name, strategy.id().version),
             "INFO",
         );
         strategy
@@ -38,7 +37,7 @@ impl Default for E2EStrategy {
 }
 
 impl E2EStrategy {
-    pub async fn handle_tick(&mut self, tick: &Tick, api: &StrategyApi) -> Vec<Action> {
+    pub async fn handle_tick(&mut self, tick: &Tick, api: &PluginInternalApi) -> Vec<Action> {
         if !self.executed_once {
             self.executed_once = true;
             info!("Create actions");
@@ -53,11 +52,11 @@ impl E2EStrategy {
         }
     }
 
-    async fn check_indicators(&self, tick: &Tick, api: &StrategyApi) {
+    async fn check_indicators(&self, tick: &Tick, api: &PluginInternalApi) {
         self.check_moving_avg(tick.instrument_id.pair, api).await;
     }
 
-    async fn check_moving_avg(&self, pair: CurrencyPair, api: &StrategyApi) {
+    async fn check_moving_avg(&self, pair: CurrencyPair, api: &PluginInternalApi) {
         let instrument_id = InstrumentId {
             exchange: Exchange::OKX,
             market_type: MarketType::Spot,
@@ -70,7 +69,7 @@ impl E2EStrategy {
         info!("Moving AVG: {}", moving_average);
     }
 
-    async fn create_drawings(&self, tick: &Tick, api: &StrategyApi) {
+    async fn create_drawings(&self, tick: &Tick, api: &PluginInternalApi) {
         let point = Point::new(
             tick.instrument_id.clone(),
             Uuid::from_str("9f8c8645-6352-4e59-a6a0-8ebfcfd97606").unwrap(), // todo remove this hot fix
@@ -146,7 +145,7 @@ impl E2EStrategy {
         Action::OrderAction(OrderAction {
             id: Uuid::new_v4(),
             simulation_id: None,
-            plugin_id: self.plugin_id(),
+            plugin_id: self.id(),
             timestamp: Utc::now(),
             status: OrderStatus::Created,
             exchange: Exchange::OKX,
@@ -167,7 +166,7 @@ impl E2EStrategy {
         Action::OrderAction(OrderAction {
             id: Uuid::new_v4(),
             simulation_id: None,
-            plugin_id: self.plugin_id(),
+            plugin_id: self.id(),
             timestamp: Utc::now(),
             status: OrderStatus::Created,
             exchange: Exchange::OKX,
@@ -188,7 +187,7 @@ impl E2EStrategy {
         Action::OrderAction(OrderAction {
             id: Uuid::new_v4(),
             simulation_id: None,
-            plugin_id: self.plugin_id(),
+            plugin_id: self.id(),
             timestamp: Utc::now(),
             status: OrderStatus::Created,
             exchange: Exchange::OKX,
@@ -205,17 +204,13 @@ impl E2EStrategy {
         })
     }
 
-    fn plugin_id(&self) -> PluginId {
-        PluginId::new(&self.name(), self.version())
-    }
-
-    async fn check_orders(&mut self, api: &StrategyApi) {
+    async fn check_orders(&mut self, api: &PluginInternalApi) {
         self.check_limit_order(api).await;
         self.check_limit_order_with_sl_tp(api).await;
         self.check_market_order(api).await;
     }
 
-    async fn check_limit_order(&mut self, api: &StrategyApi) {
+    async fn check_limit_order(&mut self, api: &PluginInternalApi) {
         if self.limit_order_id.is_some() {
             let orders = api
                 .storage_client
@@ -252,7 +247,7 @@ impl E2EStrategy {
         }
     }
 
-    async fn check_limit_order_with_sl_tp(&mut self, api: &StrategyApi) {
+    async fn check_limit_order_with_sl_tp(&mut self, api: &PluginInternalApi) {
         if self.limit_order_with_sl_tp_id.is_some() {
             let orders = api
                 .storage_client
@@ -299,7 +294,7 @@ impl E2EStrategy {
         }
     }
 
-    async fn check_market_order(&mut self, api: &StrategyApi) {
+    async fn check_market_order(&mut self, api: &PluginInternalApi) {
         if self.market_order_id.is_some() {
             let orders = api
                 .storage_client

@@ -6,19 +6,19 @@ use uuid::Uuid;
 
 use domain_model::{Action, DeploymentInfo, Tick};
 use engine_core_api::api::Deployment;
+use plugin_api::{PluginApi, PluginInternalApi};
 use storage_core_api::StorageApi;
-use strategy_api::{Strategy, StrategyApi};
 
 pub struct Runtime {
     deployments: Arc<RwLock<Vec<Deployment>>>,
-    api: StrategyApi,
+    api: PluginInternalApi,
 }
 
 impl Runtime {
     pub fn new<S: StorageApi>(storage_client: Arc<S>) -> Self {
         Self {
             deployments: Default::default(),
-            api: StrategyApi::new(storage_client),
+            api: PluginInternalApi::new(storage_client),
         }
     }
 
@@ -54,18 +54,18 @@ impl Runtime {
         let mut result = Vec::new();
         for deployment in self.deployments.write().await.iter_mut() {
             let is_simulation = deployment.simulation_id == tick.simulation_id;
-            let strategy = &mut deployment.plugin.strategy;
-            if is_subscribed(strategy.as_ref(), tick) && is_simulation {
+            let plugin = &mut deployment.plugin.api;
+            if is_subscribed(plugin.as_ref(), tick) && is_simulation {
                 debug!(
-                    "Processing tick: '{} {}-{}={}' for strategy: '{}:{}'",
+                    "Processing tick: '{} {}-{}={}' for plugin: '{}:{}'",
                     tick.instrument_id.exchange,
                     tick.instrument_id.pair.target,
                     tick.instrument_id.pair.source,
                     tick.price,
-                    strategy.name(),
-                    strategy.version()
+                    plugin.id().name,
+                    plugin.id().version
                 );
-                let mut actions = strategy.on_tick_sync(tick, &self.api);
+                let mut actions = plugin.on_tick_sync(tick, &self.api);
                 actions.iter_mut().for_each(|action| match action {
                     Action::OrderAction(order_action) => {
                         order_action.simulation_id = deployment.simulation_id
@@ -78,9 +78,9 @@ impl Runtime {
     }
 }
 
-fn is_subscribed(strategy: &(dyn Strategy + Send), tick: &Tick) -> bool {
+fn is_subscribed(plugin: &(dyn PluginApi + Send), tick: &Tick) -> bool {
     let instrument_id = &tick.instrument_id;
-    strategy.subscriptions().iter().any(|subscription| {
+    plugin.instruments().iter().any(|subscription| {
         subscription.exchange.eq(&instrument_id.exchange)
             && subscription.market_type.eq(&instrument_id.market_type)
             && subscription.pair.target.eq(&instrument_id.pair.target)

@@ -1,5 +1,5 @@
 [package]
-name = "strategy-api"
+name = "plugin-api"
 version.workspace = true
 edition.workspace = true
 

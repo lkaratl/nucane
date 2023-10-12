@@ -11,7 +11,10 @@ use plugin_loader::Plugin;
 #[async_trait]
 pub trait EngineApi: Send + Sync + 'static {
     async fn get_deployments_info(&self) -> Vec<DeploymentInfo>;
-    async fn deploy(&self, deployments: &[NewDeployment]) -> Result<Vec<DeploymentInfo>, EngineError>;
+    async fn deploy(
+        &self,
+        deployments: &[NewDeployment],
+    ) -> Result<Vec<DeploymentInfo>, EngineError>;
     async fn get_actions(&self, tick: &Tick) -> Vec<Action>;
     async fn delete_deployment(&self, id: Uuid) -> Option<DeploymentInfo>;
     async fn update_plugin(&self, plugin_id: PluginId);
@@ -31,10 +34,9 @@ impl From<&Deployment> for DeploymentInfo {
             id: value.id,
             status: DeploymentStatus::Created,
             simulation_id: value.simulation_id,
-            plugin_id: PluginId::new(&value.plugin.strategy.name(),
-                                     value.plugin.strategy.version()),
+            plugin_id: value.plugin.api.id(),
             params: value.params.clone(),
-            subscriptions: value.plugin.strategy.subscriptions(),
+            subscriptions: value.plugin.api.instruments(),
         }
     }
 }

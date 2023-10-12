@@ -267,26 +267,12 @@ pub struct PluginBinary {
 }
 
 impl PluginBinary {
-    pub fn new(name: &str, version: i64, binary: &[u8]) -> Self {
-        let id = PluginId::new(name, version);
+    pub fn new(id: PluginId, binary: &[u8]) -> Self {
         Self {
             id,
             binary: binary.to_vec(),
         }
     }
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct PluginEvent {
-    pub id: Uuid,
-    pub event: PluginEventType,
-    pub strategy_name: String,
-    pub strategy_version: String,
-}
-
-#[derive(Eq, PartialEq, Debug, Deserialize, Serialize, Clone)]
-pub enum PluginEventType {
-    Updated,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

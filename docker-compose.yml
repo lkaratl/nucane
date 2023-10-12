@@ -59,6 +59,7 @@ services:
   simulator:
     image: simulator:${TAG}
     environment:
+      SIMULATOR_DATABASE_URL: postgres://postgres:root@db:5432
       SIMULATOR_ENGINE_URL: engine:8081
       SIMULATOR_STORAGE_URL: storage:8082
       SIMULATOR_INTERACTOR_URL: interactor:8083

@@ -4,7 +4,7 @@ members = [
     "common/eac",
     "common/indicators-api",
     "common/plugin-loader",
-    "common/strategy-api",
+    "common/plugin-api",
     "engine/config",
     "engine/app",
     "engine/core",
@@ -72,7 +72,7 @@ domain-model = { path = "common/domain-model" }
 eac = { path = "common/eac" }
 indicators-api = { path = "common/indicators-api" }
 plugin-loader = { path = "common/plugin-loader" }
-strategy-api = { path = "common/strategy-api" }
+plugin-api = { path = "common/plugin-api" }
 
 engine-config = { path = "engine/config" }
 engine-app = { path = "engine/app" }
