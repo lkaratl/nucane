@@ -1,0 +1,9 @@
+[package]
+name = "engine-fs-plugin-state"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+uuid = { workspace = true }
+serde_json = { workspace = true }
+dashmap = { workspace = true }

@@ -4,13 +4,15 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_trait::async_trait;
+use serde_json::Value;
 use tokio::time::error::Elapsed;
 use tracing::Level;
 use tracing::{error, span};
 
 use domain_model::drawing::{Color, Coord, Icon, LineStyle};
 use domain_model::{
-    Action, Currency, Exchange, InstrumentId, Order, PluginId, Position, Tick, Timeframe,
+    Action, Currency, CurrencyPair, Exchange, InstrumentId, Order, OrderType, PluginId, Position,
+    Side, Size, Tick, Timeframe, Trigger,
 };
 
 #[async_trait]
@@ -58,7 +60,7 @@ pub trait PluginApi: Send + Sync {
 
 #[tokio::main]
 async fn with_tokio_runtime<T: Default>(future: impl Future<Output = T>) -> Result<T, Elapsed> {
-    tokio::time::timeout(Duration::from_secs(60), future).await
+    tokio::time::timeout(Duration::from_secs(10), future).await
 }
 
 pub trait PluginInternalApi: Send + Sync {
@@ -71,10 +73,23 @@ pub trait PluginInternalApi: Send + Sync {
 }
 
 #[async_trait]
-pub trait StateInternalApi: Send + Sync {}
+pub trait StateInternalApi: Send + Sync {
+    async fn set(&self, key: &str, state: Value);
+    async fn get(&self, key: &str) -> Option<Value>;
+}
 
 #[async_trait]
-pub trait ActionsInternalApi: Send + Sync {}
+pub trait ActionsInternalApi: Send + Sync {
+    fn create_order_action(
+        &self,
+        pair: CurrencyPair,
+        order_type: OrderType,
+        size: Size,
+        side: Side,
+        sl: Option<Trigger>,
+        tp: Option<Trigger>,
+    ) -> Action;
+}
 
 #[async_trait]
 pub trait OrdersInternalApi: Send + Sync {

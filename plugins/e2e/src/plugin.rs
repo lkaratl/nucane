@@ -1,59 +1,75 @@
 use std::sync::Arc;
 
-use chrono::{Duration, Utc};
+use chrono::Duration;
+use serde::{Deserialize, Serialize};
 use tracing::info;
-use uuid::Uuid;
 
 use domain_model::drawing::{Color, Icon, LineStyle};
-use domain_model::Size::Source;
+use domain_model::OrderType::{Limit, Market};
 use domain_model::{
-    Action, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarketType, OrderAction,
-    OrderActionType, OrderMarketType, OrderStatus, OrderType, Side, Tick, Timeframe, Trigger,
+    Action, CurrencyPair, Exchange, InstrumentId, MarketType, OrderActionType, OrderStatus, Side,
+    Size, Tick, Timeframe, Trigger,
 };
 use plugin_api::{utils, Line, PluginApi, PluginInternalApi, Point};
 
-#[derive(Clone)]
-pub struct E2EStrategy {
+const STATE_KEY: &str = "state";
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct State {
     executed_once: bool,
     limit_order_id: Option<String>,
     limit_order_with_sl_tp_id: Option<String>,
     market_order_id: Option<String>,
 }
 
-impl Default for E2EStrategy {
+#[derive(Clone)]
+pub struct E2EPlugin;
+
+impl Default for E2EPlugin {
     fn default() -> Self {
-        let strategy = Self {
-            executed_once: false,
-            limit_order_id: None,
-            limit_order_with_sl_tp_id: None,
-            market_order_id: None,
-        };
+        let plugin = Self;
         utils::init_logger(
-            &format!("{}-{}", strategy.id().name, strategy.id().version),
+            &format!("{}-{}", plugin.id().name, plugin.id().version),
             "INFO",
         );
-        strategy
+        plugin
     }
 }
 
-impl E2EStrategy {
+impl E2EPlugin {
     pub async fn handle_tick(
         &mut self,
         tick: &Tick,
         api: Arc<dyn PluginInternalApi>,
     ) -> Vec<Action> {
-        if !self.executed_once {
-            self.executed_once = true;
+        let mut state = self.get_state(api.clone()).await;
+        if !state.executed_once {
+            state.executed_once = true;
+            self.set_state(api.clone(), state).await;
             info!("Create actions");
 
-            self.check_indicators(tick, api.clone()).await;
+            // self.check_indicators(tick, api.clone()).await;
             self.create_drawings(tick, api.clone()).await;
-            self.create_order_actions(tick)
+            self.create_order_actions(tick, api).await
         } else {
             info!("Check orders");
             self.check_orders(api).await;
             Vec::new()
         }
+    }
+
+    async fn get_state(&self, api: Arc<dyn PluginInternalApi>) -> State {
+        api.state()
+            .get(STATE_KEY)
+            .await
+            .map(serde_json::from_value)
+            .map(Result::unwrap)
+            .unwrap_or_default()
+    }
+
+    async fn set_state(&self, api: Arc<dyn PluginInternalApi>, state: State) {
+        let state = serde_json::to_value(state).unwrap();
+        api.state().set(STATE_KEY, state).await;
     }
 
     async fn check_indicators(&self, tick: &Tick, api: Arc<dyn PluginInternalApi>) {
@@ -98,113 +114,93 @@ impl E2EStrategy {
         api.drawings().save_line(line).await;
     }
 
-    fn create_order_actions(&mut self, tick: &Tick) -> Vec<Action> {
+    async fn create_order_actions(
+        &mut self,
+        tick: &Tick,
+        api: Arc<dyn PluginInternalApi>,
+    ) -> Vec<Action> {
         vec![
-            self.create_limit_order_action(tick),
-            self.create_limit_order_with_sl_tp_action(tick),
-            self.create_market_order_action(tick),
+            self.create_limit_order_action(tick, api.clone()).await,
+            self.create_limit_order_with_sl_tp_action(tick, api.clone())
+                .await,
+            self.create_market_order_action(tick, api.clone()).await,
         ]
     }
 
-    fn create_limit_order_action(&mut self, tick: &Tick) -> Action {
-        let limit_order_action =
-            self.build_limit_order_action(tick.instrument_id.pair, tick.price * 0.9);
+    async fn create_limit_order_action(
+        &mut self,
+        tick: &Tick,
+        api: Arc<dyn PluginInternalApi>,
+    ) -> Action {
+        let limit_order_action = api.actions().create_order_action(
+            tick.instrument_id.pair,
+            Limit(tick.price * 0.95),
+            Size::Source(10.0),
+            Side::Buy,
+            None,
+            None,
+        );
         let order_id = match &limit_order_action {
             Action::OrderAction(order_action) => match &order_action.order {
                 OrderActionType::CreateOrder(create_order) => Some(create_order.id.clone()),
                 _ => None,
             },
         };
-        self.limit_order_id = order_id;
+        let mut state = self.get_state(api.clone()).await;
+        state.limit_order_id = order_id;
+        self.set_state(api.clone(), state).await;
         limit_order_action
     }
 
-    fn create_limit_order_with_sl_tp_action(&mut self, tick: &Tick) -> Action {
-        let limit_order_with_sl_tp_action =
-            self.build_limit_order_action_with_sl_tp(tick.instrument_id.pair, tick.price * 0.9);
+    async fn create_limit_order_with_sl_tp_action(
+        &mut self,
+        tick: &Tick,
+        api: Arc<dyn PluginInternalApi>,
+    ) -> Action {
+        let limit = tick.price * 0.95;
+        let limit_order_with_sl_tp_action = api.actions().create_order_action(
+            tick.instrument_id.pair,
+            Limit(limit),
+            Size::Source(10.0),
+            Side::Buy,
+            Trigger::new(limit * 0.5, limit * 0.4),
+            Trigger::new(limit * 2.0, limit * 2.1),
+        );
         let order_id = match &limit_order_with_sl_tp_action {
             Action::OrderAction(order_action) => match &order_action.order {
                 OrderActionType::CreateOrder(create_order) => Some(create_order.id.clone()),
                 _ => None,
             },
         };
-        self.limit_order_with_sl_tp_id = order_id;
+        let mut state = self.get_state(api.clone()).await;
+        state.limit_order_with_sl_tp_id = order_id;
+        self.set_state(api.clone(), state).await;
         limit_order_with_sl_tp_action
     }
 
-    fn create_market_order_action(&mut self, tick: &Tick) -> Action {
-        let market_order_action = self.build_market_order_action(tick.instrument_id.pair);
+    async fn create_market_order_action(
+        &mut self,
+        tick: &Tick,
+        api: Arc<dyn PluginInternalApi>,
+    ) -> Action {
+        let market_order_action = api.actions().create_order_action(
+            tick.instrument_id.pair,
+            Market,
+            Size::Source(10.0),
+            Side::Buy,
+            None,
+            None,
+        );
         let order_id = match &market_order_action {
             Action::OrderAction(order_action) => match &order_action.order {
                 OrderActionType::CreateOrder(create_order) => Some(create_order.id.clone()),
                 _ => None,
             },
         };
-        self.market_order_id = order_id;
+        let mut state = self.get_state(api.clone()).await;
+        state.market_order_id = order_id;
+        self.set_state(api.clone(), state).await;
         market_order_action
-    }
-
-    fn build_limit_order_action(&self, pair: CurrencyPair, limit: f64) -> Action {
-        Action::OrderAction(OrderAction {
-            id: Uuid::new_v4(),
-            simulation_id: None,
-            plugin_id: self.id(),
-            timestamp: Utc::now(),
-            status: OrderStatus::Created,
-            exchange: Exchange::OKX,
-            order: OrderActionType::CreateOrder(CreateOrder {
-                id: utils::string_id(),
-                pair,
-                market_type: OrderMarketType::Spot,
-                order_type: OrderType::Limit(limit),
-                side: Side::Buy,
-                size: Source(10.0),
-                stop_loss: None,
-                take_profit: None,
-            }),
-        })
-    }
-
-    fn build_limit_order_action_with_sl_tp(&self, pair: CurrencyPair, limit: f64) -> Action {
-        Action::OrderAction(OrderAction {
-            id: Uuid::new_v4(),
-            simulation_id: None,
-            plugin_id: self.id(),
-            timestamp: Utc::now(),
-            status: OrderStatus::Created,
-            exchange: Exchange::OKX,
-            order: OrderActionType::CreateOrder(CreateOrder {
-                id: utils::string_id(),
-                pair,
-                market_type: OrderMarketType::Spot,
-                order_type: OrderType::Limit(limit),
-                side: Side::Buy,
-                size: Source(10.0),
-                stop_loss: Trigger::new(limit * 0.5, limit * 0.4),
-                take_profit: Trigger::new(limit * 2.0, limit * 2.1),
-            }),
-        })
-    }
-
-    fn build_market_order_action(&self, pair: CurrencyPair) -> Action {
-        Action::OrderAction(OrderAction {
-            id: Uuid::new_v4(),
-            simulation_id: None,
-            plugin_id: self.id(),
-            timestamp: Utc::now(),
-            status: OrderStatus::Created,
-            exchange: Exchange::OKX,
-            order: OrderActionType::CreateOrder(CreateOrder {
-                id: utils::string_id(),
-                pair,
-                market_type: OrderMarketType::Spot,
-                order_type: OrderType::Market,
-                side: Side::Buy,
-                size: Source(10.0),
-                stop_loss: None,
-                take_profit: None,
-            }),
-        })
     }
 
     async fn check_orders(&mut self, api: Arc<dyn PluginInternalApi>) {
@@ -214,7 +210,7 @@ impl E2EStrategy {
     }
 
     async fn check_limit_order(&mut self, api: Arc<dyn PluginInternalApi>) {
-        if let Some(limit_order_id) = &self.limit_order_id {
+        if let Some(limit_order_id) = &self.get_state(api.clone()).await.limit_order_id {
             let limit_order = api.orders().get_order_by_id(limit_order_id).await;
             if let Some(limit_order) = limit_order {
                 if limit_order.status == OrderStatus::Completed {
@@ -226,7 +222,10 @@ impl E2EStrategy {
                         .await;
                     assert!(position.is_some());
                     assert_ne!(position.unwrap().size, 0.0);
-                    self.limit_order_id = None;
+
+                    let mut state = self.get_state(api.clone()).await;
+                    state.limit_order_id = None;
+                    self.set_state(api.clone(), state).await;
                 } else if limit_order.status == OrderStatus::InProgress {
                     info!("Limit order with id: {} InProgress", limit_order.id);
                 }
@@ -235,7 +234,9 @@ impl E2EStrategy {
     }
 
     async fn check_limit_order_with_sl_tp(&mut self, api: Arc<dyn PluginInternalApi>) {
-        if let Some(limit_order_with_sl_tp_id) = &self.limit_order_with_sl_tp_id {
+        if let Some(limit_order_with_sl_tp_id) =
+            &self.get_state(api.clone()).await.limit_order_with_sl_tp_id
+        {
             let limit_order_with_sl_tp = api
                 .orders()
                 .get_order_by_id(limit_order_with_sl_tp_id)
@@ -256,7 +257,10 @@ impl E2EStrategy {
                         .await;
                     assert!(position.is_some());
                     assert_ne!(position.unwrap().size, 0.0);
-                    self.limit_order_id = None;
+
+                    let mut state = self.get_state(api.clone()).await;
+                    state.limit_order_with_sl_tp_id = None;
+                    self.set_state(api.clone(), state).await;
                 } else if limit_order_with_sl_tp.status == OrderStatus::InProgress {
                     info!(
                         "Limit order with SL and TP with id: {} InProgress",
@@ -268,7 +272,7 @@ impl E2EStrategy {
     }
 
     async fn check_market_order(&mut self, api: Arc<dyn PluginInternalApi>) {
-        if let Some(market_order_id) = &self.market_order_id {
+        if let Some(market_order_id) = &self.get_state(api.clone()).await.market_order_id {
             let market_order = api.orders().get_order_by_id(market_order_id).await;
             if let Some(market_order) = market_order {
                 if market_order.status == OrderStatus::Completed {
@@ -280,7 +284,10 @@ impl E2EStrategy {
                         .await;
                     assert!(position.is_some());
                     assert_ne!(position.unwrap().size, 0.0);
-                    self.market_order_id = None;
+
+                    let mut state = self.get_state(api.clone()).await;
+                    state.market_order_id = None;
+                    self.set_state(api.clone(), state).await;
                 } else if market_order.status == OrderStatus::InProgress {
                     info!("Market order with id: {} InProgress", market_order.id);
                 }

@@ -4,8 +4,9 @@ use tokio::sync::RwLock;
 use tracing::debug;
 use uuid::Uuid;
 
-use domain_model::{Action, DeploymentInfo, Tick};
+use domain_model::{Action, DeploymentInfo, PluginId, Tick};
 use engine_core_api::api::Deployment;
+use engine_fs_plugin_state::FsStateManager;
 use engine_plugin_internals::api::DefaultPluginInternals;
 use plugin_api::PluginApi;
 use storage_core_api::StorageApi;
@@ -13,6 +14,7 @@ use storage_core_api::StorageApi;
 pub struct Runtime<S: StorageApi> {
     deployments: Arc<RwLock<Vec<Deployment>>>,
     storage_client: Arc<S>,
+    state_manager: Arc<FsStateManager>,
 }
 
 impl<S: StorageApi> Runtime<S> {
@@ -20,6 +22,7 @@ impl<S: StorageApi> Runtime<S> {
         Self {
             deployments: Default::default(),
             storage_client,
+            state_manager: Default::default(),
         }
     }
 
@@ -66,7 +69,11 @@ impl<S: StorageApi> Runtime<S> {
                     plugin.id().name,
                     plugin.id().version
                 );
-                let plugin_internal_api = self.build_plugin_internal_api(deployment.id);
+                let plugin_internal_api = self.build_plugin_internal_api(
+                    deployment.id,
+                    plugin.id(),
+                    deployment.simulation_id,
+                );
                 let mut actions = plugin.on_tick_sync(tick, plugin_internal_api);
                 actions.iter_mut().for_each(|action| match action {
                     Action::OrderAction(order_action) => {
@@ -79,9 +86,20 @@ impl<S: StorageApi> Runtime<S> {
         result
     }
 
-    fn build_plugin_internal_api(&self, deployment_id: Uuid) -> Arc<DefaultPluginInternals<S>> {
+    fn build_plugin_internal_api(
+        &self,
+        deployment_id: Uuid,
+        plugin_id: PluginId,
+        simulation_id: Option<Uuid>,
+    ) -> Arc<DefaultPluginInternals<S>> {
         let storage_client = Arc::clone(&self.storage_client);
-        Arc::new(DefaultPluginInternals::new(deployment_id, storage_client))
+        Arc::new(DefaultPluginInternals::new(
+            deployment_id,
+            plugin_id,
+            simulation_id,
+            storage_client,
+            Arc::clone(&self.state_manager),
+        ))
     }
 }
 

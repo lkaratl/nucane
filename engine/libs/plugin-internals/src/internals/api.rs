@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use uuid::Uuid;
 
+use domain_model::PluginId;
+use engine_fs_plugin_state::FsStateManager;
 use plugin_api::{
     ActionsInternalApi, DrawingsInternalApi, IndicatorsInternalApi, OrdersInternalApi,
     PluginInternalApi, PositionsInternalApi, StateInternalApi,
@@ -25,21 +27,23 @@ pub struct DefaultPluginInternals<S: StorageApi> {
 }
 
 impl<S: StorageApi> DefaultPluginInternals<S> {
-    pub fn new(deployment_id: Uuid, storage_client: Arc<S>) -> Self {
-        let orders = Arc::new(DefaultOrderInternals::new(Arc::clone(&storage_client)));
-        let positions = Arc::new(DefaultPositionInternals::new(Arc::clone(&storage_client)));
-        let drawings = Arc::new(DefaultDrawingInternals::new(
-            deployment_id,
-            Arc::clone(&storage_client),
-        ));
-        let indicators = Arc::new(DefaultIndicatorInternals::new(Arc::clone(&storage_client)));
+    pub fn new(
+        deployment_id: Uuid,
+        plugin_id: PluginId,
+        simulation_id: Option<Uuid>,
+        storage_client: Arc<S>,
+        state_manager: Arc<FsStateManager>,
+    ) -> Self {
         Self {
-            state: Default::default(),
-            actions: Default::default(),
-            orders,
-            positions,
-            indicators,
-            drawings,
+            state: Arc::new(DefaultStateInternals::new(deployment_id, state_manager)),
+            actions: Arc::new(DefaultActionInternals::new(simulation_id, plugin_id)),
+            orders: Arc::new(DefaultOrderInternals::new(Arc::clone(&storage_client))),
+            positions: Arc::new(DefaultPositionInternals::new(Arc::clone(&storage_client))),
+            indicators: Arc::new(DefaultIndicatorInternals::new(Arc::clone(&storage_client))),
+            drawings: Arc::new(DefaultDrawingInternals::new(
+                deployment_id,
+                Arc::clone(&storage_client),
+            )),
         }
     }
 }

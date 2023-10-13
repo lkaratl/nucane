@@ -8,23 +8,23 @@ use domain_model::{
 };
 use plugin_api::{PluginApi, PluginInternalApi};
 
-use crate::strategy::E2EStrategy;
+use crate::plugin::E2EPlugin;
 
-mod strategy;
+mod plugin;
 
 #[allow(improper_ctypes_definitions)]
 #[no_mangle]
 pub extern "C" fn load() -> Box<dyn PluginApi> {
-    Box::<E2EStrategy>::default()
+    Box::<E2EPlugin>::default()
 }
 
 const PLUGIN_NAME: &str = "e2e";
-const PLUGIN_VERSION: i64 = 1;
+const PLUGIN_VERSION: i64 = 2;
 
 const PARAMETER_NAME: &str = "test-parameter";
 
 #[async_trait]
-impl PluginApi for E2EStrategy {
+impl PluginApi for E2EPlugin {
     fn id(&self) -> PluginId {
         PluginId::new(PLUGIN_NAME, PLUGIN_VERSION)
     }
