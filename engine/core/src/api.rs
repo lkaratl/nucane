@@ -83,8 +83,11 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> Engine<I, R, S> {
     ) -> Result<DeploymentInfo, EngineError> {
         let strategy_name = deployment.plugin_id.name.clone();
         let strategy_version = deployment.plugin_id.version;
+        let state_id = deployment.state_id;
         let params = deployment.params.clone();
-        debug!("Create deployment for strategy with name: '{strategy_name}' and version: '{strategy_version}' and params: '{params:?}'");
+        debug!("Create deployment for strategy with \
+        name: '{strategy_name}', version: '{strategy_version}', \
+        state id: {state_id:?} and params: '{params:?}'");
 
         let plugin = self
             .load_plugin(&strategy_name, strategy_version, &params)
@@ -92,6 +95,7 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> Engine<I, R, S> {
         let deployment = Deployment {
             id: Uuid::new_v4(),
             simulation_id: deployment.simulation_id,
+            state_id,
             params: params.clone(),
             plugin,
         };
@@ -149,6 +153,7 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> EngineApi for Engine<I, R,
             self.delete_deployment(deployment.id).await;
             let new_deployment = NewDeployment {
                 simulation_id: deployment.simulation_id,
+                state_id: deployment.state_id,
                 plugin_id: plugin_id.clone(),
                 params: deployment.params.clone(),
             };

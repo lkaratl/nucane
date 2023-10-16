@@ -72,9 +72,11 @@ impl<S: StorageApi> Runtime<S> {
                     plugin.id().version
                 );
 
-                let state = self.state_manager.get(&deployment.id.to_string()).await;
-                if let Some(state) = state {
-                    plugin.set_state(state);
+                if let Some(state_id) = deployment.state_id {
+                    let state = self.state_manager.get(&state_id.to_string());
+                    if let Some(state) = state {
+                        plugin.set_state(state);
+                    }
                 }
 
                 let plugin_internal_api = self.build_plugin_internal_api(
@@ -85,8 +87,10 @@ impl<S: StorageApi> Runtime<S> {
                 let mut actions = plugin.on_tick_sync(tick, plugin_internal_api);
                 result.append(&mut actions);
 
-                let state = plugin.get_state();
-                self.state_manager.set(&deployment.id.to_string(), state).await;
+                if let Some(state_id) = deployment.state_id {
+                    let state = plugin.get_state();
+                    self.state_manager.set(&state_id.to_string(), state);
+                }
             }
         }
         result

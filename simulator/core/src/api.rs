@@ -706,6 +706,7 @@ fn convert_to_create_deployment_dto(
 ) -> NewDeployment {
     NewDeployment {
         simulation_id: Some(simulation_id),
+        state_id: None,
         plugin_id: value.plugin_id,
         params: value.params,
     }

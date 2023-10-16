@@ -24,6 +24,7 @@ pub trait EngineApi: Send + Sync + 'static {
 pub struct Deployment {
     pub id: Uuid,
     pub simulation_id: Option<Uuid>,
+    pub state_id: Option<Uuid>,
     pub params: HashMap<String, String>,
     pub plugin: Plugin,
 }
@@ -34,6 +35,7 @@ impl From<&Deployment> for DeploymentInfo {
             id: value.id,
             status: DeploymentStatus::Created,
             simulation_id: value.simulation_id,
+            state_id: value.state_id,
             plugin_id: value.plugin.api.id(),
             params: value.params.clone(),
             subscriptions: value.plugin.api.instruments(),

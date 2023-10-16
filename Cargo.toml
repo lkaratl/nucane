@@ -179,4 +179,4 @@ tokio-native-tls = "0.3"
 async-broadcast = "0.5.1"
 pg-embed = "0.6" # newer versions don't support db creation yet
 charming = { version = "0.2.4", features = ["ssr"] }
-dashmap = { version = "5.5.3", features = ["inline"] }
+dashmap = { version = "5.5.3", features = ["inline", "serde"] }

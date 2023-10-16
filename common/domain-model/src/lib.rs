@@ -280,6 +280,7 @@ pub struct DeploymentInfo {
     pub id: Uuid,
     pub status: DeploymentStatus,
     pub simulation_id: Option<Uuid>,
+    pub state_id: Option<Uuid>,
     pub plugin_id: PluginId,
     pub params: HashMap<String, String>,
     pub subscriptions: Vec<InstrumentId>,
@@ -295,6 +296,7 @@ pub enum DeploymentStatus {
 pub struct NewDeployment {
     pub simulation_id: Option<Uuid>,
     pub plugin_id: PluginId,
+    pub state_id: Option<Uuid>,
     pub params: HashMap<String, String>,
 }
 
