@@ -6,24 +6,26 @@ use std::time::Duration;
 use async_trait::async_trait;
 use serde_json::Value;
 use tokio::time::error::Elapsed;
-use tracing::Level;
 use tracing::{error, span};
+use tracing::Level;
 
-use domain_model::drawing::{Color, Coord, Icon, LineStyle};
 use domain_model::{
     Action, Currency, CurrencyPair, Exchange, InstrumentId, Order, OrderType, PluginId, Position,
     Side, Size, Tick, Timeframe, Trigger,
 };
+use domain_model::drawing::{Color, Coord, Icon, LineStyle};
 
 #[async_trait]
 pub trait PluginApi: Send + Sync {
     fn id(&self) -> PluginId;
     fn configure(&mut self, _config: &HashMap<String, String>) {}
     fn instruments(&self) -> Vec<InstrumentId>;
+    // todo create common indicators enum
     fn indicators(&self) -> Vec<()> {
         Vec::new()
     }
-    // todo create common indicators enum
+    fn get_state(&self) -> Value;
+    fn set_state(&mut self, state: Value);
     fn on_tick_sync(&mut self, tick: &Tick, api: Arc<dyn PluginInternalApi>) -> Vec<Action> {
         let tick_id = format!(
             "{} '{}' {}-{}='{}'",
@@ -64,7 +66,6 @@ async fn with_tokio_runtime<T: Default>(future: impl Future<Output = T>) -> Resu
 }
 
 pub trait PluginInternalApi: Send + Sync {
-    fn state(&self) -> Arc<dyn StateInternalApi>;
     fn actions(&self) -> Arc<dyn ActionsInternalApi>;
     fn orders(&self) -> Arc<dyn OrdersInternalApi>;
     fn positions(&self) -> Arc<dyn PositionsInternalApi>;

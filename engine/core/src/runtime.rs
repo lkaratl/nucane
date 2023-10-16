@@ -6,10 +6,11 @@ use uuid::Uuid;
 
 use domain_model::{Action, DeploymentInfo, PluginId, Tick};
 use engine_core_api::api::Deployment;
-use engine_fs_plugin_state::FsStateManager;
 use engine_plugin_internals::api::DefaultPluginInternals;
 use plugin_api::PluginApi;
 use storage_core_api::StorageApi;
+
+use crate::fs_state_manager::FsStateManager;
 
 pub struct Runtime<S: StorageApi> {
     deployments: Arc<RwLock<Vec<Deployment>>>,
@@ -54,6 +55,7 @@ impl<S: StorageApi> Runtime<S> {
         }
     }
 
+    // todo refactoring
     pub async fn get_actions(&self, tick: &Tick) -> Vec<Action> {
         let mut result = Vec::new();
         for deployment in self.deployments.write().await.iter_mut() {
@@ -69,18 +71,22 @@ impl<S: StorageApi> Runtime<S> {
                     plugin.id().name,
                     plugin.id().version
                 );
+
+                let state = self.state_manager.get(&deployment.id.to_string()).await;
+                if let Some(state) = state {
+                    plugin.set_state(state);
+                }
+
                 let plugin_internal_api = self.build_plugin_internal_api(
                     deployment.id,
                     plugin.id(),
                     deployment.simulation_id,
                 );
                 let mut actions = plugin.on_tick_sync(tick, plugin_internal_api);
-                actions.iter_mut().for_each(|action| match action {
-                    Action::OrderAction(order_action) => {
-                        order_action.simulation_id = deployment.simulation_id
-                    }
-                });
                 result.append(&mut actions);
+
+                let state = plugin.get_state();
+                self.state_manager.set(&deployment.id.to_string(), state).await;
             }
         }
         result
@@ -98,7 +104,6 @@ impl<S: StorageApi> Runtime<S> {
             plugin_id,
             simulation_id,
             storage_client,
-            Arc::clone(&self.state_manager),
         ))
     }
 }

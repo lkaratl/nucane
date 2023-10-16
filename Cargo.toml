@@ -13,7 +13,6 @@ members = [
     "engine/adapters/rest-client",
     "engine/libs/rest-api",
     "engine/libs/plugin-internals",
-    "engine/libs/fs-plugin-state",
     "interactor/config",
     "interactor/app",
     "interactor/core",
@@ -84,7 +83,6 @@ engine-rest-api-server = { path = "engine/adapters/rest-api-server" }
 engine-rest-client = { path = "engine/adapters/rest-client" }
 engine-rest-api = { path = "engine/libs/rest-api" }
 engine-plugin-internals = { path = "engine/libs/plugin-internals" }
-engine-fs-plugin-state = { path = "engine/libs/fs-plugin-state" }
 
 interactor-config = { path = "interactor/config" }
 interactor-app = { path = "interactor/app" }

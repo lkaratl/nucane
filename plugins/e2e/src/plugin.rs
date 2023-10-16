@@ -2,17 +2,16 @@ use std::sync::Arc;
 
 use chrono::Duration;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tracing::info;
 
-use domain_model::drawing::{Color, Icon, LineStyle};
-use domain_model::OrderType::{Limit, Market};
 use domain_model::{
     Action, CurrencyPair, Exchange, InstrumentId, MarketType, OrderActionType, OrderStatus, Side,
     Size, Tick, Timeframe, Trigger,
 };
-use plugin_api::{utils, Line, PluginApi, PluginInternalApi, Point};
-
-const STATE_KEY: &str = "state";
+use domain_model::drawing::{Color, Icon, LineStyle};
+use domain_model::OrderType::{Limit, Market};
+use plugin_api::{Line, PluginApi, PluginInternalApi, Point, utils};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct State {
@@ -22,12 +21,15 @@ struct State {
     market_order_id: Option<String>,
 }
 
-#[derive(Clone)]
-pub struct E2EPlugin;
+pub struct E2EPlugin {
+    state: State,
+}
 
 impl Default for E2EPlugin {
     fn default() -> Self {
-        let plugin = Self;
+        let plugin = Self {
+            state: Default::default()
+        };
         utils::init_logger(
             &format!("{}-{}", plugin.id().name, plugin.id().version),
             "INFO",
@@ -37,15 +39,21 @@ impl Default for E2EPlugin {
 }
 
 impl E2EPlugin {
+    pub fn get_state(&self) -> Value {
+        serde_json::to_value(&self.state).unwrap()
+    }
+
+    pub fn set_state(&mut self, state: Value) {
+        self.state = serde_json::from_value(state).unwrap()
+    }
+
     pub async fn handle_tick(
         &mut self,
         tick: &Tick,
         api: Arc<dyn PluginInternalApi>,
     ) -> Vec<Action> {
-        let mut state = self.get_state(api.clone()).await;
-        if !state.executed_once {
-            state.executed_once = true;
-            self.set_state(api.clone(), state).await;
+        if !self.state.executed_once {
+            self.state.executed_once = true;
             info!("Create actions");
 
             // self.check_indicators(tick, api.clone()).await;
@@ -56,20 +64,6 @@ impl E2EPlugin {
             self.check_orders(api).await;
             Vec::new()
         }
-    }
-
-    async fn get_state(&self, api: Arc<dyn PluginInternalApi>) -> State {
-        api.state()
-            .get(STATE_KEY)
-            .await
-            .map(serde_json::from_value)
-            .map(Result::unwrap)
-            .unwrap_or_default()
-    }
-
-    async fn set_state(&self, api: Arc<dyn PluginInternalApi>, state: State) {
-        let state = serde_json::to_value(state).unwrap();
-        api.state().set(STATE_KEY, state).await;
     }
 
     async fn check_indicators(&self, tick: &Tick, api: Arc<dyn PluginInternalApi>) {
@@ -146,9 +140,7 @@ impl E2EPlugin {
                 _ => None,
             },
         };
-        let mut state = self.get_state(api.clone()).await;
-        state.limit_order_id = order_id;
-        self.set_state(api.clone(), state).await;
+        self.state.limit_order_id = order_id;
         limit_order_action
     }
 
@@ -172,9 +164,7 @@ impl E2EPlugin {
                 _ => None,
             },
         };
-        let mut state = self.get_state(api.clone()).await;
-        state.limit_order_with_sl_tp_id = order_id;
-        self.set_state(api.clone(), state).await;
+        self.state.limit_order_with_sl_tp_id = order_id;
         limit_order_with_sl_tp_action
     }
 
@@ -197,9 +187,7 @@ impl E2EPlugin {
                 _ => None,
             },
         };
-        let mut state = self.get_state(api.clone()).await;
-        state.market_order_id = order_id;
-        self.set_state(api.clone(), state).await;
+        self.state.market_order_id = order_id;
         market_order_action
     }
 
@@ -210,7 +198,7 @@ impl E2EPlugin {
     }
 
     async fn check_limit_order(&mut self, api: Arc<dyn PluginInternalApi>) {
-        if let Some(limit_order_id) = &self.get_state(api.clone()).await.limit_order_id {
+        if let Some(limit_order_id) = &self.state.limit_order_id {
             let limit_order = api.orders().get_order_by_id(limit_order_id).await;
             if let Some(limit_order) = limit_order {
                 if limit_order.status == OrderStatus::Completed {
@@ -223,9 +211,7 @@ impl E2EPlugin {
                     assert!(position.is_some());
                     assert_ne!(position.unwrap().size, 0.0);
 
-                    let mut state = self.get_state(api.clone()).await;
-                    state.limit_order_id = None;
-                    self.set_state(api.clone(), state).await;
+                    self.state.limit_order_id = None;
                 } else if limit_order.status == OrderStatus::InProgress {
                     info!("Limit order with id: {} InProgress", limit_order.id);
                 }
@@ -235,7 +221,7 @@ impl E2EPlugin {
 
     async fn check_limit_order_with_sl_tp(&mut self, api: Arc<dyn PluginInternalApi>) {
         if let Some(limit_order_with_sl_tp_id) =
-            &self.get_state(api.clone()).await.limit_order_with_sl_tp_id
+            &self.state.limit_order_with_sl_tp_id
         {
             let limit_order_with_sl_tp = api
                 .orders()
@@ -258,9 +244,7 @@ impl E2EPlugin {
                     assert!(position.is_some());
                     assert_ne!(position.unwrap().size, 0.0);
 
-                    let mut state = self.get_state(api.clone()).await;
-                    state.limit_order_with_sl_tp_id = None;
-                    self.set_state(api.clone(), state).await;
+                    self.state.limit_order_with_sl_tp_id = None;
                 } else if limit_order_with_sl_tp.status == OrderStatus::InProgress {
                     info!(
                         "Limit order with SL and TP with id: {} InProgress",
@@ -272,7 +256,7 @@ impl E2EPlugin {
     }
 
     async fn check_market_order(&mut self, api: Arc<dyn PluginInternalApi>) {
-        if let Some(market_order_id) = &self.get_state(api.clone()).await.market_order_id {
+        if let Some(market_order_id) = &self.state.market_order_id {
             let market_order = api.orders().get_order_by_id(market_order_id).await;
             if let Some(market_order) = market_order {
                 if market_order.status == OrderStatus::Completed {
@@ -285,9 +269,7 @@ impl E2EPlugin {
                     assert!(position.is_some());
                     assert_ne!(position.unwrap().size, 0.0);
 
-                    let mut state = self.get_state(api.clone()).await;
-                    state.market_order_id = None;
-                    self.set_state(api.clone(), state).await;
+                    self.state.market_order_id = None;
                 } else if market_order.status == OrderStatus::InProgress {
                     info!("Market order with id: {} InProgress", market_order.id);
                 }

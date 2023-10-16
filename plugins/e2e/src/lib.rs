@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use serde_json::Value;
 
 use domain_model::{
     Action, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, PluginId, Tick,
@@ -43,6 +44,14 @@ impl PluginApi for E2EPlugin {
                 source: Currency::USDT,
             },
         }]
+    }
+
+    fn get_state(&self) -> Value {
+        self.get_state()
+    }
+
+    fn set_state(&mut self, state: Value) {
+        self.set_state(state);
     }
 
     async fn on_tick(&mut self, tick: &Tick, api: Arc<dyn PluginInternalApi>) -> Vec<Action> {
