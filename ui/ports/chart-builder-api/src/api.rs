@@ -31,6 +31,7 @@ impl Series {
 
 pub enum Data {
     CandleStick(Vec<Vec<f64>>),
+    Line(Vec<f64>)
 }
 
 #[derive(Debug)]

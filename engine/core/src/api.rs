@@ -7,9 +7,7 @@ use chrono::{Duration, Utc};
 use tracing::{debug, error, info};
 use uuid::Uuid;
 
-use domain_model::{
-    Action, DeploymentInfo, InstrumentId, NewDeployment, PluginId, Tick, Timeframe,
-};
+use domain_model::{Action, DeploymentInfo, Indicator, InstrumentId, NewDeployment, PluginId, Tick, Timeframe};
 use engine_core_api::api::{Deployment, EngineApi, EngineError};
 use interactor_core_api::InteractorApi;
 use plugin_loader::Plugin;
@@ -57,16 +55,20 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> Engine<I, R, S> {
         Ok(plugin)
     }
 
-    async fn sync_data(&self, subscriptions: &[InstrumentId]) {
+    async fn sync_data(&self, subscriptions: &[InstrumentId], indicators: &[Indicator]) {
         let timeframes = [
             Timeframe::FiveM,
             Timeframe::FifteenM,
             Timeframe::ThirtyM,
-            Timeframe::OneD,
+            Timeframe::OneH,
             Timeframe::FourH,
             Timeframe::OneD,
         ];
-        let from = Utc::now() - Duration::days(30);
+        let offset = indicators.iter()
+            .map(Indicator::as_multiplier)
+            .max()
+            .unwrap_or_default();
+        let from = Utc::now() - Duration::days(offset as i64);
         for subscription in subscriptions {
             let sync_result = self
                 .storage_client
@@ -101,7 +103,7 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> Engine<I, R, S> {
         };
         let deployment_info: DeploymentInfo = (&deployment).into();
         self.runtime.deploy(deployment).await;
-        self.sync_data(&deployment_info.subscriptions).await;
+        self.sync_data(&deployment_info.subscriptions, &deployment_info.indicators).await;
         self.interactor_client
             .subscribe((&deployment_info).into())
             .await

@@ -1,12 +1,12 @@
 use anyhow::{bail, Error};
 
-pub fn moving_average(values: &[f64], length: u16) -> Result<Vec<f64>, Error> {
+pub fn moving_average(values: &[f64], length: u64) -> Result<Vec<f64>, Error> {
     if values.is_empty() || values.len() < length as usize {
         bail!("Moving average length too long for this set of values.")
     }
     let mut tail_pointer = 0usize;
     let mut head_pointer = length as usize;
-    let mut result = Vec::new();
+    let mut result = vec![0.0; length as usize];
     while head_pointer <= values.len() {
         let range_avg = average(&values[tail_pointer..head_pointer]);
         result.push(range_avg);

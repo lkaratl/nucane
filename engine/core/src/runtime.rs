@@ -83,6 +83,7 @@ impl<S: StorageApi> Runtime<S> {
                     deployment.id,
                     plugin.id(),
                     deployment.simulation_id,
+                    tick,
                 );
                 let mut actions = plugin.on_tick_sync(tick, plugin_internal_api);
                 result.append(&mut actions);
@@ -96,18 +97,15 @@ impl<S: StorageApi> Runtime<S> {
         result
     }
 
-    fn build_plugin_internal_api(
-        &self,
-        deployment_id: Uuid,
-        plugin_id: PluginId,
-        simulation_id: Option<Uuid>,
-    ) -> Arc<DefaultPluginInternals<S>> {
+    fn build_plugin_internal_api(&self, deployment_id: Uuid, plugin_id: PluginId,
+                                 simulation_id: Option<Uuid>, tick: &Tick) -> Arc<DefaultPluginInternals<S>> {
         let storage_client = Arc::clone(&self.storage_client);
         Arc::new(DefaultPluginInternals::new(
             deployment_id,
             plugin_id,
             simulation_id,
             storage_client,
+            tick.timestamp,
         ))
     }
 }

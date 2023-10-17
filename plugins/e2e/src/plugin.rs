@@ -56,7 +56,7 @@ impl E2EPlugin {
             self.state.executed_once = true;
             info!("Create actions");
 
-            // self.check_indicators(tick, api.clone()).await;
+            self.check_indicators(tick, api.clone()).await;
             self.create_drawings(tick, api.clone()).await;
             self.create_order_actions(tick, api).await
         } else {

@@ -2,7 +2,7 @@
 members = [
     "common/domain-model",
     "common/eac",
-    "common/indicators-api",
+    "common/indicators",
     "common/plugin-loader",
     "common/plugin-api",
     "engine/config",
@@ -71,7 +71,7 @@ edition = "2021"
 [workspace.dependencies]
 domain-model = { path = "common/domain-model" }
 eac = { path = "common/eac" }
-indicators-api = { path = "common/indicators-api" }
+indicators = { path = "common/indicators" }
 plugin-loader = { path = "common/plugin-loader" }
 plugin-api = { path = "common/plugin-api" }
 

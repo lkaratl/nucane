@@ -316,6 +316,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportReposito
                 {
                     simulation_deployment.deployment_id = Some(deployment.id);
                     simulation_deployment.subscriptions = deployment.subscriptions.clone();
+                    simulation_deployment.indicators = deployment.indicators.clone();
                 }
             }
         }

@@ -4,9 +4,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::Value;
 
-use domain_model::{
-    Action, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, PluginId, Tick,
-};
+use domain_model::{Action, Currency, CurrencyPair, Exchange, Indicator, InstrumentId, MarketType, PluginId, Tick};
 use plugin_api::{PluginApi, PluginInternalApi};
 
 use crate::plugin::E2EPlugin;
@@ -39,11 +37,17 @@ impl PluginApi for E2EPlugin {
             exchange: Exchange::OKX,
             market_type: MarketType::Spot,
             pair: CurrencyPair {
-                // todo make configurabel
+                // todo make configurable
                 target: Currency::BTC,
                 source: Currency::USDT,
             },
         }]
+    }
+
+    fn indicators(&self) -> Vec<Indicator> {
+        vec![
+            Indicator::MovingAVG(7)
+        ]
     }
 
     fn get_state(&self) -> Value {

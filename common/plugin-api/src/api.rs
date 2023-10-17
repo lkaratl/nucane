@@ -9,10 +9,7 @@ use tokio::time::error::Elapsed;
 use tracing::{error, span};
 use tracing::Level;
 
-use domain_model::{
-    Action, Currency, CurrencyPair, Exchange, InstrumentId, Order, OrderType, PluginId, Position,
-    Side, Size, Tick, Timeframe, Trigger,
-};
+use domain_model::{Action, Currency, CurrencyPair, Exchange, Indicator, InstrumentId, Order, OrderType, PluginId, Position, Side, Size, Tick, Timeframe, Trigger};
 use domain_model::drawing::{Color, Coord, Icon, LineStyle};
 
 #[async_trait]
@@ -20,8 +17,7 @@ pub trait PluginApi: Send + Sync {
     fn id(&self) -> PluginId;
     fn configure(&mut self, _config: &HashMap<String, String>) {}
     fn instruments(&self) -> Vec<InstrumentId>;
-    // todo create common indicators enum
-    fn indicators(&self) -> Vec<()> {
+    fn indicators(&self) -> Vec<Indicator> {
         Vec::new()
     }
     fn get_state(&self) -> Value;
@@ -108,7 +104,7 @@ pub trait IndicatorsInternalApi: Send + Sync {
         &self,
         instrument_id: &InstrumentId,
         timeframe: Timeframe,
-        length: u16,
+        length: u64,
     ) -> f64;
 }
 

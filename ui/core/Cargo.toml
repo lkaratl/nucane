@@ -9,6 +9,7 @@ simulator-core-api = { workspace = true }
 storage-core-api = { workspace = true }
 ui-chart-builder-api = { workspace = true }
 domain-model = { workspace = true }
+indicators = { workspace = true }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 uuid = { workspace = true }

@@ -11,6 +11,7 @@ domain-model = { workspace = true }
 simulator-rest-client = { workspace = true }
 storage-rest-client = { workspace = true }
 ui-charming-builder = { workspace = true }
+indicators = { workspace = true }
 tokio = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }

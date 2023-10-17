@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use chrono::{DateTime, Duration, Utc};
+
 use domain_model::{InstrumentId, Timeframe};
 use storage_core_api::StorageApi;
 
@@ -18,16 +20,18 @@ impl<S: StorageApi> Indicators<S> {
         &self,
         instrument_id: &InstrumentId,
         timeframe: Timeframe,
-        length: u16,
+        timestamp: DateTime<Utc>,
+        length: u64,
     ) -> f64 {
+        let from = timestamp - Duration::seconds(timeframe.as_sec() * length as i64);
         let candles = self
             .storage_client
             .get_candles(
                 instrument_id,
                 Some(timeframe),
-                None,
-                None,
-                Some(length as u64),
+                Some(from),
+                Some(timestamp),
+                Some(length),
             )
             .await
             .unwrap();
@@ -35,6 +39,6 @@ impl<S: StorageApi> Indicators<S> {
             .into_iter()
             .map(|candle| candle.close_price)
             .collect();
-        *moving_average(&values, length).unwrap().first().unwrap()
+        *moving_average(&values, length).unwrap().get(length as usize).unwrap()
     }
 }

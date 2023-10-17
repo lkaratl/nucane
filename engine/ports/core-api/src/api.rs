@@ -39,6 +39,7 @@ impl From<&Deployment> for DeploymentInfo {
             plugin_id: value.plugin.api.id(),
             params: value.params.clone(),
             subscriptions: value.plugin.api.instruments(),
+            indicators: value.plugin.api.indicators()
         }
     }
 }

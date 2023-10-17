@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use domain_model::PluginId;
@@ -29,12 +30,13 @@ impl<S: StorageApi> DefaultPluginInternals<S> {
         plugin_id: PluginId,
         simulation_id: Option<Uuid>,
         storage_client: Arc<S>,
+        timestamp: DateTime<Utc>
     ) -> Self {
         Self {
             actions: Arc::new(DefaultActionInternals::new(simulation_id, plugin_id)),
             orders: Arc::new(DefaultOrderInternals::new(Arc::clone(&storage_client))),
             positions: Arc::new(DefaultPositionInternals::new(Arc::clone(&storage_client))),
-            indicators: Arc::new(DefaultIndicatorInternals::new(Arc::clone(&storage_client))),
+            indicators: Arc::new(DefaultIndicatorInternals::new(Arc::clone(&storage_client), timestamp)),
             drawings: Arc::new(DefaultDrawingInternals::new(
                 deployment_id,
                 Arc::clone(&storage_client),

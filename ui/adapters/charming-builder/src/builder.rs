@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use charming::{Chart, df, HtmlRenderer};
 use charming::component::{Axis, DataZoom, DataZoomType, Grid, Legend};
 use charming::element::{
     AreaStyle, AxisPointer, AxisPointerType, AxisType, DataBackground, Emphasis, EmphasisFocus,
@@ -7,7 +8,6 @@ use charming::element::{
 };
 use charming::series::{Candlestick, Scatter};
 use charming::theme::Theme;
-use charming::{df, Chart, HtmlRenderer};
 use chrono::{DateTime, Utc};
 
 use ui_chart_builder_api::{ChartBuilderApi, Data, Icon, Line, Point, Series};
@@ -54,7 +54,7 @@ fn build_base_chart() -> Chart {
         .tooltip(
             Tooltip::new().trigger(Trigger::Axis).axis_pointer(
                 AxisPointer::new()
-                    .animation(true)
+                    .animation(false)
                     .type_(AxisPointerType::Cross),
             ),
         )
@@ -104,10 +104,17 @@ fn add_x_axis(chart: Chart, values: Vec<DateTime<Utc>>) -> Chart {
 
 fn add_series(mut chart: Chart, series: Vec<Series>) -> Chart {
     for s in series {
-        let s = match s.data {
-            Data::CandleStick(data) => Candlestick::new().name(s.label).data(data),
+        match s.data {
+            Data::CandleStick(data) => {
+                let candlestick = Candlestick::new().name(s.label).data(data);
+                chart = chart.series(candlestick)
+            }
+            Data::Line(data) => {
+                let line = charming::series::Line::new().name(s.label).data(data)
+                    .smooth(true).show_symbol(false);
+                chart = chart.series(line);
+            }
         };
-        chart = chart.series(s)
     }
     chart
 }

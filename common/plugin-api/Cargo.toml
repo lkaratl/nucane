@@ -5,7 +5,7 @@ edition.workspace = true
 
 [dependencies]
 domain-model = { workspace = true }
-indicators-api = { workspace = true }
+indicators = { workspace = true }
 storage-core-api = { workspace = true }
 async-trait = { workspace = true }
 nanoid = { workspace = true }

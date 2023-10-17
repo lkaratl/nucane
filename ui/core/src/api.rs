@@ -6,7 +6,8 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use domain_model::{Candle, InstrumentId, Order, OrderStatus, OrderType, Side, Timeframe};
+use domain_model::{Candle, Indicator, InstrumentId, Order, OrderStatus, OrderType, Side, Timeframe};
+use indicators::Indicators;
 use simulator_core_api::SimulatorApi;
 use storage_core_api::StorageApi;
 use ui_chart_builder_api::{ChartBuilderApi, Color, Data, Icon, Line, Point, Series};
@@ -16,41 +17,87 @@ pub struct Ui<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> {
     simulator_client: Arc<S>,
     storage_client: Arc<R>,
     chart_builder: Arc<C>,
+    indicators: Arc<Indicators<R>>,
 }
 
 impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
-    pub fn new(simulator_client: Arc<S>, storage_client: Arc<R>, chart_builder: Arc<C>) -> Self {
+    pub fn new(simulator_client: Arc<S>, storage_client: Arc<R>, chart_builder: Arc<C>, indicators: Arc<Indicators<R>>) -> Self {
         Self {
             simulator_client,
             storage_client,
             chart_builder,
+            indicators,
         }
     }
 
     async fn get_candles(
         &self,
-        simulation_id: Uuid,
         timeframe: Timeframe,
         instrument_id: &InstrumentId,
+        from: DateTime<Utc>,
+        to: DateTime<Utc>,
     ) -> Vec<Candle> {
-        let simulation_report = self
-            .simulator_client
-            .get_simulation_report(simulation_id)
-            .await
-            .unwrap();
         let mut candles = self
             .storage_client
             .get_candles(
                 instrument_id,
                 Some(timeframe),
-                Some(simulation_report.start),
-                Some(simulation_report.end),
+                Some(from),
+                Some(to),
                 None,
             )
             .await
             .unwrap();
         candles.reverse();
         candles
+    }
+
+    async fn get_series(&self, candles: Vec<Candle>, indicators: Vec<Indicator>, timeframe: Timeframe,
+                        timestamps: &[DateTime<Utc>], instrument_id: &InstrumentId) -> Vec<Series> {
+        let mut series = Vec::new();
+        for indicator in indicators {
+            let set = self.get_indicator_series(timeframe, timestamps, instrument_id, indicator).await;
+            series.push(set);
+        }
+        series.push(self.get_candle_series(candles));
+        series
+    }
+
+    fn get_candle_series(&self, candles: Vec<Candle>) -> Series {
+        Series::new(
+            "Candles",
+            Data::CandleStick(
+                candles
+                    .iter()
+                    .map(|candle| {
+                        vec![
+                            candle.open_price,
+                            candle.close_price,
+                            candle.lowest_price,
+                            candle.highest_price,
+                        ]
+                    })
+                    .collect(),
+            ),
+        )
+    }
+
+    async fn get_indicator_series(&self, timeframe: Timeframe, timestamps: &[DateTime<Utc>], instrument_id: &InstrumentId, indicator: Indicator) -> Series {
+        let data = match indicator {
+            Indicator::MovingAVG(multiplier) => {
+                let mut data = Vec::new();
+                for timestamp in timestamps {
+                    let value = self.indicators
+                        .moving_average(instrument_id, timeframe, timestamp.clone(), multiplier).await;
+                    data.push(value);
+                }
+                data
+            }
+        };
+        Series::new(
+            &indicator.to_string(),
+            Data::Line(data),
+        )
     }
 
     async fn get_points(
@@ -156,27 +203,24 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> UiApi for Ui<S, R, C> {
         instrument_id: InstrumentId,
     ) -> Result<String> {
         let timeframe = timeframe.unwrap_or(Timeframe::FiveM);
+        let simulation_report = self
+            .simulator_client
+            .get_simulation_report(simulation_id)
+            .await
+            .unwrap();
+        let deployment = simulation_report.deployments.iter()
+            .find(|deployment| deployment.deployment_id.unwrap() == deployment_id)
+            .unwrap()
+            .clone();
+
         let candles = self
-            .get_candles(simulation_id, timeframe, &instrument_id)
+            .get_candles(timeframe, &instrument_id, simulation_report.start, simulation_report.end)
             .await;
 
-        let timestamps = candles.iter().map(|candle| candle.timestamp).collect();
-        let candle_series = Series::new(
-            "Candles",
-            Data::CandleStick(
-                candles
-                    .iter()
-                    .map(|candle| {
-                        vec![
-                            candle.open_price,
-                            candle.close_price,
-                            candle.lowest_price,
-                            candle.highest_price,
-                        ]
-                    })
-                    .collect(),
-            ),
-        );
+        let timestamps: Vec<_> = candles.iter().map(|candle| candle.timestamp).collect();
+
+        let series = self.get_series(candles, deployment.indicators, timeframe, &timestamps, &instrument_id).await;
+
         let points: Vec<_> = self
             .get_points(simulation_id, deployment_id, &instrument_id, timeframe)
             .await;
@@ -189,7 +233,7 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> UiApi for Ui<S, R, C> {
         );
         let chart_html = self
             .chart_builder
-            .build(&title, timestamps, vec![candle_series], points, lines)
+            .build(&title, timestamps, series, points, lines)
             .await;
         Ok(chart_html)
     }

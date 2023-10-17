@@ -11,7 +11,6 @@ interactor-core-api = { workspace = true }
 storage-core-api = { workspace = true }
 domain-model = { workspace = true }
 storage-rest-client = { workspace = true }
-indicators-api = { workspace = true }
 plugin-api = { workspace = true }
 registry-rest-client = { workspace = true }
 plugin-loader = { workspace = true }

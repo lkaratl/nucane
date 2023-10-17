@@ -26,10 +26,12 @@ pub struct Simulation {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SimulationDeployment {
     pub deployment_id: Option<Uuid>,
+    // todo remove Option
     pub timeframe: Timeframe,
     pub plugin_id: PluginId,
     pub params: HashMap<String, String>,
     pub subscriptions: Vec<InstrumentId>,
+    pub indicators: Vec<Indicator>
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -284,6 +286,7 @@ pub struct DeploymentInfo {
     pub plugin_id: PluginId,
     pub params: HashMap<String, String>,
     pub subscriptions: Vec<InstrumentId>,
+    pub indicators: Vec<Indicator>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -624,6 +627,7 @@ pub fn convert_to_simulation_deployment(value: CreateSimulationDeployment) -> Si
         plugin_id: value.plugin_id,
         params: value.params,
         subscriptions: Vec::new(),
+        indicators: Vec::new()
     }
 }
 
@@ -672,5 +676,24 @@ impl From<CreateSimulation> for Simulation {
             actions_count: 0,
             active_orders: Vec::new(),
         }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub enum Indicator {
+    MovingAVG(u64)
+}
+
+impl Indicator {
+    pub fn as_multiplier(&self) -> u64 {
+        match self {
+            Indicator::MovingAVG(multiplier) => *multiplier
+        }
+    }
+}
+
+impl fmt::Display for Indicator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", format!("{self:?}"))
     }
 }
