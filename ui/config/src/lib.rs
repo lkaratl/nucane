@@ -61,7 +61,7 @@ impl Config {
                     .separator("_"),
             )
             .add_source(
-                Environment::with_prefix("REGISTRY")
+                Environment::with_prefix("UI")
                     .try_parsing(true)
                     .separator("_"),
             )
