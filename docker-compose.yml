@@ -3,7 +3,8 @@ version: "3.7"
 name: ncn-${NAMESPACE}
 
 volumes:
-  ncn-${NAMESPACE}: null
+  ncn-temp:
+    name: ncn-${NAMESPACE}
 
 networks:
   tailscale_network:
@@ -23,7 +24,7 @@ services:
       ENGINE_REGISTRY_URL: registry:8085
       ENGINE_STORAGE_URL: storage:8082
     volumes:
-      - ncn-${NAMESPACE}:/tmp/nucane
+      - ncn-temp:/tmp/nucane
     networks:
       tailscale_network:
         ipv4_address: 172.${SUBNET_ID}.0.2
@@ -69,7 +70,7 @@ services:
       SIMULATOR_STORAGE_URL: storage:8082
       SIMULATOR_INTERACTOR_URL: interactor:8083
     volumes:
-      - ncn-${NAMESPACE}:/tmp/nucane
+      - ncn-temp:/tmp/nucane
     networks:
       tailscale_network:
         ipv4_address: 172.${SUBNET_ID}.0.5
