@@ -87,7 +87,7 @@ services:
   ui:
     image: ui:${TAG}
     environment:
-      UI_SIMULATOR_URL: interactor:8084
+      UI_SIMULATOR_URL: simulator:8084
       UI_STORAGE_URL: storage:8082
     networks:
       tailscale_network:
