@@ -1,9 +1,9 @@
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 
+use axum::{Json, Router};
 use axum::extract::{Path, State};
 use axum::routing::{get, post};
-use axum::{Json, Router};
 use uuid::Uuid;
 
 use domain_model::CreateSimulation;

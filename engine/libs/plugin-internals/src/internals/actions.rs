@@ -6,7 +6,7 @@ use domain_model::{
     Action, CreateOrder, CurrencyPair, Exchange, OrderAction, OrderActionType, OrderMarketType,
     OrderStatus, OrderType, PluginId, Side, Size, Trigger,
 };
-use plugin_api::{utils, ActionsInternalApi};
+use plugin_api::{ActionsInternalApi, utils};
 
 pub struct DefaultActionInternals {
     simulation_id: Option<Uuid>,

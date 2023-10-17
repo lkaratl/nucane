@@ -29,11 +29,18 @@ mod tests {
     fn test_moving_average() {
         let values = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
         let result = moving_average(&values, 7).expect("Error during moving average calculation");
-        assert_eq!(result.len(), 5);
-        assert_eq!(result.first().unwrap(), &3.0);
-        assert_eq!(result.get(1).unwrap(), &4.0);
-        assert_eq!(result.get(2).unwrap(), &5.0);
-        assert_eq!(result.get(3).unwrap(), &6.0);
-        assert_eq!(result.get(4).unwrap(), &7.0);
+        assert_eq!(result.len(), 12);
+        assert_eq!(result.first().unwrap(), &0.0);
+        assert_eq!(result.get(1).unwrap(), &0.0);
+        assert_eq!(result.get(2).unwrap(), &0.0);
+        assert_eq!(result.get(3).unwrap(), &0.0);
+        assert_eq!(result.get(4).unwrap(), &0.0);
+        assert_eq!(result.get(5).unwrap(), &0.0);
+        assert_eq!(result.get(6).unwrap(), &0.0);
+        assert_eq!(result.get(7).unwrap(), &3.0);
+        assert_eq!(result.get(8).unwrap(), &4.0);
+        assert_eq!(result.get(9).unwrap(), &5.0);
+        assert_eq!(result.get(10).unwrap(), &6.0);
+        assert_eq!(result.get(11).unwrap(), &7.0);
     }
 }

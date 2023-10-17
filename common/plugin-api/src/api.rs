@@ -38,7 +38,7 @@ pub trait PluginApi: Send + Sync {
             version = self.id().version,
             tick_id
         )
-        .entered();
+            .entered();
         let runtime = with_tokio_runtime(self.on_tick(tick, api));
         match runtime {
             Ok(actions) => actions,
@@ -57,7 +57,7 @@ pub trait PluginApi: Send + Sync {
 }
 
 #[tokio::main]
-async fn with_tokio_runtime<T: Default>(future: impl Future<Output = T>) -> Result<T, Elapsed> {
+async fn with_tokio_runtime<T: Default>(future: impl Future<Output=T>) -> Result<T, Elapsed> {
     tokio::time::timeout(Duration::from_secs(10), future).await
 }
 

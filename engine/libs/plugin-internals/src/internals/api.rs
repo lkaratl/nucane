@@ -30,7 +30,7 @@ impl<S: StorageApi> DefaultPluginInternals<S> {
         plugin_id: PluginId,
         simulation_id: Option<Uuid>,
         storage_client: Arc<S>,
-        timestamp: DateTime<Utc>
+        timestamp: DateTime<Utc>,
     ) -> Self {
         Self {
             actions: Arc::new(DefaultActionInternals::new(simulation_id, plugin_id)),

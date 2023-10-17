@@ -13,8 +13,8 @@ pub mod websocket;
 // - isolated margin auto transfer
 #[cfg(test)]
 mod tests {
-    use tracing_subscriber::fmt::SubscriberBuilder;
     use tracing_subscriber::EnvFilter;
+    use tracing_subscriber::fmt::SubscriberBuilder;
 
     #[allow(unused)]
     const LOGGING_LEVEL: &str = "DEBUG";
@@ -39,10 +39,10 @@ mod tests {
 
         use crate::enums::{Side, TdMode};
         use crate::okx::tests::{init_logger, LOGGING_LEVEL};
-        use crate::rest::Size::{Source, Target};
         use crate::rest::{
             CandlesHistoryRequest, OkExRest, PlaceOrderRequest, RateLimitedRestClient, Trigger,
         };
+        use crate::rest::Size::{Source, Target};
 
         pub fn build_private_rest_client() -> OkExRest {
             OkExRest::with_credential(
@@ -331,16 +331,16 @@ mod tests {
     }
 
     mod websocket {
-        use std::time::Duration;
         use std::{env, thread};
+        use std::time::Duration;
 
         use async_trait::async_trait;
         use serde_json::{from_value, Value};
 
         use crate::enums::{InstType, Side, TdMode};
         use crate::okx::tests::rest::build_private_rest_client;
-        use crate::rest::Size::Source;
         use crate::rest::{MarkPriceResponse, OrderDetailsResponse, PlaceOrderRequest};
+        use crate::rest::Size::Source;
         use crate::websocket::{Action, Channel, Command, OkxWsClient, WsMessageHandler};
 
         struct MarkPriceHandler;
@@ -396,7 +396,7 @@ mod tests {
                 &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-PASSPHRASE").unwrap(),
                 handler,
             )
-            .await
+                .await
         }
 
         async fn build_public_ws_client<H: WsMessageHandler>(handler: H) -> OkxWsClient {

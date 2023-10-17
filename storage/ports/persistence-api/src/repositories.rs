@@ -3,11 +3,11 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use domain_model::drawing::{Line, Point};
 use domain_model::{
     Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position,
     Side, Timeframe,
 };
+use domain_model::drawing::{Line, Point};
 
 #[async_trait]
 pub trait OrderRepository: Send + Sync + 'static {

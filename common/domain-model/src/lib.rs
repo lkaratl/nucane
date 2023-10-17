@@ -31,7 +31,7 @@ pub struct SimulationDeployment {
     pub plugin_id: PluginId,
     pub params: HashMap<String, String>,
     pub subscriptions: Vec<InstrumentId>,
-    pub indicators: Vec<Indicator>
+    pub indicators: Vec<Indicator>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -627,7 +627,7 @@ pub fn convert_to_simulation_deployment(value: CreateSimulationDeployment) -> Si
         plugin_id: value.plugin_id,
         params: value.params,
         subscriptions: Vec::new(),
-        indicators: Vec::new()
+        indicators: Vec::new(),
     }
 }
 
@@ -694,6 +694,6 @@ impl Indicator {
 
 impl fmt::Display for Indicator {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", format!("{self:?}"))
+        write!(f, "{self:?}")
     }
 }

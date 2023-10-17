@@ -64,10 +64,10 @@ impl<S: StorageApi, R: SubscriptionRepository> InteractorApi for Interactor<S, R
                 trace!("Action event: {action:?}");
                 match action {
                     Action::OrderAction(OrderAction {
-                        order: OrderActionType::CreateOrder(create_order),
-                        exchange,
-                        ..
-                    }) => {
+                                            order: OrderActionType::CreateOrder(create_order),
+                                            exchange,
+                                            ..
+                                        }) => {
                         self.service_facade
                             .place_order(exchange, create_order)
                             .await

@@ -1,8 +1,8 @@
-use std::time::Duration;
 use std::{env, io, thread};
+use std::time::Duration;
 
+use tracing_subscriber::{EnvFilter, fmt, Layer};
 use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::{fmt, EnvFilter, Layer};
 
 use standalone_config::CONFIG;
 
