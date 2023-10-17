@@ -3,15 +3,15 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use sea_orm::{ActiveValue, ColumnTrait, Condition, ConnectionTrait, EntityTrait, sea_query};
 use sea_orm::QueryFilter;
-use sea_orm::{sea_query, ActiveValue, ColumnTrait, Condition, ConnectionTrait, EntityTrait};
 use serde_json::json;
 use uuid::Uuid;
 
 use simulator_persistence_api::SimulationReportRepository;
 
-use crate::entities::prelude::SimulationReport;
 use crate::entities::*;
+use crate::entities::prelude::SimulationReport;
 
 pub struct SimulationReportPostgresRepository<T: ConnectionTrait> {
     db: Arc<T>,
@@ -25,7 +25,7 @@ impl<T: ConnectionTrait> SimulationReportPostgresRepository<T> {
 
 #[async_trait]
 impl<T: ConnectionTrait + Send + 'static> SimulationReportRepository
-    for SimulationReportPostgresRepository<T>
+for SimulationReportPostgresRepository<T>
 {
     async fn save(&self, simulation_report: simulator_core_api::SimulationReport) -> Result<()> {
         let simulation_report = simulation_report::ActiveModel {

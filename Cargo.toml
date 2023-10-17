@@ -2,9 +2,9 @@
 members = [
     "common/domain-model",
     "common/eac",
-    "common/indicators-api",
+    "common/indicators",
     "common/plugin-loader",
-    "common/strategy-api",
+    "common/plugin-api",
     "engine/config",
     "engine/app",
     "engine/core",
@@ -12,6 +12,7 @@ members = [
     "engine/adapters/rest-api-server",
     "engine/adapters/rest-client",
     "engine/libs/rest-api",
+    "engine/libs/plugin-internals",
     "interactor/config",
     "interactor/app",
     "interactor/core",
@@ -70,9 +71,9 @@ edition = "2021"
 [workspace.dependencies]
 domain-model = { path = "common/domain-model" }
 eac = { path = "common/eac" }
-indicators-api = { path = "common/indicators-api" }
+indicators = { path = "common/indicators" }
 plugin-loader = { path = "common/plugin-loader" }
-strategy-api = { path = "common/strategy-api" }
+plugin-api = { path = "common/plugin-api" }
 
 engine-config = { path = "engine/config" }
 engine-app = { path = "engine/app" }
@@ -81,6 +82,7 @@ engine-core-api = { path = "engine/ports/core-api" }
 engine-rest-api-server = { path = "engine/adapters/rest-api-server" }
 engine-rest-client = { path = "engine/adapters/rest-client" }
 engine-rest-api = { path = "engine/libs/rest-api" }
+engine-plugin-internals = { path = "engine/libs/plugin-internals" }
 
 interactor-config = { path = "interactor/config" }
 interactor-app = { path = "interactor/app" }
@@ -177,3 +179,4 @@ tokio-native-tls = "0.3"
 async-broadcast = "0.5.1"
 pg-embed = "0.6" # newer versions don't support db creation yet
 charming = { version = "0.2.4", features = ["ssr"] }
+dashmap = { version = "5.5.3", features = ["inline", "serde"] }

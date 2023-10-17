@@ -1,5 +1,5 @@
 [package]
-name = "indicators-api"
+name = "indicators"
 version.workspace = true
 edition.workspace = true
 
@@ -8,3 +8,4 @@ domain-model = { workspace = true }
 storage-core-api = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
+chrono = { workspace = true }

@@ -1,9 +1,9 @@
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 
+use axum::{Json, Router};
 use axum::extract::{Query, State};
 use axum::routing::{delete, get, post};
-use axum::{Json, Router};
 use chrono::{TimeZone, Utc};
 
 use domain_model::{Action, Candle, CurrencyPair, InstrumentId, Subscription, Subscriptions};

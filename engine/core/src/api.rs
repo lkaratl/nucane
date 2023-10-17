@@ -7,9 +7,7 @@ use chrono::{Duration, Utc};
 use tracing::{debug, error, info};
 use uuid::Uuid;
 
-use domain_model::{
-    Action, DeploymentInfo, InstrumentId, NewDeployment, PluginId, Tick, Timeframe,
-};
+use domain_model::{Action, DeploymentInfo, Indicator, InstrumentId, NewDeployment, PluginId, Tick, Timeframe};
 use engine_core_api::api::{Deployment, EngineApi, EngineError};
 use interactor_core_api::InteractorApi;
 use plugin_loader::Plugin;
@@ -23,7 +21,7 @@ pub struct Engine<I: InteractorApi, R: RegistryApi, S: StorageApi> {
     interactor_client: Arc<I>,
     registry_client: Arc<R>,
     storage_client: Arc<S>,
-    runtime: Runtime,
+    runtime: Runtime<S>,
 }
 
 impl<I: InteractorApi, R: RegistryApi, S: StorageApi> Engine<I, R, S> {
@@ -53,20 +51,24 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> Engine<I, R, S> {
             error!("Error during plugin loading: {err}");
             PluginLoadingError
         })?;
-        plugin.strategy.tune(params);
+        plugin.api.configure(params);
         Ok(plugin)
     }
 
-    async fn sync_data(&self, subscriptions: &[InstrumentId]) {
+    async fn sync_data(&self, subscriptions: &[InstrumentId], indicators: &[Indicator]) {
         let timeframes = [
             Timeframe::FiveM,
             Timeframe::FifteenM,
             Timeframe::ThirtyM,
-            Timeframe::OneD,
+            Timeframe::OneH,
             Timeframe::FourH,
             Timeframe::OneD,
         ];
-        let from = Utc::now() - Duration::days(30);
+        let offset = indicators.iter()
+            .map(Indicator::as_multiplier)
+            .max()
+            .unwrap_or_default();
+        let from = Utc::now() - Duration::days(offset as i64);
         for subscription in subscriptions {
             let sync_result = self
                 .storage_client
@@ -83,8 +85,11 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> Engine<I, R, S> {
     ) -> Result<DeploymentInfo, EngineError> {
         let strategy_name = deployment.plugin_id.name.clone();
         let strategy_version = deployment.plugin_id.version;
+        let state_id = deployment.state_id;
         let params = deployment.params.clone();
-        debug!("Create deployment for strategy with name: '{strategy_name}' and version: '{strategy_version}' and params: '{params:?}'");
+        debug!("Create deployment for strategy with \
+        name: '{strategy_name}', version: '{strategy_version}', \
+        state id: {state_id:?} and params: '{params:?}'");
 
         let plugin = self
             .load_plugin(&strategy_name, strategy_version, &params)
@@ -92,12 +97,13 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> Engine<I, R, S> {
         let deployment = Deployment {
             id: Uuid::new_v4(),
             simulation_id: deployment.simulation_id,
+            state_id,
             params: params.clone(),
             plugin,
         };
         let deployment_info: DeploymentInfo = (&deployment).into();
         self.runtime.deploy(deployment).await;
-        self.sync_data(&deployment_info.subscriptions).await;
+        self.sync_data(&deployment_info.subscriptions, &deployment_info.indicators).await;
         self.interactor_client
             .subscribe((&deployment_info).into())
             .await
@@ -149,6 +155,7 @@ impl<I: InteractorApi, R: RegistryApi, S: StorageApi> EngineApi for Engine<I, R,
             self.delete_deployment(deployment.id).await;
             let new_deployment = NewDeployment {
                 simulation_id: deployment.simulation_id,
+                state_id: deployment.state_id,
                 plugin_id: plugin_id.clone(),
                 params: deployment.params.clone(),
             };

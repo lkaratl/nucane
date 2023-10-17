@@ -4,15 +4,15 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use sea_orm::QueryFilter;
 use sea_orm::{ActiveValue, ColumnTrait, Condition, ConnectionTrait, EntityTrait};
+use sea_orm::QueryFilter;
 use serde_json::json;
 use uuid::Uuid;
 
 use storage_persistence_api::DrawingRepository;
 
-use crate::entities::prelude::{Line, Point};
 use crate::entities::{line, point};
+use crate::entities::prelude::{Line, Point};
 
 pub struct DrawingPostgresRepository<T: ConnectionTrait> {
     db: Arc<T>,

@@ -2,22 +2,22 @@ use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 use std::sync::Arc;
 
+use axum::{Json, Router};
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::routing::{get, post};
-use axum::{Json, Router};
 use chrono::{TimeZone, Utc};
 use tracing::error;
 
-use domain_model::drawing::{Line, Point};
 use domain_model::{Candle, CurrencyPair, InstrumentId, Order, Position, Timeframe};
+use domain_model::drawing::{Line, Point};
 use storage_core_api::{StorageApi, SyncReport};
 use storage_rest_api::endpoints::{
     GET_CANDLES, GET_LINES, GET_ORDERS, GET_POINTS, GET_POSITIONS, POST_CANDLES, POST_LINE,
     POST_ORDERS, POST_POINT, POST_POSITIONS, POST_SYNC,
 };
 use storage_rest_api::path_queries::{
-    CandleSyncQuery, CandlesQuery, DrawingQuery, OrdersQuery, PositionsQuery,
+    CandlesQuery, CandleSyncQuery, DrawingQuery, OrdersQuery, PositionsQuery,
 };
 
 pub async fn run(port: u16, storage: impl StorageApi) {

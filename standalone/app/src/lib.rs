@@ -1,6 +1,6 @@
+use std::{env, thread};
 use std::sync::Arc;
 use std::time::Duration;
-use std::{env, thread};
 
 use pg_embed::pg_enums::PgAuthMethod;
 use pg_embed::pg_fetch::{PgFetchSettings, PostgresVersion};
@@ -21,8 +21,8 @@ pub fn run() {
     thread::spawn(run_interactor);
     thread::spawn(run_ui);
     debug!(
-        " ▸ standalone: Temp data folder: {}",
-        env::temp_dir().display()
+        " ▸ standalone: Temp data folder: 'file:///{}nucane'",
+        env::temp_dir().display().to_string().replace('\\', "/")
     );
     info!("{APP_NAME}");
 }

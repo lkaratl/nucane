@@ -5,11 +5,11 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use domain_model::drawing::{Line, Point};
 use domain_model::{
     Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position,
     Side, Timeframe,
 };
+use domain_model::drawing::{Line, Point};
 use interactor_core_api::InteractorApi;
 use storage_core_api::{StorageApi, SyncReport};
 use storage_persistence_api::{
@@ -37,12 +37,12 @@ pub struct Storage<
 }
 
 impl<
-        I: InteractorApi,
-        O: OrderRepository,
-        P: PositionRepository,
-        C: CandleRepository,
-        D: DrawingRepository,
-    > Storage<I, O, P, C, D>
+    I: InteractorApi,
+    O: OrderRepository,
+    P: PositionRepository,
+    C: CandleRepository,
+    D: DrawingRepository,
+> Storage<I, O, P, C, D>
 {
     pub fn new(
         interactor_client: I,
@@ -70,12 +70,12 @@ impl<
 
 #[async_trait]
 impl<
-        I: InteractorApi,
-        O: OrderRepository,
-        P: PositionRepository,
-        C: CandleRepository,
-        D: DrawingRepository,
-    > StorageApi for Storage<I, O, P, C, D>
+    I: InteractorApi,
+    O: OrderRepository,
+    P: PositionRepository,
+    C: CandleRepository,
+    D: DrawingRepository,
+> StorageApi for Storage<I, O, P, C, D>
 {
     async fn save_order(&self, order: Order) -> Result<()> {
         self.order_service.save(order).await;

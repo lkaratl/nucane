@@ -4,18 +4,18 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use sea_orm::QueryFilter;
 use sea_orm::{
-    sea_query, ActiveValue, ColumnTrait, Condition, ConnectionTrait, EntityTrait, QueryOrder,
+    ActiveValue, ColumnTrait, Condition, ConnectionTrait, EntityTrait, QueryOrder, sea_query,
 };
+use sea_orm::QueryFilter;
 use serde_json::json;
 use uuid::Uuid;
 
 use domain_model::{Currency, Exchange, MarketType, OrderStatus, OrderType, Side};
 use storage_persistence_api::OrderRepository;
 
-use crate::entities::prelude::Order;
 use crate::entities::*;
+use crate::entities::prelude::Order;
 
 pub struct OrderPostgresRepository<T: ConnectionTrait> {
     db: Arc<T>,

@@ -4,21 +4,26 @@ use tokio::sync::RwLock;
 use tracing::debug;
 use uuid::Uuid;
 
-use domain_model::{Action, DeploymentInfo, Tick};
+use domain_model::{Action, DeploymentInfo, PluginId, Tick};
 use engine_core_api::api::Deployment;
+use engine_plugin_internals::api::DefaultPluginInternals;
+use plugin_api::PluginApi;
 use storage_core_api::StorageApi;
-use strategy_api::{Strategy, StrategyApi};
 
-pub struct Runtime {
+use crate::fs_state_manager::FsStateManager;
+
+pub struct Runtime<S: StorageApi> {
     deployments: Arc<RwLock<Vec<Deployment>>>,
-    api: StrategyApi,
+    storage_client: Arc<S>,
+    state_manager: Arc<FsStateManager>,
 }
 
-impl Runtime {
-    pub fn new<S: StorageApi>(storage_client: Arc<S>) -> Self {
+impl<S: StorageApi> Runtime<S> {
+    pub fn new(storage_client: Arc<S>) -> Self {
         Self {
             deployments: Default::default(),
-            api: StrategyApi::new(storage_client),
+            storage_client,
+            state_manager: Default::default(),
         }
     }
 
@@ -50,37 +55,64 @@ impl Runtime {
         }
     }
 
+    // todo refactoring
     pub async fn get_actions(&self, tick: &Tick) -> Vec<Action> {
         let mut result = Vec::new();
         for deployment in self.deployments.write().await.iter_mut() {
             let is_simulation = deployment.simulation_id == tick.simulation_id;
-            let strategy = &mut deployment.plugin.strategy;
-            if is_subscribed(strategy.as_ref(), tick) && is_simulation {
+            let plugin = &mut deployment.plugin.api;
+            if is_subscribed(plugin.as_ref(), tick) && is_simulation {
                 debug!(
-                    "Processing tick: '{} {}-{}={}' for strategy: '{}:{}'",
+                    "Processing tick: '{} {}-{}={}' for plugin: '{}:{}'",
                     tick.instrument_id.exchange,
                     tick.instrument_id.pair.target,
                     tick.instrument_id.pair.source,
                     tick.price,
-                    strategy.name(),
-                    strategy.version()
+                    plugin.id().name,
+                    plugin.id().version
                 );
-                let mut actions = strategy.on_tick_sync(tick, &self.api);
-                actions.iter_mut().for_each(|action| match action {
-                    Action::OrderAction(order_action) => {
-                        order_action.simulation_id = deployment.simulation_id
+
+                if let Some(state_id) = deployment.state_id {
+                    let state = self.state_manager.get(&state_id.to_string());
+                    if let Some(state) = state {
+                        plugin.set_state(state);
                     }
-                });
+                }
+
+                let plugin_internal_api = self.build_plugin_internal_api(
+                    deployment.id,
+                    plugin.id(),
+                    deployment.simulation_id,
+                    tick,
+                );
+                let mut actions = plugin.on_tick_sync(tick, plugin_internal_api);
                 result.append(&mut actions);
+
+                if let Some(state_id) = deployment.state_id {
+                    let state = plugin.get_state();
+                    self.state_manager.set(&state_id.to_string(), state);
+                }
             }
         }
         result
     }
+
+    fn build_plugin_internal_api(&self, deployment_id: Uuid, plugin_id: PluginId,
+                                 simulation_id: Option<Uuid>, tick: &Tick) -> Arc<DefaultPluginInternals<S>> {
+        let storage_client = Arc::clone(&self.storage_client);
+        Arc::new(DefaultPluginInternals::new(
+            deployment_id,
+            plugin_id,
+            simulation_id,
+            storage_client,
+            tick.timestamp,
+        ))
+    }
 }
 
-fn is_subscribed(strategy: &(dyn Strategy + Send), tick: &Tick) -> bool {
+fn is_subscribed(plugin: &(dyn PluginApi + Send), tick: &Tick) -> bool {
     let instrument_id = &tick.instrument_id;
-    strategy.subscriptions().iter().any(|subscription| {
+    plugin.instruments().iter().any(|subscription| {
         subscription.exchange.eq(&instrument_id.exchange)
             && subscription.market_type.eq(&instrument_id.market_type)
             && subscription.pair.target.eq(&instrument_id.pair.target)

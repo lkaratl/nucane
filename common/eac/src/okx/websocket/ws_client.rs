@@ -2,19 +2,19 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_broadcast::{broadcast, Receiver, Sender};
-use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt};
+use futures::stream::{SplitSink, SplitStream};
+use tokio::{select, task};
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
-use tokio::{select, task};
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 use tracing::{debug, error, info, trace, warn};
 use tungstenite::Message as WsMessage;
 use url::Url;
 
 use crate::okx::credential::Credential;
-use crate::websocket::handler::WsMessageHandler;
 use crate::websocket::{Command, Message};
+use crate::websocket::handler::WsMessageHandler;
 
 pub struct OkxWsClient {
     sender: Sender<WsMessage>,
@@ -59,7 +59,7 @@ impl OkxWsClient {
             Some(Credential::new(api_key, api_secret, passphrase)),
             handler,
         )
-        .await
+            .await
     }
 
     async fn new<H: WsMessageHandler>(

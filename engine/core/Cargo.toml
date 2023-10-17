@@ -11,10 +11,10 @@ interactor-core-api = { workspace = true }
 storage-core-api = { workspace = true }
 domain-model = { workspace = true }
 storage-rest-client = { workspace = true }
-indicators-api = { workspace = true }
-strategy-api = { workspace = true }
+plugin-api = { workspace = true }
 registry-rest-client = { workspace = true }
 plugin-loader = { workspace = true }
+engine-plugin-internals = { workspace = true }
 tokio = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
@@ -26,3 +26,4 @@ once_cell = { workspace = true }
 axum = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
+dashmap = { workspace = true }

@@ -1,0 +1,14 @@
+[package]
+name = "engine-plugin-internals"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+domain-model = { workspace = true }
+plugin-api = { workspace = true }
+async-trait = { workspace = true }
+uuid = { workspace = true }
+storage-core-api = { workspace = true }
+indicators = { workspace = true }
+chrono = { workspace = true }
+serde_json = { workspace = true }

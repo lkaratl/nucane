@@ -11,12 +11,12 @@ use domain_model::{
     Candle, CandleStatus, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarginMode,
     MarketType, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Timeframe,
 };
+use eac::{enums, rest};
 use eac::enums::{InstType, TdMode};
 use eac::rest::{
     CandlesHistoryRequest, OkExRest, PlaceOrderRequest, RateLimitedRestClient, Trigger,
 };
 use eac::websocket::{Channel, Command, OkxWsClient};
-use eac::{enums, rest};
 use engine_core_api::api::EngineApi;
 use interactor_exchange_api::ExchangeApi;
 use storage_core_api::StorageApi;
@@ -167,7 +167,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
                 &self.api_passphrase,
                 handler,
             )
-            .await;
+                .await;
             client
                 .send(Command::subscribe(vec![Channel::Orders {
                     inst_type: InstType::Any,
@@ -197,7 +197,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
                 &self.api_passphrase,
                 handler,
             )
-            .await;
+                .await;
             client
                 .send(Command::subscribe(vec![Channel::account(None)]))
                 .await;

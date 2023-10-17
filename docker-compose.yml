@@ -2,6 +2,10 @@
 version: "3.7"
 name: ncn-${NAMESPACE}
 
+volumes:
+  ncn-temp:
+    name: ncn-${NAMESPACE}
+
 networks:
   tailscale_network:
     driver: bridge
@@ -19,6 +23,8 @@ services:
       ENGINE_INTERACTOR_URL: interactor:8083
       ENGINE_REGISTRY_URL: registry:8085
       ENGINE_STORAGE_URL: storage:8082
+    volumes:
+      - ncn-temp:/tmp/nucane
     networks:
       tailscale_network:
         ipv4_address: 172.${SUBNET_ID}.0.2
@@ -59,9 +65,12 @@ services:
   simulator:
     image: simulator:${TAG}
     environment:
+      SIMULATOR_DATABASE_URL: postgres://postgres:root@db:5432
       SIMULATOR_ENGINE_URL: engine:8081
       SIMULATOR_STORAGE_URL: storage:8082
       SIMULATOR_INTERACTOR_URL: interactor:8083
+    volumes:
+      - ncn-temp:/tmp/nucane
     networks:
       tailscale_network:
         ipv4_address: 172.${SUBNET_ID}.0.5
@@ -86,7 +95,7 @@ services:
   ui:
     image: ui:${TAG}
     environment:
-      UI_SIMULATOR_URL: interactor:8084
+      UI_SIMULATOR_URL: simulator:8084
       UI_STORAGE_URL: storage:8082
     networks:
       tailscale_network:

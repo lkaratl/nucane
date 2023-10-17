@@ -29,7 +29,7 @@ pub struct Simulator<E: EngineApi, S: StorageApi, I: InteractorApi, SR: Simulati
 
 #[async_trait]
 impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportRepository> SimulatorApi
-    for Simulator<E, S, I, SR>
+for Simulator<E, S, I, SR>
 {
     async fn run_simulation(&self, simulation: CreateSimulation) -> Result<SimulationReport> {
         let simulation: Simulation = simulation.into();
@@ -57,7 +57,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportReposito
 }
 
 impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportRepository>
-    Simulator<E, S, I, SR>
+Simulator<E, S, I, SR>
 {
     pub fn new(
         engine_client: Arc<E>,
@@ -316,6 +316,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportReposito
                 {
                     simulation_deployment.deployment_id = Some(deployment.id);
                     simulation_deployment.subscriptions = deployment.subscriptions.clone();
+                    simulation_deployment.indicators = deployment.indicators.clone();
                 }
             }
         }
@@ -566,7 +567,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportReposito
                     source_position,
                     logger,
                 )
-                .await;
+                    .await;
             }
             Side::Sell => {
                 self.update_positions(
@@ -577,7 +578,7 @@ impl<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportReposito
                     target_position,
                     logger,
                 )
-                .await;
+                    .await;
             }
         }
         order.avg_price = quote;
@@ -706,6 +707,7 @@ fn convert_to_create_deployment_dto(
 ) -> NewDeployment {
     NewDeployment {
         simulation_id: Some(simulation_id),
+        state_id: None,
         plugin_id: value.plugin_id,
         params: value.params,
     }

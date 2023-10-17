@@ -6,13 +6,17 @@ use std::io::Write;
 use anyhow::Result;
 use libloading::Library;
 
-use strategy_api::Strategy;
+use plugin_api::PluginApi;
 
 #[allow(improper_ctypes_definitions)]
-type StrategyLoader = extern fn() -> Box<dyn Strategy + Send + Sync>;
+type PluginLoader = extern "C" fn() -> Box<dyn PluginApi + Send + Sync>;
 
 pub fn load(binary: &[u8]) -> Result<Plugin> {
-    let file_name = if cfg!(target_os = "windows") { "plugin.dll" } else { "plugin.so" };
+    let file_name = if cfg!(target_os = "windows") {
+        "plugin.dll"
+    } else {
+        "plugin.so"
+    };
     let temp_dir = tempfile::tempdir()?;
     let file_path = temp_dir.path().join(file_name);
     {
@@ -21,25 +25,29 @@ pub fn load(binary: &[u8]) -> Result<Plugin> {
     }
     let plugin = unsafe {
         let library = Library::new(file_path)?;
-        let load: libloading::Symbol<StrategyLoader> = library.get(b"load")?;
-        let strategy = load();
+        let plugin_api = library.get::<PluginLoader>(b"load")?();
         Plugin {
             library,
-            strategy,
+            api: plugin_api,
         }
     };
     Ok(plugin)
 }
 
 pub struct Plugin {
-    // don't change order, strategy should drop before library
-    pub strategy: Box<dyn Strategy + Send + Sync>,
+    // don't change order, api should drop before library
+    pub api: Box<dyn PluginApi + Send + Sync>,
     #[allow(unused)]
     library: Library,
 }
 
 impl fmt::Debug for Plugin {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "Strategy plugin, name: '{}', version: '{}'", self.strategy.name(), self.strategy.version())
+        write!(
+            f,
+            "Plugin name: '{}', version: '{}'",
+            self.api.id().name,
+            self.api.id().version
+        )
     }
 }

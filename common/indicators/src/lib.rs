@@ -1,5 +1,5 @@
 pub use api::Indicators;
 
-mod calculation;
+pub mod calculation;
 pub mod api;
 

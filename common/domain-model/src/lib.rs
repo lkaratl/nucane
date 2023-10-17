@@ -26,10 +26,12 @@ pub struct Simulation {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SimulationDeployment {
     pub deployment_id: Option<Uuid>,
+    // todo remove Option
     pub timeframe: Timeframe,
     pub plugin_id: PluginId,
     pub params: HashMap<String, String>,
     pub subscriptions: Vec<InstrumentId>,
+    pub indicators: Vec<Indicator>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -267,8 +269,7 @@ pub struct PluginBinary {
 }
 
 impl PluginBinary {
-    pub fn new(name: &str, version: i64, binary: &[u8]) -> Self {
-        let id = PluginId::new(name, version);
+    pub fn new(id: PluginId, binary: &[u8]) -> Self {
         Self {
             id,
             binary: binary.to_vec(),
@@ -277,26 +278,15 @@ impl PluginBinary {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct PluginEvent {
-    pub id: Uuid,
-    pub event: PluginEventType,
-    pub strategy_name: String,
-    pub strategy_version: String,
-}
-
-#[derive(Eq, PartialEq, Debug, Deserialize, Serialize, Clone)]
-pub enum PluginEventType {
-    Updated,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DeploymentInfo {
     pub id: Uuid,
     pub status: DeploymentStatus,
     pub simulation_id: Option<Uuid>,
+    pub state_id: Option<Uuid>,
     pub plugin_id: PluginId,
     pub params: HashMap<String, String>,
     pub subscriptions: Vec<InstrumentId>,
+    pub indicators: Vec<Indicator>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -309,6 +299,7 @@ pub enum DeploymentStatus {
 pub struct NewDeployment {
     pub simulation_id: Option<Uuid>,
     pub plugin_id: PluginId,
+    pub state_id: Option<Uuid>,
     pub params: HashMap<String, String>,
 }
 
@@ -636,6 +627,7 @@ pub fn convert_to_simulation_deployment(value: CreateSimulationDeployment) -> Si
         plugin_id: value.plugin_id,
         params: value.params,
         subscriptions: Vec::new(),
+        indicators: Vec::new(),
     }
 }
 
@@ -684,5 +676,24 @@ impl From<CreateSimulation> for Simulation {
             actions_count: 0,
             active_orders: Vec::new(),
         }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub enum Indicator {
+    MovingAVG(u64)
+}
+
+impl Indicator {
+    pub fn as_multiplier(&self) -> u64 {
+        match self {
+            Indicator::MovingAVG(multiplier) => *multiplier
+        }
+    }
+}
+
+impl fmt::Display for Indicator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{self:?}")
     }
 }

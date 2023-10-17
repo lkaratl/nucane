@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use axum::extract::{Path, Query, State};
 use axum::response::Html;
-use axum::routing::get;
 use axum::Router;
+use axum::routing::get;
 use tracing::error;
 
 use domain_model::{CurrencyPair, InstrumentId};

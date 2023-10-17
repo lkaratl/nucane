@@ -35,9 +35,9 @@ impl<B: BlobApi, E: EngineApi> RegistryApi for Registry<B, E> {
     async fn get_plugin_binary(&self, id: PluginId) -> Option<PluginBinary> {
         let binary = self.plugins_storage.get_plugin_binary(id).await;
         if let Some(binary) = binary {
-            plugin_loader::load(&binary).ok().map(|plugin| {
-                PluginBinary::new(&plugin.strategy.name(), plugin.strategy.version(), &binary)
-            })
+            plugin_loader::load(&binary)
+                .ok()
+                .map(|plugin| PluginBinary::new(plugin.api.id(), &binary))
         } else {
             None
         }
@@ -45,9 +45,7 @@ impl<B: BlobApi, E: EngineApi> RegistryApi for Registry<B, E> {
 
     async fn add_plugin(&self, binary: &[u8], force: bool) -> Result<PluginInfo> {
         let active_plugin = plugin_loader::load(binary)?;
-        let name = &active_plugin.strategy.name();
-        let version = active_plugin.strategy.version();
-        let plugin = PluginBinary::new(name, version, binary);
+        let plugin = PluginBinary::new(active_plugin.api.id(), binary);
         let result = self.plugins_storage.add_plugin(plugin, force).await;
         if let Ok(plugin_info) = &result {
             self.engine_client
