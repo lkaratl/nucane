@@ -25,14 +25,14 @@ impl<S: StorageApi> DefaultIndicatorInternals<S> {
 
 #[async_trait]
 impl<S: StorageApi> IndicatorsInternalApi for DefaultIndicatorInternals<S> {
-    async fn moving_avg(
-        &self,
-        instrument_id: &InstrumentId,
-        timeframe: Timeframe,
-        length: u64,
-    ) -> f64 {
+    async fn sma(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64) -> f64 {
         self.indicators
-            .moving_average(instrument_id, timeframe, self.timestamp, length)
+            .simple_moving_average(instrument_id, timeframe, self.timestamp, period)
+            .await
+    }
+    async fn ema(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64) -> f64 {
+        self.indicators
+            .exponential_moving_average(instrument_id, timeframe, self.timestamp, period)
             .await
     }
 }

@@ -20,8 +20,8 @@ pub trait PluginApi: Send + Sync {
     fn indicators(&self) -> Vec<Indicator> {
         Vec::new()
     }
-    fn get_state(&self) -> Value;
-    fn set_state(&mut self, state: Value);
+    async fn get_state(&self) -> Option<Value> { None }
+    async fn set_state(&mut self, _state: Value) {}
     fn on_tick_sync(&mut self, tick: &Tick, api: Arc<dyn PluginInternalApi>) -> Vec<Action> {
         let tick_id = format!(
             "{} '{}' {}-{}='{}'",
@@ -100,12 +100,8 @@ pub trait PositionsInternalApi: Send + Sync {
 
 #[async_trait]
 pub trait IndicatorsInternalApi: Send + Sync {
-    async fn moving_avg(
-        &self,
-        instrument_id: &InstrumentId,
-        timeframe: Timeframe,
-        length: u64,
-    ) -> f64;
+    async fn sma(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64) -> f64;
+    async fn ema(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64) -> f64;
 }
 
 #[async_trait]

@@ -75,7 +75,7 @@ impl<S: StorageApi> Runtime<S> {
                 if let Some(state_id) = deployment.state_id {
                     let state = self.state_manager.get(&state_id.to_string());
                     if let Some(state) = state {
-                        plugin.set_state(state);
+                        plugin.set_state(state).await;
                     }
                 }
 
@@ -89,8 +89,9 @@ impl<S: StorageApi> Runtime<S> {
                 result.append(&mut actions);
 
                 if let Some(state_id) = deployment.state_id {
-                    let state = plugin.get_state();
-                    self.state_manager.set(&state_id.to_string(), state);
+                    if let Some(state) = plugin.get_state().await {
+                        self.state_manager.set(&state_id.to_string(), state);
+                    }
                 }
             }
         }

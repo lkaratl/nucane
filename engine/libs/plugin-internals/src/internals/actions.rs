@@ -39,11 +39,11 @@ impl ActionsInternalApi for DefaultActionInternals {
             plugin_id: self.plugin_id.clone(),
             timestamp: Utc::now(),
             status: OrderStatus::Created,
-            exchange: Exchange::OKX,
+            exchange: Exchange::OKX, // todo customizable
             order: OrderActionType::CreateOrder(CreateOrder {
                 id: utils::string_id(),
                 pair,
-                market_type: OrderMarketType::Spot,
+                market_type: OrderMarketType::Spot, // todo customizable
                 order_type,
                 side,
                 size,

@@ -5,7 +5,7 @@ use chrono::{DateTime, Duration, Utc};
 use domain_model::{InstrumentId, Timeframe};
 use storage_core_api::StorageApi;
 
-use crate::calculation::moving_average;
+use crate::calculation::{exponential_moving_average, simple_moving_average};
 
 pub struct Indicators<S: StorageApi> {
     storage_client: Arc<S>,
@@ -16,14 +16,8 @@ impl<S: StorageApi> Indicators<S> {
         Self { storage_client }
     }
 
-    pub async fn moving_average(
-        &self,
-        instrument_id: &InstrumentId,
-        timeframe: Timeframe,
-        timestamp: DateTime<Utc>,
-        length: u64,
-    ) -> f64 {
-        let from = timestamp - Duration::seconds(timeframe.as_sec() * length as i64);
+    async fn get_prices(&self, instrument_id: &InstrumentId, timeframe: Timeframe, timestamp: DateTime<Utc>, period: u64) -> Vec<f64> {
+        let from = timestamp - Duration::seconds(timeframe.as_sec() * period as i64);
         let candles = self
             .storage_client
             .get_candles(
@@ -31,14 +25,34 @@ impl<S: StorageApi> Indicators<S> {
                 Some(timeframe),
                 Some(from),
                 Some(timestamp),
-                Some(length),
+                Some(period),
             )
             .await
             .unwrap();
-        let values: Vec<_> = candles
-            .into_iter()
+        candles.into_iter()
             .map(|candle| candle.close_price)
-            .collect();
-        *moving_average(&values, length).unwrap().get(length as usize).unwrap()
+            .collect()
+    }
+
+    pub async fn simple_moving_average(
+        &self,
+        instrument_id: &InstrumentId,
+        timeframe: Timeframe,
+        timestamp: DateTime<Utc>,
+        period: u64,
+    ) -> f64 {
+        let prices = self.get_prices(instrument_id, timeframe, timestamp, period).await;
+        *simple_moving_average(&prices, period).unwrap().get(period as usize).unwrap()
+    }
+
+    pub async fn exponential_moving_average(
+        &self,
+        instrument_id: &InstrumentId,
+        timeframe: Timeframe,
+        timestamp: DateTime<Utc>,
+        period: u64,
+    ) -> f64 {
+        let prices = self.get_prices(instrument_id, timeframe, timestamp, period).await;
+        *exponential_moving_average(&prices, period).unwrap().first().unwrap()
     }
 }

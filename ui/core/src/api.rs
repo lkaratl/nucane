@@ -88,7 +88,7 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
                 let mut data = Vec::new();
                 for timestamp in timestamps {
                     let value = self.indicators
-                        .moving_average(instrument_id, timeframe, *timestamp, multiplier).await;
+                        .simple_moving_average(instrument_id, timeframe, *timestamp, multiplier).await;
                     data.push(value);
                 }
                 data

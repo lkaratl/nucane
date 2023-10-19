@@ -50,11 +50,11 @@ impl PluginApi for E2EPlugin {
         ]
     }
 
-    fn get_state(&self) -> Value {
-        self.get_state()
+    async fn get_state(&self) -> Option<Value> {
+        Some(self.get_state())
     }
 
-    fn set_state(&mut self, state: Value) {
+    async fn set_state(&mut self, state: Value) {
         self.set_state(state);
     }
 
