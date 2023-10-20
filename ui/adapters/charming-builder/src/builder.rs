@@ -9,6 +9,7 @@ use charming::element::{
 use charming::series::{Candlestick, Scatter};
 use charming::theme::Theme;
 use chrono::{DateTime, Utc};
+use tracing::debug;
 
 use ui_chart_builder_api::{ChartBuilderApi, Data, Icon, Line, Point, Series};
 
@@ -39,6 +40,7 @@ impl CharmingBuilder {
         points: Vec<Point>,
         lines: Vec<Line>,
     ) -> Chart {
+        debug!("Build chart");
         let mut chart = build_base_chart();
         chart = add_legend(chart, &series, &points, &lines);
         chart = add_x_axis(chart, timestamps);
@@ -79,6 +81,7 @@ fn build_base_chart() -> Chart {
 }
 
 fn add_legend(chart: Chart, series: &[Series], points: &[Point], lines: &[Line]) -> Chart {
+    debug!("Add legend");
     let legend = generate_legend(series, points, lines);
     chart.legend(Legend::new().inactive_color("#777").data(legend))
 }
@@ -98,11 +101,13 @@ fn generate_legend(series: &[Series], points: &[Point], lines: &[Line]) -> Vec<S
 }
 
 fn add_x_axis(chart: Chart, values: Vec<DateTime<Utc>>) -> Chart {
+    debug!("Add x axis");
     let values = values.iter().map(|value| value.to_string()).collect();
     chart.x_axis(Axis::new().type_(AxisType::Category).data(values))
 }
 
 fn add_series(mut chart: Chart, series: Vec<Series>) -> Chart {
+    debug!("Add series");
     for s in series {
         match s.data {
             Data::CandleStick(data) => {
@@ -120,6 +125,7 @@ fn add_series(mut chart: Chart, series: Vec<Series>) -> Chart {
 }
 
 fn add_points(mut chart: Chart, points: Vec<Point>) -> Chart {
+    debug!("Add points");
     for point in points {
         let mut scatter = Scatter::new()
             .name(point.label)
@@ -158,6 +164,7 @@ fn add_points(mut chart: Chart, points: Vec<Point>) -> Chart {
 
 #[allow(clippy::unnecessary_unwrap)]
 fn add_lines(mut chart: Chart, lines: Vec<Line>) -> Chart {
+    debug!("Add lines");
     for line in lines {
         let mut mark_line = charming::series::Line::new()
             .name(line.label.as_str())

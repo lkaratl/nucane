@@ -4,6 +4,7 @@ use std::time::Duration;
 use anyhow::Result;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use tracing::debug;
 use uuid::Uuid;
 
 use domain_model::{Candle, Indicator, InstrumentId, Order, OrderStatus, OrderType, Side, Timeframe};
@@ -54,8 +55,10 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
 
     async fn get_series(&self, candles: Vec<Candle>, indicators: Vec<Indicator>, timeframe: Timeframe,
                         timestamps: &[DateTime<Utc>], instrument_id: &InstrumentId) -> Vec<Series> {
+        debug!("Calculate series for candles and indicators: '{indicators:?}'");
         let mut series = Vec::new();
         for indicator in indicators {
+            debug!("Calculate indicator: '{indicator:?}'");
             let set = self.get_indicator_series(timeframe, timestamps, instrument_id, indicator).await;
             series.push(set);
         }
@@ -84,11 +87,20 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
 
     async fn get_indicator_series(&self, timeframe: Timeframe, timestamps: &[DateTime<Utc>], instrument_id: &InstrumentId, indicator: Indicator) -> Series {
         let data = match indicator {
-            Indicator::MovingAVG(multiplier) => {
+            Indicator::SMA(multiplier) => {
                 let mut data = Vec::new();
                 for timestamp in timestamps {
                     let value = self.indicators
                         .simple_moving_average(instrument_id, timeframe, *timestamp, multiplier).await;
+                    data.push(value);
+                }
+                data
+            },
+            Indicator::EMA(multiplier) => {
+                let mut data = Vec::new();
+                for timestamp in timestamps {
+                    let value = self.indicators
+                        .exponential_moving_average(instrument_id, timeframe, *timestamp, multiplier).await;
                     data.push(value);
                 }
                 data
@@ -107,6 +119,7 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
         instrument_id: &InstrumentId,
         timeframe: Timeframe,
     ) -> Vec<Point> {
+        debug!("Build points");
         let mut points = Vec::new();
         points.extend(self.get_order_points(simulation_id).await);
         points.extend(self.get_custom_points(deployment_id, instrument_id).await);
@@ -178,6 +191,7 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
         instrument_id: &InstrumentId,
         timeframe: Timeframe,
     ) -> Vec<Line> {
+        debug!("Build lines");
         self.storage_client
             .get_lines(deployment_id, instrument_id)
             .await
@@ -202,6 +216,7 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> UiApi for Ui<S, R, C> {
         timeframe: Option<Timeframe>,
         instrument_id: InstrumentId,
     ) -> Result<String> {
+        debug!("Start chart building for simulation: '{simulation_id}' and deployment: '{deployment_id}' with instrument: '{instrument_id:?}'");
         let timeframe = timeframe.unwrap_or(Timeframe::FiveM);
         let simulation_report = self
             .simulator_client

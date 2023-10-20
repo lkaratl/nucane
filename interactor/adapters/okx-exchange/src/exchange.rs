@@ -30,7 +30,8 @@ pub struct OkxExchange<E: EngineApi, S: StorageApi> {
     api_passphrase: String,
     ws_url: String,
     sockets: Arc<Mutex<RefCell<HashMap<String, OkxWsClient>>>>,
-    rest_client: RateLimitedRestClient,
+    private_client: RateLimitedRestClient,
+    public_client: RateLimitedRestClient,
 
     engine_client: Arc<E>,
     storage_client: Arc<S>,
@@ -48,8 +49,10 @@ impl<E: EngineApi, S: StorageApi> OkxExchange<E, S> {
         engine_client: Arc<E>,
         storage_client: Arc<S>,
     ) -> Self {
-        let rest_client =
+        let private_client =
             OkExRest::with_credential(http_url, is_demo, api_key, api_secret, api_passphrase);
+        let public_client =
+            OkExRest::new(http_url, false);
         Self {
             is_demo,
             api_key: api_key.to_owned(),
@@ -57,7 +60,8 @@ impl<E: EngineApi, S: StorageApi> OkxExchange<E, S> {
             api_passphrase: api_passphrase.to_owned(),
             ws_url: ws_url.to_owned(),
             sockets: Default::default(),
-            rest_client: RateLimitedRestClient::new(rest_client),
+            private_client: RateLimitedRestClient::new(private_client),
+            public_client: RateLimitedRestClient::new(public_client),
             engine_client,
             storage_client,
         }
@@ -119,7 +123,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
         if !already_exists {
             let storage_client = Arc::clone(&self.storage_client);
             let handler = CandleHandler::new(*currency_pair, *market_type, storage_client);
-            let client = OkxWsClient::business(self.is_demo, &self.ws_url, handler).await;
+            let client = OkxWsClient::business(false, &self.ws_url, handler).await;
 
             let subscribe_command = Command::subscribe(vec![
                 Channel::candle_1m(&inst_id),
@@ -246,7 +250,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
                     take_profit,
                 );
                 request.set_cl_ord_id(&create_order.id.to_string());
-                let [response] = self.rest_client.request(request).await.unwrap();
+                let [response] = self.private_client.request(request).await.unwrap();
                 debug!("Place limit order response: {response:?}");
                 if response.s_code != 0 {
                     response.s_msg
@@ -264,7 +268,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
                     take_profit,
                 );
                 request.set_cl_ord_id(&create_order.id.to_string());
-                let [response] = self.rest_client.request(request).await.unwrap();
+                let [response] = self.private_client.request(request).await.unwrap();
                 debug!("Place market order response: {response:?}");
                 if response.s_code != 0 {
                     response.s_msg
@@ -342,7 +346,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
             limit,
         };
 
-        self.rest_client
+        self.public_client
             .request(request)
             .await
             .unwrap()

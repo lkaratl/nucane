@@ -46,7 +46,7 @@ impl PluginApi for E2EPlugin {
 
     fn indicators(&self) -> Vec<Indicator> {
         vec![
-            Indicator::MovingAVG(7)
+            Indicator::SMA(7)
         ]
     }
 

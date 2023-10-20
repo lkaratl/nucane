@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
 use chrono::{DateTime, Duration, Utc};
+use ta::indicators::ExponentialMovingAverage;
+use ta::Next;
 
 use domain_model::{InstrumentId, Timeframe};
 use storage_core_api::StorageApi;
 
-use crate::calculation::{exponential_moving_average, simple_moving_average};
+use crate::calculation::simple_moving_average;
 
 pub struct Indicators<S: StorageApi> {
     storage_client: Arc<S>,
@@ -52,7 +54,15 @@ impl<S: StorageApi> Indicators<S> {
         timestamp: DateTime<Utc>,
         period: u64,
     ) -> f64 {
-        let prices = self.get_prices(instrument_id, timeframe, timestamp, period).await;
-        *exponential_moving_average(&prices, period).unwrap().first().unwrap()
+        let mut prices = self.get_prices(instrument_id, timeframe, timestamp, period * 2).await;
+        prices.reverse();
+        dbg!(prices.len());
+        let mut ema = ExponentialMovingAverage::new(period as usize).unwrap();
+        let mut result = 0.;
+        for price in prices {
+            dbg!(price);
+            result = ema.next(price);
+        }
+        result
     }
 }

@@ -16,25 +16,6 @@ pub fn simple_moving_average(values: &[f64], period: u64) -> Result<Vec<f64>, Er
     Ok(sma_values)
 }
 
-pub fn exponential_moving_average(values: &[f64], period: u64) -> Result<Vec<f64>, Error> {
-    if values.is_empty() || values.len() < period as usize {
-        bail!("Exponential moving average period too long for this set of values.")
-    }
-    let mut ema_values = Vec::new();
-    if values.len() >= period as usize {
-        let sma: f64 = values.iter().take(period as usize).sum::<f64>() / period as f64;
-        ema_values.push(sma);
-
-        let multiplier: f64 = 2.0 / ((period as f64) + 1.0);
-        for price in values.iter().skip(period as usize) {
-            let ema_previous = *ema_values.last().unwrap();
-            let ema_current = ((price - ema_previous) * multiplier) + ema_previous;
-            ema_values.push(ema_current);
-        }
-    }
-    Ok(ema_values)
-}
-
 fn average(values: &[f64]) -> f64 {
     let sum: f64 = values.iter().sum();
     sum / values.len() as f64

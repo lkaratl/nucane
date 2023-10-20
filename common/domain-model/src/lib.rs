@@ -681,13 +681,15 @@ impl From<CreateSimulation> for Simulation {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum Indicator {
-    MovingAVG(u64)
+    SMA(u64),
+    EMA(u64)
 }
 
 impl Indicator {
     pub fn as_multiplier(&self) -> u64 {
         match self {
-            Indicator::MovingAVG(multiplier) => *multiplier
+            Indicator::SMA(multiplier) => *multiplier,
+            Indicator::EMA(multiplier) => *multiplier
         }
     }
 }

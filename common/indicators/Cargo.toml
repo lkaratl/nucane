@@ -9,3 +9,4 @@ storage-core-api = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
+ta = { workspace = true }
