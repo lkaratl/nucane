@@ -62,7 +62,7 @@ impl From<SimulationPosition> for Position {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Candle {
     pub id: String,
     pub status: CandleStatus,
@@ -77,7 +77,7 @@ pub struct Candle {
     pub source_volume: f64,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
 pub enum CandleStatus {
     Open,
     Close,
@@ -364,13 +364,25 @@ impl From<(Currency, Currency)> for CurrencyPair {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Tick {
     pub id: Uuid,
     pub simulation_id: Option<Uuid>,
     pub timestamp: DateTime<Utc>,
     pub instrument_id: InstrumentId,
     pub price: f64,
+}
+
+impl Tick {
+    pub fn new(simulation_id: Option<Uuid>, timestamp: DateTime<Utc>, instrument_id: InstrumentId, price: f64) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            simulation_id,
+            timestamp,
+            instrument_id,
+            price,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Copy, Clone)]
@@ -682,7 +694,7 @@ impl From<CreateSimulation> for Simulation {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum Indicator {
     SMA(u64),
-    EMA(u64)
+    EMA(u64),
 }
 
 impl Indicator {

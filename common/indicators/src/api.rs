@@ -56,11 +56,9 @@ impl<S: StorageApi> Indicators<S> {
     ) -> f64 {
         let mut prices = self.get_prices(instrument_id, timeframe, timestamp, period * 2).await;
         prices.reverse();
-        dbg!(prices.len());
         let mut ema = ExponentialMovingAverage::new(period as usize).unwrap();
         let mut result = 0.;
         for price in prices {
-            dbg!(price);
             result = ema.next(price);
         }
         result

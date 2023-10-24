@@ -6,11 +6,7 @@ use chrono::{DateTime, Duration, Utc};
 use tracing::debug;
 use uuid::Uuid;
 
-use domain_model::{
-    Action, CreateSimulation, Currency, CurrencyPair, Exchange, InstrumentId, MarketType,
-    NewDeployment, Order, OrderActionType, OrderMarketType, OrderStatus, OrderType, Position, Side,
-    Simulation, SimulationDeployment, SimulationPosition, Size, Tick,
-};
+use domain_model::{Action, Candle, CreateSimulation, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, NewDeployment, Order, OrderActionType, OrderMarketType, OrderStatus, OrderType, Position, Side, Simulation, SimulationDeployment, SimulationPosition, Size, Tick};
 use engine_core_api::api::EngineApi;
 use interactor_core_api::InteractorApi;
 use simulator_core_api::{SimulationReport, SimulatorApi};
@@ -19,8 +15,7 @@ use storage_core_api::StorageApi;
 
 use crate::file_logger::Logger;
 
-pub struct Simulator<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportRepository>
-{
+pub struct Simulator<E: EngineApi, S: StorageApi, I: InteractorApi, SR: SimulationReportRepository> {
     engine_client: Arc<E>,
     storage_client: Arc<S>,
     interactor_client: Arc<I>,
@@ -270,7 +265,7 @@ Simulator<E, S, I, SR>
                         timestamp,
                         simulation_id: order_action.simulation_id,
                         exchange: order_action.exchange,
-                        status: OrderStatus::InProgress,
+                        status: OrderStatus::Created,
                         market_type: create_order.market_type,
                         order_type: create_order.order_type,
                         pair: create_order.pair,
@@ -361,14 +356,17 @@ Simulator<E, S, I, SR>
                 }
             }
         }
-        active_orders.retain(|order| {
+        for order in active_orders.iter_mut() {
             if completed_orders.contains(&order.id) {
                 logger.log(format!("|---> Order fully processed: '{}'", order.id));
-                false
-            } else {
-                true
+
+                order.status = OrderStatus::Completed;
+                self.storage_client.save_order(order.clone()).await.unwrap();
             }
-        });
+        }
+        active_orders.retain(|order|
+            order.status == OrderStatus::Created ||
+                order.status == OrderStatus::InProgress);
     }
 
     async fn check_limit_order(
@@ -379,7 +377,7 @@ Simulator<E, S, I, SR>
         positions: &mut Vec<SimulationPosition>,
         logger: &mut Logger,
     ) -> bool {
-        if order.status != OrderStatus::Completed {
+        if order.status != OrderStatus::InProgress {
             match order.side {
                 Side::Buy if tick.price <= price => {
                     logger.log(format!(
@@ -395,13 +393,12 @@ Simulator<E, S, I, SR>
                         order.id, price
                     ));
                     self.execute_order(order, price, positions, logger).await;
-                    order.side = change_side(order.side);
                 }
                 _ => {}
             }
             false
         } else {
-            self.check_sp_and_tp(order, tick, positions, logger).await
+            self.check_sl_and_tp(order, tick, positions, logger).await
         }
     }
 
@@ -412,19 +409,18 @@ Simulator<E, S, I, SR>
         positions: &mut Vec<SimulationPosition>,
         logger: &mut Logger,
     ) -> bool {
-        if order.status != OrderStatus::Completed {
+        if order.status != OrderStatus::InProgress {
             logger.log(format!(
                 "|--> Execute market order: {}, price: '{}'",
                 order.id, tick.price
             ));
             self.execute_order(order, tick.price, positions, logger)
                 .await;
-            order.side = change_side(order.side);
         }
-        self.check_sp_and_tp(order, tick, positions, logger).await
+        self.check_sl_and_tp(order, tick, positions, logger).await
     }
 
-    async fn check_sp_and_tp(
+    async fn check_sl_and_tp(
         &self,
         order: &mut Order,
         tick: &Tick,
@@ -471,11 +467,11 @@ Simulator<E, S, I, SR>
         logger: &mut Logger,
     ) -> bool {
         match order.side {
-            Side::Buy if tick.price >= price => {
+            Side::Buy if tick.price <= price => {
                 self.execute_order(order, price, positions, logger).await;
                 true
             }
-            Side::Sell if tick.price <= price => {
+            Side::Sell if tick.price >= price => {
                 self.execute_order(order, price, positions, logger).await;
                 true
             }
@@ -492,11 +488,11 @@ Simulator<E, S, I, SR>
         logger: &mut Logger,
     ) -> bool {
         match order.side {
-            Side::Buy if tick.price <= price => {
+            Side::Buy if tick.price >= price => {
                 self.execute_order(order, price, positions, logger).await;
                 true
             }
-            Side::Sell if tick.price >= price => {
+            Side::Sell if tick.price <= price => {
                 self.execute_order(order, price, positions, logger).await;
                 true
             }
@@ -552,12 +548,21 @@ Simulator<E, S, I, SR>
             }
         });
 
-        let fee_percent = get_fee_percent(order.exchange, order.market_type, order.side);
+        let is_sl_tp_execution = order.avg_price != 0.;
+        let mut side = order.side;
+        if is_sl_tp_execution {
+            side = change_side(side);
+        } else {
+            order.avg_price = quote;
+        }
+        let price = order.avg_price;
+
+        let fee_percent = get_fee_percent(order.exchange, order.market_type, side);
         let (target_size, source_size) = match order.size {
-            Size::Target(size) => (size, size * quote),
-            Size::Source(size) => (size / quote, size),
+            Size::Target(size) => (size, size * price),
+            Size::Source(size) => (size / price, size),
         };
-        match order.side {
+        match side {
             Side::Buy => {
                 self.update_positions(
                     target_size,
@@ -581,8 +586,7 @@ Simulator<E, S, I, SR>
                     .await;
             }
         }
-        order.avg_price = quote;
-        order.status = OrderStatus::Completed;
+        order.status = OrderStatus::InProgress;
         self.storage_client.save_order(order.clone()).await.unwrap();
     }
 
@@ -612,22 +616,18 @@ Simulator<E, S, I, SR>
                     .get_candles(instrument_id, Some(timeframe), Some(from), Some(to), None)
                     .await
                     .unwrap();
-                let mut first_iter = candles.iter();
-                for next_candle in candles.iter().skip(1) {
-                    let previous_candle = first_iter.next().unwrap();
-                    if Price(previous_candle.open_price) != Price(next_candle.open_price) {
-                        ticks.push(Tick {
-                            id: Uuid::new_v4(),
-                            simulation_id,
-                            timestamp: next_candle.timestamp,
-                            instrument_id: instrument_id.clone(),
-                            price: next_candle.open_price,
-                        });
-                    }
-                }
+
+                ticks = candles.iter()
+                    .rev()
+                    .flat_map(candle_to_ticks)
+                    .map(|mut tick| {
+                        tick.simulation_id = simulation_id;
+                        tick
+                    })
+                    .collect()
             }
         }
-        ticks.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        ticks = remove_redundancy(ticks);
         ticks
     }
 
@@ -668,6 +668,48 @@ Simulator<E, S, I, SR>
             fee
         ));
     }
+}
+
+fn candle_to_ticks(candle: &Candle) -> Vec<Tick> {
+    let open_tick = Tick::new(
+        None,
+        candle.timestamp,
+        candle.instrument_id.clone(),
+        candle.open_price,
+    );
+    let lowest_tick = Tick::new(
+        None,
+        candle.timestamp,
+        candle.instrument_id.clone(),
+        candle.lowest_price,
+    );
+    let highest_tick = Tick::new(
+        None,
+        candle.timestamp,
+        candle.instrument_id.clone(),
+        candle.highest_price,
+    );
+    let close_tick = Tick::new(
+        None,
+        candle.timestamp,
+        candle.instrument_id.clone(),
+        candle.close_price,
+    );
+    vec![open_tick, lowest_tick, highest_tick, close_tick]
+}
+
+fn remove_redundancy(ticks: Vec<Tick>) -> Vec<Tick> {
+    let mut optimized_ticks = Vec::new();
+    let mut tail_iter = ticks.iter();
+    for next_tick in ticks.iter().skip(1) {
+        let previous_tick = tail_iter.next().unwrap();
+        if next_tick.price != previous_tick.price {
+            optimized_ticks.push(previous_tick.clone());
+        }
+    }
+    optimized_ticks.push(tail_iter.next().unwrap().clone());
+    debug!("Remove redundancy ticks, all: '{}', optimized: '{}'", ticks.len(), optimized_ticks.len());
+    optimized_ticks
 }
 
 fn change_side(side: Side) -> Side {
