@@ -9,7 +9,7 @@ use tokio::time::error::Elapsed;
 use tracing::{error, span};
 use tracing::Level;
 
-use domain_model::{Action, Currency, CurrencyPair, Exchange, Indicator, InstrumentId, Order, OrderType, PluginId, Position, Side, Size, Tick, Timeframe, Trigger};
+use domain_model::{Action, Candle, Currency, CurrencyPair, Exchange, Indicator, InstrumentId, Order, OrderType, PluginId, Position, Side, Size, Tick, Timeframe, Trigger};
 use domain_model::drawing::{Color, Coord, Icon, LineStyle};
 
 #[async_trait]
@@ -65,6 +65,7 @@ pub trait PluginInternalApi: Send + Sync {
     fn actions(&self) -> Arc<dyn ActionsInternalApi>;
     fn orders(&self) -> Arc<dyn OrdersInternalApi>;
     fn positions(&self) -> Arc<dyn PositionsInternalApi>;
+    fn candles(&self) -> Arc<dyn CandlesInternalApi>;
     fn indicators(&self) -> Arc<dyn IndicatorsInternalApi>;
     fn drawings(&self) -> Arc<dyn DrawingsInternalApi>;
 }
@@ -96,6 +97,11 @@ pub trait OrdersInternalApi: Send + Sync {
 #[async_trait]
 pub trait PositionsInternalApi: Send + Sync {
     async fn get_position(&self, exchange: Exchange, currency: Currency) -> Option<Position>;
+}
+
+#[async_trait]
+pub trait CandlesInternalApi: Send + Sync {
+    async fn get_candles(&self, instrument_id: &InstrumentId, timeframe: Timeframe, limit: u64) -> Vec<Candle>;
 }
 
 #[async_trait]
