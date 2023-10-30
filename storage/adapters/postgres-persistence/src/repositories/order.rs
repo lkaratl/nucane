@@ -41,9 +41,11 @@ impl<T: ConnectionTrait + Send + 'static> OrderRepository for OrderPostgresRepos
             order_type: ActiveValue::Set(json!(order.order_type)),
             side: ActiveValue::Set(order.side.to_string()),
             size: ActiveValue::Set(json!(order.size)),
-            avg_price: ActiveValue::Set(order.avg_price),
+            avg_fill_price: ActiveValue::Set(order.avg_fill_price),
             stop_loss: ActiveValue::Set(order.stop_loss.map(|sl| json!(sl))),
+            avg_sl_price: ActiveValue::Set(order.avg_sl_price),
             take_profit: ActiveValue::Set(order.take_profit.map(|tp| json!(tp))),
+            avg_tp_price: ActiveValue::Set(order.avg_tp_price),
         };
         Order::insert(order)
             .on_conflict(
@@ -52,9 +54,11 @@ impl<T: ConnectionTrait + Send + 'static> OrderRepository for OrderPostgresRepos
                         order::Column::Status,
                         order::Column::OrderType,
                         order::Column::Size,
-                        order::Column::AvgPrice,
+                        order::Column::AvgFillPrice,
                         order::Column::StopLoss,
+                        order::Column::AvgSlPrice,
                         order::Column::TakeProfit,
+                        order::Column::AvgTpPrice,
                     ])
                     .to_owned(),
             )
@@ -122,13 +126,15 @@ impl<T: ConnectionTrait + Send + 'static> OrderRepository for OrderPostgresRepos
                 order_type: serde_json::from_value(model.order_type).unwrap(),
                 side: Side::from_str(&model.side).unwrap(),
                 size: serde_json::from_value(model.size).unwrap(),
-                avg_price: model.avg_price,
+                avg_fill_price: model.avg_fill_price,
                 stop_loss: model
                     .stop_loss
                     .map(|sl| serde_json::from_value(sl).unwrap()),
+                avg_sl_price: model.avg_sl_price,
                 take_profit: model
                     .take_profit
                     .map(|tp| serde_json::from_value(tp).unwrap()),
+                avg_tp_price: model.avg_tp_price,
             })
             .collect();
         Ok(result)

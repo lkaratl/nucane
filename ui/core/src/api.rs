@@ -164,7 +164,7 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
                 let y = if let OrderType::Limit(limit) = order.order_type {
                     limit
                 } else {
-                    order.avg_price
+                    order.avg_fill_price
                 };
                 Point::new(name, icon.into(), Some(color), info.into(), (x, y).into())
             })

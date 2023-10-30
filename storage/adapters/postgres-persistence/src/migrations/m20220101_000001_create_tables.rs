@@ -21,9 +21,11 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Order::OrderType).json().not_null())
                     .col(ColumnDef::new(Order::Side).string().not_null())
                     .col(ColumnDef::new(Order::Size).json().not_null())
-                    .col(ColumnDef::new(Order::AvgPrice).double().not_null())
+                    .col(ColumnDef::new(Order::AvgFillPrice).double().not_null())
                     .col(ColumnDef::new(Order::StopLoss).json())
+                    .col(ColumnDef::new(Order::AvgSlPrice).double().not_null())
                     .col(ColumnDef::new(Order::TakeProfit).json())
+                    .col(ColumnDef::new(Order::AvgTpPrice).double().not_null())
                     .to_owned(),
             )
             .await?;
@@ -149,9 +151,11 @@ enum Order {
     OrderType,
     Side,
     Size,
-    AvgPrice,
+    AvgFillPrice,
     StopLoss,
+    AvgSlPrice,
     TakeProfit,
+    AvgTpPrice,
 }
 
 #[derive(Iden)]

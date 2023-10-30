@@ -271,9 +271,11 @@ Simulator<E, S, I, SR>
                         pair: create_order.pair,
                         side: create_order.side,
                         size: create_order.size.clone(),
-                        avg_price: 0.0,
+                        avg_fill_price: 0.0,
                         stop_loss: create_order.stop_loss.clone(),
+                        avg_sl_price: 0.0,
                         take_profit: create_order.take_profit.clone(),
+                        avg_tp_price: 0.0,
                     };
                     self.storage_client.save_order(order.clone()).await.unwrap();
                     logger.log(format!("|-> Place Order: {} {:?} {:?} '{}-{}' {} '{:?}', stop-loss: {:?}, take-profit: {:?}, id: '{}'",
@@ -429,11 +431,19 @@ Simulator<E, S, I, SR>
     ) -> bool {
         let mut fully_completed = true;
         if let Some(stop_loss) = &order.stop_loss {
-            let price = stop_loss.order_px;
+            let price = match stop_loss.order_px {
+                OrderType::Limit(limit) => limit,
+                OrderType::Market => stop_loss.trigger_px
+            };
             if self.check_sl(order, price, tick, positions, logger).await {
+                let size = match order.size {
+                    Size::Target(size) => size,
+                    Size::Source(size) => size,
+                };
+                let loss = (size / 100.) * ((order.avg_fill_price - order.avg_sl_price).abs() / (order.avg_sl_price / 100.));
                 logger.log(format!(
-                    "|X-> Execute SL {} '{}' for order: {} with price: '{}' executed",
-                    order.side, price, order.id, tick.price
+                    "|X-> Execute SL '{}' for {} order: {} with price: '{}' executed. Result: -{loss}",
+                    price, order.side, order.id, tick.price
                 ));
                 return true;
             } else {
@@ -441,14 +451,22 @@ Simulator<E, S, I, SR>
             }
         }
         if let Some(take_profit) = &order.take_profit {
-            let price = take_profit.order_px;
+            let price = match take_profit.order_px {
+                OrderType::Limit(limit) => limit,
+                OrderType::Market => take_profit.trigger_px
+            };
             if self
-                .check_tp(order, take_profit.order_px, tick, positions, logger)
+                .check_tp(order, price, tick, positions, logger)
                 .await
             {
+                let size = match order.size {
+                    Size::Target(size) => size,
+                    Size::Source(size) => size,
+                };
+                let profit = (size / 100.) * ((order.avg_fill_price - order.avg_tp_price).abs() / (order.avg_tp_price / 100.));
                 logger.log(format!(
-                    "|X-> Execute TP {} '{}' for order: {} with price: '{}' executed",
-                    order.side, price, order.id, tick.price
+                    "|X-> Execute TP '{}' for {} order: {} with price: '{}' executed. Result: +{profit}",
+                    price, order.side, order.id, tick.price
                 ));
                 return true;
             } else {
@@ -469,10 +487,12 @@ Simulator<E, S, I, SR>
         match order.side {
             Side::Buy if tick.price <= price => {
                 self.execute_order(order, price, positions, logger).await;
+                order.avg_sl_price = price;
                 true
             }
             Side::Sell if tick.price >= price => {
                 self.execute_order(order, price, positions, logger).await;
+                order.avg_sl_price = price;
                 true
             }
             _ => false,
@@ -490,10 +510,12 @@ Simulator<E, S, I, SR>
         match order.side {
             Side::Buy if tick.price >= price => {
                 self.execute_order(order, price, positions, logger).await;
+                order.avg_tp_price = price;
                 true
             }
             Side::Sell if tick.price <= price => {
                 self.execute_order(order, price, positions, logger).await;
+                order.avg_tp_price = price;
                 true
             }
             _ => false,
@@ -548,19 +570,18 @@ Simulator<E, S, I, SR>
             }
         });
 
-        let is_sl_tp_execution = order.avg_price != 0.;
+        let is_sl_tp_execution = order.avg_fill_price != 0.;
         let mut side = order.side;
         if is_sl_tp_execution {
             side = change_side(side);
         } else {
-            order.avg_price = quote;
+            order.avg_fill_price = quote;
         }
-        let price = order.avg_price;
 
         let fee_percent = get_fee_percent(order.exchange, order.market_type, side);
         let (target_size, source_size) = match order.size {
-            Size::Target(size) => (size, size * price),
-            Size::Source(size) => (size / price, size),
+            Size::Target(size) => (size, size * quote),
+            Size::Source(size) => (size / quote, size),
         };
         match side {
             Side::Buy => {
