@@ -12,7 +12,7 @@ const ID_KEYS: [char; 62] = [
 ];
 
 pub fn string_id() -> String {
-    nanoid!(32, &ID_KEYS)
+    nanoid!(16, &ID_KEYS) // todo fix too small length, can be collision
 }
 
 pub fn init_logger(file_name: &str, directives: &str) {

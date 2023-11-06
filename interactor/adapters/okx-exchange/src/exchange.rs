@@ -77,7 +77,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
     // todo maybe better don't create client for each subscription and use one thread to handle all messages
     async fn subscribe_ticks(&self, currency_pair: &CurrencyPair, market_type: &MarketType) {
         let mut inst_id = format!("{}-{}", currency_pair.target, currency_pair.source);
-        if !MarketType::Spot.eq(market_type) {
+        if !MarketType::Spot.eq(market_type) && !MarketType::Margin.eq(market_type) {
             inst_id = format!("{}-{}", inst_id, market_type);
         }
         let id: &str = &format!("mark-price-{}", &inst_id);
@@ -103,7 +103,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
             "mark-price-{}-{}",
             currency_pair.target, currency_pair.source
         );
-        if !MarketType::Spot.eq(market_type) {
+        if !MarketType::Spot.eq(market_type) && !MarketType::Margin.eq(market_type) {
             socket_id = format!("{}-{}", socket_id, market_type);
         }
         self.sockets
@@ -115,7 +115,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
 
     async fn subscribe_candles(&self, currency_pair: &CurrencyPair, market_type: &MarketType) {
         let mut inst_id = format!("{}-{}", currency_pair.target, currency_pair.source);
-        if !MarketType::Spot.eq(market_type) {
+        if !MarketType::Spot.eq(market_type) && !MarketType::Margin.eq(market_type) {
             inst_id = format!("{}-{}", inst_id, market_type);
         }
         let id: &str = &format!("candles-{}", &inst_id);
@@ -147,7 +147,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
     async fn unsubscribe_candles(&self, currency_pair: &CurrencyPair, market_type: &MarketType) {
         debug!("Remove socket for candles");
         let mut socket_id = format!("candles-{}-{}", currency_pair.target, currency_pair.source);
-        if !MarketType::Spot.eq(market_type) {
+        if !MarketType::Spot.eq(market_type) && !MarketType::Margin.eq(market_type) {
             socket_id = format!("{}-{}", socket_id, market_type);
         }
         self.sockets
@@ -225,12 +225,20 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
             Side::Sell => enums::Side::Sell,
         };
         let stop_loss = if let Some(stop_loss) = &create_order.stop_loss {
-            Trigger::new(stop_loss.trigger_px, stop_loss.order_px)
+            let order_px = match stop_loss.order_px {
+                OrderType::Limit(limit) => limit,
+                OrderType::Market => -1.
+            };
+            Trigger::new(stop_loss.trigger_px, order_px)
         } else {
             None
         };
         let take_profit = if let Some(take_profit) = &create_order.take_profit {
-            Trigger::new(take_profit.trigger_px, take_profit.order_px)
+            let order_px = match take_profit.order_px {
+                OrderType::Limit(limit) => limit,
+                OrderType::Market => -1.
+            };
+            Trigger::new(take_profit.trigger_px, order_px)
         } else {
             None
         };
@@ -238,44 +246,34 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
             Size::Target(size) => rest::Size::Target(size),
             Size::Source(size) => rest::Size::Source(size),
         };
-        let error_message = match create_order.order_type {
-            OrderType::Limit(price) => {
-                let mut request = PlaceOrderRequest::limit(
-                    &inst_id,
-                    td_mode,
-                    side,
-                    price,
-                    size,
-                    stop_loss,
-                    take_profit,
-                );
-                request.set_cl_ord_id(&create_order.id.to_string());
-                let [response] = self.private_client.request(request).await.unwrap();
-                debug!("Place limit order response: {response:?}");
-                if response.s_code != 0 {
-                    response.s_msg
-                } else {
-                    None
-                }
-            }
-            OrderType::Market => {
-                let mut request = PlaceOrderRequest::market(
-                    &inst_id,
-                    td_mode,
-                    side,
-                    size,
-                    stop_loss,
-                    take_profit,
-                );
-                request.set_cl_ord_id(&create_order.id.to_string());
-                let [response] = self.private_client.request(request).await.unwrap();
-                debug!("Place market order response: {response:?}");
-                if response.s_code != 0 {
-                    response.s_msg
-                } else {
-                    None
-                }
-            }
+        let mut place_order_request = match create_order.order_type {
+            OrderType::Limit(price) => PlaceOrderRequest::limit(
+                &inst_id,
+                td_mode,
+                side,
+                price,
+                size,
+                stop_loss,
+                take_profit,
+            ),
+            OrderType::Market => PlaceOrderRequest::market(
+                &inst_id,
+                td_mode,
+                side,
+                size,
+                stop_loss,
+                take_profit,
+            )
+        };
+        place_order_request.set_cl_ord_id(&create_order.id);
+        place_order_request.set_tag(&create_order.id);
+        dbg!(&place_order_request);
+        let [response] = self.private_client.request(place_order_request).await.unwrap();
+        debug!("Place order response: {response:?}");
+        let error_message = if response.s_code != 0 {
+            response.s_msg
+        } else {
+            None
         };
         if let Some(error_message) = error_message {
             error!("Failed to place order: {}", error_message);
@@ -290,9 +288,12 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
                 order_type: create_order.order_type,
                 side: create_order.side,
                 size: create_order.size.clone(),
-                avg_price: 0.0,
+                fee: 0.,
+                avg_fill_price: 0.0,
                 stop_loss: create_order.stop_loss.clone(),
+                avg_sl_price: 0.0,
                 take_profit: create_order.take_profit.clone(),
+                avg_tp_price: 0.0,
             }
         } else {
             Order {
@@ -306,9 +307,12 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
                 order_type: create_order.order_type,
                 side: create_order.side,
                 size: create_order.size.clone(),
-                avg_price: 0.0,
+                fee: 0.,
+                avg_fill_price: 0.0,
                 stop_loss: create_order.stop_loss.clone(),
+                avg_sl_price: 0.0,
                 take_profit: create_order.take_profit.clone(),
+                avg_tp_price: 0.0,
             }
         }
     }
@@ -324,7 +328,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
     ) -> Vec<Candle> {
         // todo check that limit no more than 100
         let mut inst_id = format!("{}-{}", currency_pair.target, currency_pair.source);
-        if !MarketType::Spot.eq(market_type) {
+        if !MarketType::Spot.eq(market_type) && !MarketType::Margin.eq(market_type) {
             inst_id = format!("{}-{}", inst_id, market_type);
         };
         let bar = match timeframe {

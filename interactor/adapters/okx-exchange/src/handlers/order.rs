@@ -4,7 +4,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use chrono::Utc;
 use serde_json::{from_value, Value};
-use tracing::trace;
+use tracing::info;
 
 use domain_model::{
     Currency, CurrencyPair, Exchange, MarginMode, Order, OrderMarketType, OrderStatus, OrderType,
@@ -36,7 +36,7 @@ impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
         _action: Option<Action>,
         data: Vec<Value>,
     ) -> Option<Self::Type> {
-        trace!("Retrieved massage with raw payload: {:?}", &data);
+        info!("Retrieved massage with raw payload: {}", serde_json::to_string_pretty(&data).unwrap());
         let mut orders = Vec::new();
         for item in data {
             let order_details: OrderDetailsResponse = from_value(item).unwrap();
@@ -74,25 +74,40 @@ impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
                     OrdType::Market => match order_details.tgt_ccy.as_str() {
                         "quote_ccy" => Size::Source(order_details.sz),
                         "base_ccy" => Size::Target(order_details.sz),
-                        _ => panic!("Empty target currency"),
+                        _ => match side {
+                            Side::Buy => Size::Source(order_details.sz),
+                            Side::Sell => Size::Target(order_details.sz)
+                        },
                     },
                     OrdType::Limit => Size::Target(order_details.sz),
                     order_type => panic!("Unsupported order type: {order_type:?}"),
                 };
                 let stop_loss =
                     if order_details.sl_trigger_px.is_some() && order_details.sl_ord_px.is_some() {
+                        let sl_order_px = order_details.sl_ord_px.unwrap();
+                        let sl_order_px = if sl_order_px == -1. {
+                            OrderType::Market
+                        } else {
+                            OrderType::Limit(sl_order_px)
+                        };
                         Trigger::new(
                             order_details.sl_trigger_px.unwrap(),
-                            order_details.sl_ord_px.unwrap(),
+                            sl_order_px,
                         )
                     } else {
                         None
                     };
                 let take_profit =
                     if order_details.tp_trigger_px.is_some() && order_details.tp_ord_px.is_some() {
+                        let tp_order_px = order_details.sl_ord_px.unwrap();
+                        let tp_order_px = if tp_order_px == -1. {
+                            OrderType::Market
+                        } else {
+                            OrderType::Limit(tp_order_px)
+                        };
                         Trigger::new(
                             order_details.tp_trigger_px.unwrap(),
-                            order_details.tp_ord_px.unwrap(),
+                            tp_order_px,
                         )
                     } else {
                         None
@@ -108,9 +123,12 @@ impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
                     order_type,
                     side,
                     size,
-                    avg_price: order_details.avg_px,
+                    fee: order_details.fee.abs(),
+                    avg_fill_price: order_details.avg_px,
                     stop_loss,
+                    avg_sl_price: 0.,
                     take_profit,
+                    avg_tp_price: 0.,
                 };
                 orders.push(order);
             }

@@ -9,7 +9,7 @@ use tokio::time::error::Elapsed;
 use tracing::{error, span};
 use tracing::Level;
 
-use domain_model::{Action, Candle, Currency, CurrencyPair, Exchange, Indicator, InstrumentId, Order, OrderType, PluginId, Position, Side, Size, Tick, Timeframe, Trigger};
+use domain_model::{Action, Candle, Currency, CurrencyPair, Exchange, Indicator, InstrumentId, Order, OrderMarketType, OrderType, PluginId, Position, Side, Size, Tick, Timeframe, Trigger};
 use domain_model::drawing::{Color, Coord, Icon, LineStyle};
 
 #[async_trait]
@@ -76,11 +76,14 @@ pub trait StateInternalApi: Send + Sync {
     async fn get(&self, key: &str) -> Option<Value>;
 }
 
+#[allow(clippy::too_many_arguments)]
 #[async_trait]
 pub trait ActionsInternalApi: Send + Sync {
     fn create_order_action(
         &self,
+        exchange: Exchange,
         pair: CurrencyPair,
+        market_type: OrderMarketType,
         order_type: OrderType,
         size: Size,
         side: Side,

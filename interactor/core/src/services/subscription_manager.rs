@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::time::Duration;
 
 use tracing::debug;
 
@@ -30,32 +31,23 @@ impl<S: StorageApi, R: SubscriptionRepository> SubscriptionManager<S, R> {
         if new_subscription.simulation_id.is_none() {
             debug!("Subscribe: {}", new_subscription.deployment_id);
             for new_instrument in new_subscription.instruments {
-                let subscription = self
-                    .subscription_repository
+                let subscription = self.subscription_repository
                     .get_be_instrument(&new_instrument)
                     .await;
                 if let Some(mut subscription) = subscription {
-                    subscription
-                        .deployments
-                        .insert(new_subscription.deployment_id);
+                    subscription.deployments.insert(new_subscription.deployment_id);
                 } else {
-                    self.service_facade
-                        .listen_orders(new_instrument.exchange)
-                        .await;
-                    self.service_facade
-                        .listen_position(new_instrument.exchange)
-                        .await;
+                    self.service_facade.listen_orders(new_instrument.exchange).await;
+                    self.service_facade.listen_position(new_instrument.exchange).await;
                     self.service_facade.subscribe_candles(&new_instrument).await;
+                    tokio::time::sleep(Duration::from_secs(2)).await;
                     self.service_facade.subscribe_ticks(&new_instrument).await;
 
                     let new_subscription = Subscriptions {
                         instrument_id: new_instrument,
                         deployments: HashSet::from([new_subscription.deployment_id]),
                     };
-                    self.subscription_repository
-                        .save(&new_subscription)
-                        .await
-                        .unwrap();
+                    self.subscription_repository.save(&new_subscription).await.unwrap();
                 }
             }
         }
