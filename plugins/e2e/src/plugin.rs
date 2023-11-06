@@ -5,10 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::info;
 
-use domain_model::{
-    Action, CurrencyPair, Exchange, InstrumentId, MarketType, OrderActionType, OrderStatus, Side,
-    Size, Tick, Timeframe, Trigger,
-};
+use domain_model::{Action, CurrencyPair, Exchange, InstrumentId, MarketType, OrderActionType, OrderStatus, Side, Size, Tick, Timeframe, Trigger};
 use domain_model::drawing::{Color, Icon, LineStyle};
 use domain_model::OrderType::{Limit, Market};
 use plugin_api::{Line, PluginApi, PluginInternalApi, Point, utils};
@@ -155,8 +152,8 @@ impl E2EPlugin {
             Limit(limit),
             Size::Source(10.0),
             Side::Buy,
-            Trigger::new(limit * 0.5, limit * 0.4),
-            Trigger::new(limit * 2.0, limit * 2.1),
+            Trigger::new(limit * 0.5, Limit(limit * 0.4)),
+            Trigger::new(limit * 2.0, Limit(limit * 2.1)),
         );
         let order_id = match &limit_order_with_sl_tp_action {
             Action::OrderAction(order_action) => match &order_action.order {

@@ -10,6 +10,7 @@ ui-rest-api-server = { workspace = true }
 domain-model = { workspace = true }
 simulator-rest-client = { workspace = true }
 storage-rest-client = { workspace = true }
+storage-core-api-cache = { workspace = true }
 ui-charming-builder = { workspace = true }
 indicators = { workspace = true }
 tokio = { workspace = true }

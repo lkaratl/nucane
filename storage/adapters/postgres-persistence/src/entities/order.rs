@@ -17,6 +17,8 @@ pub struct Model {
     pub side: String,
     pub size: Json,
     #[sea_orm(column_type = "Double")]
+    pub fee: f64,
+    #[sea_orm(column_type = "Double")]
     pub avg_fill_price: f64,
     pub stop_loss: Option<Json>,
     #[sea_orm(column_type = "Double")]

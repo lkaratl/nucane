@@ -217,15 +217,34 @@ pub struct Order {
     pub order_type: OrderType,
     pub side: Side,
     pub size: Size,
-    pub avg_price: f64,
+    pub fee: f64,
+    pub avg_fill_price: f64,
     pub stop_loss: Option<Trigger>,
+    pub avg_sl_price: f64,
     pub take_profit: Option<Trigger>,
+    pub avg_tp_price: f64,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum Size {
     Target(f64),
     Source(f64),
+}
+
+impl Size {
+    pub fn as_target(&self, quote: f64) -> Self {
+        match self {
+            Size::Target(_) => self.clone(),
+            Size::Source(size) => Self::Target(size / quote)
+        }
+    }
+
+    pub fn as_source(&self, quote: f64) -> Self {
+        match self {
+            Size::Target(size) => Self::Source(size * quote),
+            Size::Source(_) => self.clone()
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -563,11 +582,11 @@ pub struct CreateOrder {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Trigger {
     pub trigger_px: f64,
-    pub order_px: f64,
+    pub order_px: OrderType,
 }
 
 impl Trigger {
-    pub fn new(trigger_px: f64, order_px: f64) -> Option<Self> {
+    pub fn new(trigger_px: f64, order_px: OrderType) -> Option<Self> {
         Some(Self {
             trigger_px,
             order_px,

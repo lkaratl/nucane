@@ -21,6 +21,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Order::OrderType).json().not_null())
                     .col(ColumnDef::new(Order::Side).string().not_null())
                     .col(ColumnDef::new(Order::Size).json().not_null())
+                    .col(ColumnDef::new(Order::Fee).double().not_null())
                     .col(ColumnDef::new(Order::AvgFillPrice).double().not_null())
                     .col(ColumnDef::new(Order::StopLoss).json())
                     .col(ColumnDef::new(Order::AvgSlPrice).double().not_null())
@@ -151,6 +152,7 @@ enum Order {
     OrderType,
     Side,
     Size,
+    Fee,
     AvgFillPrice,
     StopLoss,
     AvgSlPrice,

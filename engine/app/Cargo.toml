@@ -10,6 +10,7 @@ engine-rest-api-server = { workspace = true }
 interactor-rest-client = { workspace = true }
 domain-model = { workspace = true }
 storage-rest-client = { workspace = true }
+storage-core-api-cache = { workspace = true }
 registry-rest-client = { workspace = true }
 plugin-loader = { workspace = true }
 tokio = { workspace = true }
