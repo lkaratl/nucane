@@ -11,6 +11,8 @@ steps:
             value: "dev.env"
           - label: "staging"
             value: "staging.env"
+          - label: "staging-demo"
+            value: "staging-demo.env"
           - label: "prod"
             value: "prod.env"
         default: "dev.env"
