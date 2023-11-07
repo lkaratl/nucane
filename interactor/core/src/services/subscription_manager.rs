@@ -40,7 +40,7 @@ impl<S: StorageApi, R: SubscriptionRepository> SubscriptionManager<S, R> {
                     self.service_facade.listen_orders(new_instrument.exchange).await;
                     self.service_facade.listen_position(new_instrument.exchange).await;
                     self.service_facade.subscribe_candles(&new_instrument).await;
-                    tokio::time::sleep(Duration::from_secs(2)).await;
+                    tokio::time::sleep(Duration::from_secs(5)).await;
                     self.service_facade.subscribe_ticks(&new_instrument).await;
 
                     let new_subscription = Subscriptions {

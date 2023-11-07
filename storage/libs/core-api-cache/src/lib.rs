@@ -6,7 +6,7 @@ use chrono::{DateTime, Utc};
 use moka::future::Cache;
 use uuid::Uuid;
 
-use domain_model::{Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position, Side, Timeframe};
+use domain_model::{Candle, Currency, Exchange, InstrumentId, LP, MarketType, Order, OrderStatus, OrderType, Position, Side, Timeframe};
 use domain_model::drawing::{Line, Point};
 use storage_core_api::{StorageApi, SyncReport};
 
@@ -28,6 +28,10 @@ impl<S: StorageApi> StorageCoreApiCache<S> {
 impl<S: StorageApi> StorageApi for StorageCoreApiCache<S> {
     async fn save_order(&self, order: Order) -> Result<()> {
         self.client.save_order(order).await
+    }
+
+    async fn save_lp(&self, lp: LP) -> Result<()> {
+        self.client.save_lp(lp).await
     }
 
     async fn get_orders(&self, id: Option<String>,

@@ -225,6 +225,14 @@ pub struct Order {
     pub avg_tp_price: f64,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct LP {
+    pub id: String,
+    pub price: f64,
+    pub size: Size,
+
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum Size {
     Target(f64),

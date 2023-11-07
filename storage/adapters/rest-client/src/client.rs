@@ -7,16 +7,10 @@ use surf::{Client, Config};
 use tracing::trace;
 use uuid::Uuid;
 
-use domain_model::{
-    Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position,
-    Side, Timeframe,
-};
+use domain_model::{Candle, Currency, Exchange, InstrumentId, LP, MarketType, Order, OrderStatus, OrderType, Position, Side, Timeframe};
 use domain_model::drawing::{Line, Point};
 use storage_core_api::{StorageApi, SyncReport};
-use storage_rest_api::endpoints::{
-    GET_CANDLES, GET_LINES, GET_ORDERS, GET_POINTS, GET_POSITIONS, POST_CANDLES, POST_LINE,
-    POST_ORDERS, POST_POINT, POST_POSITIONS, POST_SYNC,
-};
+use storage_rest_api::endpoints::{GET_CANDLES, GET_LINES, GET_ORDERS, GET_POINTS, GET_POSITIONS, POST_CANDLES, POST_LINE, POST_LP, POST_ORDERS, POST_POINT, POST_POSITIONS, POST_SYNC};
 use storage_rest_api::path_queries::{
     CandlesQuery, CandleSyncQuery, DrawingQuery, OrdersQuery, PositionsQuery,
 };
@@ -47,6 +41,18 @@ impl StorageApi for StorageRestClient {
         self.client
             .post(endpoint)
             .body_json(&order)
+            .unwrap()
+            .await
+            .unwrap();
+        Ok(())
+    }
+
+    async fn save_lp(&self, lp: LP) -> Result<()> {
+        let endpoint = format!("{}{}", self.url, POST_LP);
+        trace!("Request: POST '{endpoint}'");
+        self.client
+            .post(endpoint)
+            .body_json(&lp)
             .unwrap()
             .await
             .unwrap();

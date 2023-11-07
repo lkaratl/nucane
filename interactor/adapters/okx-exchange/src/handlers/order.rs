@@ -6,15 +6,17 @@ use chrono::Utc;
 use serde_json::{from_value, Value};
 use tracing::info;
 
-use domain_model::{
-    Currency, CurrencyPair, Exchange, MarginMode, Order, OrderMarketType, OrderStatus, OrderType,
-    Side, Size, Trigger,
-};
+use domain_model::{Currency, CurrencyPair, Exchange, LP, MarginMode, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Trigger};
 use eac::enums;
 use eac::enums::{OrdState, OrdType, TdMode};
 use eac::rest::OrderDetailsResponse;
 use eac::websocket::{Action, Channel, WsMessageHandler};
 use storage_core_api::StorageApi;
+
+pub enum OrderInfo {
+    Order(Order),
+    LP(LP),
+}
 
 pub struct OrderHandler<S: StorageApi> {
     storage_client: Arc<S>,
@@ -28,7 +30,7 @@ impl<S: StorageApi> OrderHandler<S> {
 
 #[async_trait]
 impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
-    type Type = Vec<Order>;
+    type Type = Vec<OrderInfo>;
 
     async fn convert_data(
         &mut self,
@@ -45,7 +47,13 @@ impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
                     OrdState::Canceled => OrderStatus::Canceled,
                     OrdState::Live => OrderStatus::InProgress,
                     OrdState::PartiallyFilled => OrderStatus::InProgress,
-                    OrdState::Filled => OrderStatus::Completed,
+                    OrdState::Filled => {
+                        if order_details.sl_trigger_px.is_none() && order_details.tp_trigger_px.is_none() {
+                            OrderStatus::Completed
+                        } else {
+                            OrderStatus::InProgress
+                        }
+                    }
                 };
                 let pair = {
                     let mut inst_id = order_details.inst_id.split('-');
@@ -112,23 +120,31 @@ impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
                     } else {
                         None
                     };
-                let order = Order {
-                    id: order_details.cl_ord_id,
-                    timestamp: Utc::now(),
-                    simulation_id: None,
-                    status,
-                    exchange: Exchange::OKX,
-                    pair,
-                    market_type,
-                    order_type,
-                    side,
-                    size,
-                    fee: order_details.fee.abs(),
-                    avg_fill_price: order_details.avg_px,
-                    stop_loss,
-                    avg_sl_price: 0.,
-                    take_profit,
-                    avg_tp_price: 0.,
+                let order = if let Some(7) = order_details.source {
+                    OrderInfo::LP(LP {
+                        id: order_details.tag,
+                        price: order_details.avg_px,
+                        size,
+                    })
+                } else {
+                    OrderInfo::Order(Order {
+                        id: order_details.cl_ord_id,
+                        timestamp: Utc::now(),
+                        simulation_id: None,
+                        status,
+                        exchange: Exchange::OKX,
+                        pair,
+                        market_type,
+                        order_type,
+                        side,
+                        size,
+                        fee: order_details.fee.abs(),
+                        avg_fill_price: order_details.avg_px,
+                        stop_loss,
+                        avg_sl_price: 0.,
+                        take_profit,
+                        avg_tp_price: 0.,
+                    })
                 };
                 orders.push(order);
             }
@@ -138,7 +154,10 @@ impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
 
     async fn handle(&mut self, message: Self::Type) {
         for order in message {
-            self.storage_client.save_order(order).await.unwrap();
+            match order {
+                OrderInfo::Order(order) => self.storage_client.save_order(order).await.unwrap(),
+                OrderInfo::LP(lp) => self.storage_client.save_lp(lp).await.unwrap(),
+            }
         }
     }
 }
