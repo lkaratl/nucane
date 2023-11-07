@@ -48,6 +48,7 @@ impl Default for E2EPlugin {
     }
 }
 
+#[allow(dead_code)]
 impl E2EPlugin {
     pub fn get_state(&self) -> Value {
         serde_json::to_value(&self.state).unwrap()

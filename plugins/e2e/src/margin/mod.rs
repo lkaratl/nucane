@@ -12,6 +12,7 @@ use plugin_api::PluginInternalApi;
 
 use crate::plugin::E2EPlugin;
 
+#[allow(dead_code)]
 impl E2EPlugin {
     pub async fn handle_margin_tick(&mut self, tick: &Tick, api: Arc<dyn PluginInternalApi>) -> Vec<Action> {
         if !self.state.margin_executed_once {
