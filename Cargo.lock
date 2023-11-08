@@ -1504,6 +1504,7 @@ dependencies = [
  "chrono",
  "domain-model",
  "indicators",
+ "interactor-core-api",
  "plugin-api",
  "serde_json",
  "storage-core-api",

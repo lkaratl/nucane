@@ -11,7 +11,7 @@ use tracing::{debug, error};
 use domain_model::{Candle, CandleStatus, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, LP, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Timeframe};
 use eac::{enums, rest};
 use eac::enums::{InstType, OrdState, OrdType, TdMode};
-use eac::rest::{CandlesHistoryRequest, OkExRest, OrderDetailsResponse, OrderHistoryRequest, PlaceOrderRequest, RateLimitedRestClient, Trigger};
+use eac::rest::{BalanceRequest, CandlesHistoryRequest, OkExRest, OrderDetailsResponse, OrderHistoryRequest, PlaceOrderRequest, RateLimitedRestClient, Trigger};
 use eac::websocket::{Channel, Command, OkxWsClient};
 use engine_core_api::api::EngineApi;
 use interactor_exchange_api::ExchangeApi;
@@ -427,6 +427,14 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
         } else {
             self.get_order_by_market(MarketType::Margin, order_id).await
         }
+    }
+
+    async fn get_total_balance(&self) -> f64 {
+        let request = BalanceRequest::default();
+        self.private_client.request(request)
+            .await.unwrap()
+            .first().unwrap()
+            .total_eq
     }
 }
 

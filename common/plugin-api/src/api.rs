@@ -68,6 +68,7 @@ pub trait PluginInternalApi: Send + Sync {
     fn candles(&self) -> Arc<dyn CandlesInternalApi>;
     fn indicators(&self) -> Arc<dyn IndicatorsInternalApi>;
     fn drawings(&self) -> Arc<dyn DrawingsInternalApi>;
+    fn account(&self) -> Arc<dyn AccountInternalApi>;
 }
 
 #[async_trait]
@@ -100,6 +101,11 @@ pub trait OrdersInternalApi: Send + Sync {
 #[async_trait]
 pub trait PositionsInternalApi: Send + Sync {
     async fn get_position(&self, exchange: Exchange, currency: Currency) -> Option<Position>;
+}
+
+#[async_trait]
+pub trait AccountInternalApi: Send + Sync {
+    async fn total_balance(&self, exchange: Exchange) -> f64;
 }
 
 #[async_trait]

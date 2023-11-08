@@ -9,6 +9,7 @@ plugin-api = { workspace = true }
 async-trait = { workspace = true }
 uuid = { workspace = true }
 storage-core-api = { workspace = true }
+interactor-core-api = { workspace = true }
 indicators = { workspace = true }
 chrono = { workspace = true }
 serde_json = { workspace = true }

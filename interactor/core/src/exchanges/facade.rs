@@ -156,4 +156,9 @@ impl<S: StorageApi> ServiceFacade<S> {
         let exchange = self.get_exchange(exchange);
         exchange.get_order(order_id).await
     }
+
+    pub async fn total_balance(&self, exchange: Exchange) -> f64 {
+        let exchange = self.get_exchange(exchange);
+        exchange.get_total_balance().await
+    }
 }

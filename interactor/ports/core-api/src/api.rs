@@ -14,4 +14,5 @@ pub trait InteractorApi: Send + Sync + 'static {
     async fn get_price(&self, instrument_id: &InstrumentId, timestamp: Option<DateTime<Utc>>) -> Result<f64>;
     // todo maybe same bidirectional abstraction
     async fn get_order(&self, exchange: Exchange, order_id: &str) -> Result<Option<Order>>;
+    async fn get_total_balance(&self, exchange: Exchange) -> Result<f64>;
 }

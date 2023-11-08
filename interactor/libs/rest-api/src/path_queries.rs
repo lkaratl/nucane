@@ -32,3 +32,8 @@ pub struct OrderQuery {
     pub order_id: String,
     pub exchange: Exchange,
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct TotalBalanceQuery {
+    pub exchange: Exchange,
+}

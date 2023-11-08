@@ -7,8 +7,8 @@ use tracing::trace;
 
 use domain_model::{Action, Candle, Exchange, InstrumentId, Order, Subscription, Subscriptions, Timeframe};
 use interactor_core_api::InteractorApi;
-use interactor_rest_api::endpoints::{DELETE_UNSUBSCRIBE, GET_CANDLES, GET_ORDER, GET_PRICE, GET_SUBSCRIPTIONS, POST_EXECUTE_ACTIONS, POST_SUBSCRIBE};
-use interactor_rest_api::path_queries::{CandlesQuery, OrderQuery, PriceQuery};
+use interactor_rest_api::endpoints::{DELETE_UNSUBSCRIBE, GET_CANDLES, GET_ORDER, GET_PRICE, GET_SUBSCRIPTIONS, GET_TOTAL_BALANCE, POST_EXECUTE_ACTIONS, POST_SUBSCRIBE};
+use interactor_rest_api::path_queries::{CandlesQuery, OrderQuery, PriceQuery, TotalBalanceQuery};
 
 pub struct InteractorRestClient {
     url: String,
@@ -127,6 +127,23 @@ impl InteractorApi for InteractorRestClient {
         };
 
         let endpoint = format!("{}{}", self.url, GET_ORDER);
+        let mut url = Url::parse(&endpoint)?;
+        url.set_query(Some(&to_string(query)?));
+        trace!("Request url: {url:?}");
+        let result = self.client.get(url)
+            .send()
+            .await?
+            .json()
+            .await?;
+        Ok(result)
+    }
+
+    async fn get_total_balance(&self, exchange: Exchange) -> Result<f64> {
+        let query = TotalBalanceQuery {
+            exchange,
+        };
+
+        let endpoint = format!("{}{}", self.url, GET_TOTAL_BALANCE);
         let mut url = Url::parse(&endpoint)?;
         url.set_query(Some(&to_string(query)?));
         trace!("Request url: {url:?}");

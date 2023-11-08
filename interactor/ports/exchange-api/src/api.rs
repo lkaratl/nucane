@@ -15,4 +15,5 @@ pub trait ExchangeApi: Send + Sync + 'static {
     async fn place_order(&self, create_order: &CreateOrder) -> Order;
     async fn candles_history(&self, currency_pair: &CurrencyPair, market_type: &MarketType, timeframe: Timeframe, before: Option<DateTime<Utc>>, after: Option<DateTime<Utc>>, limit: Option<u8>) -> Vec<Candle>;
     async fn get_order(&self, order_id: &str) -> Option<Order>;
+    async fn get_total_balance(&self) -> f64;
 }

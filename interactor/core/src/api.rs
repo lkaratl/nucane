@@ -104,4 +104,9 @@ impl<S: StorageApi, R: SubscriptionRepository> InteractorApi for Interactor<S, R
         let order = self.service_facade.order(exchange, order_id).await;
         Ok(order)
     }
+
+    async fn get_total_balance(&self, exchange: Exchange) -> Result<f64> {
+        let total_balance = self.service_facade.total_balance(exchange).await;
+        Ok(total_balance)
+    }
 }
