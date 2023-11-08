@@ -3,7 +3,7 @@ use std::sync::Arc;
 use chrono::{DateTime, Duration, Utc};
 use tracing::{debug, info};
 
-use domain_model::{Candle, CreateOrder, Exchange, InstrumentId, Timeframe};
+use domain_model::{Candle, CreateOrder, Exchange, InstrumentId, Order, Timeframe};
 use interactor_exchange_api::ExchangeApi;
 use storage_core_api::StorageApi;
 
@@ -150,5 +150,10 @@ impl<S: StorageApi> ServiceFacade<S> {
             .first()
             .unwrap()
             .open_price
+    }
+
+    pub async fn order(&self, exchange: Exchange, order_id: &str) -> Option<Order> {
+        let exchange = self.get_exchange(exchange);
+        exchange.get_order(order_id).await
     }
 }

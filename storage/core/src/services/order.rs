@@ -1,15 +1,23 @@
+use std::sync::Arc;
+
+use tracing::debug;
 use uuid::Uuid;
 
 use domain_model::{Currency, Exchange, LP, MarketType, OrderStatus, OrderType, Side};
+use interactor_core_api::InteractorApi;
 use storage_persistence_api::OrderRepository;
 
-pub struct OrderService<R: OrderRepository> {
+pub struct OrderService<R: OrderRepository, I: InteractorApi> {
     repository: R,
+    interactor_client: Arc<I>,
 }
 
-impl<R: OrderRepository> OrderService<R> {
-    pub fn new(repository: R) -> Self {
-        Self { repository }
+impl<R: OrderRepository, I: InteractorApi> OrderService<R, I> {
+    pub fn new(repository: R, interactor_client: Arc<I>) -> Self {
+        Self {
+            repository,
+            interactor_client,
+        }
     }
 
     pub async fn save(&self, order: domain_model::Order) {
@@ -65,6 +73,15 @@ impl<R: OrderRepository> OrderService<R> {
         side: Option<Side>,
         order_type: Option<OrderType>,
     ) -> Vec<domain_model::Order> {
+        if let Some(order_id) = &id {
+            if let Some(exchange) = exchange {
+                debug!("Sync order with id: '{order_id}'");
+                if let Ok(Some(order)) = self.interactor_client.get_order(exchange, order_id).await {
+                    self.repository.save(order).await
+                        .expect("Error during order sync");
+                }
+            }
+        }
         self.repository
             .get(
                 id,

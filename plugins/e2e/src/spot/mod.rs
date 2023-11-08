@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tracing::info;
 
-use domain_model::{Action, OrderActionType, OrderStatus, Tick, Trigger};
+use domain_model::{Action, Exchange, OrderActionType, OrderStatus, Tick, Trigger};
 use domain_model::OrderMarketType::Spot;
 use domain_model::OrderType::{Limit, Market};
 use domain_model::Side::Buy;
@@ -122,7 +122,7 @@ impl E2EPlugin {
 
     async fn check_spot_limit_order(&mut self, api: Arc<dyn PluginInternalApi>) {
         if let Some(limit_order_id) = &self.state.spot_limit_order_id {
-            let limit_order = api.orders().get_order_by_id(limit_order_id).await;
+            let limit_order = api.orders().get_order_by_id(Exchange::OKX, limit_order_id).await;
             if let Some(limit_order) = limit_order {
                 if limit_order.status == OrderStatus::Completed {
                     info!("Successfully complete limit order with id: {}, market type: {:?}, target currency: {}, source currency: {}, order type: {:?}",
@@ -148,7 +148,7 @@ impl E2EPlugin {
         {
             let limit_order_with_sl_tp = api
                 .orders()
-                .get_order_by_id(limit_order_with_sl_tp_id)
+                .get_order_by_id(Exchange::OKX, limit_order_with_sl_tp_id)
                 .await;
             if let Some(limit_order_with_sl_tp) = limit_order_with_sl_tp {
                 assert!(limit_order_with_sl_tp.stop_loss.is_some());
@@ -180,7 +180,7 @@ impl E2EPlugin {
 
     async fn check_spot_market_order(&mut self, api: Arc<dyn PluginInternalApi>) {
         if let Some(market_order_id) = &self.state.spot_market_order_id {
-            let market_order = api.orders().get_order_by_id(market_order_id).await;
+            let market_order = api.orders().get_order_by_id(Exchange::OKX, market_order_id).await;
             if let Some(market_order) = market_order {
                 if market_order.status == OrderStatus::Completed {
                     info!("Successfully complete market order with id: {}, market type: {:?}, target currency: {}, source currency: {}",

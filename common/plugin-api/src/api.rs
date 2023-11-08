@@ -94,7 +94,7 @@ pub trait ActionsInternalApi: Send + Sync {
 
 #[async_trait]
 pub trait OrdersInternalApi: Send + Sync {
-    async fn get_order_by_id(&self, id: &str) -> Option<Order>;
+    async fn get_order_by_id(&self, exchange: Exchange, id: &str) -> Option<Order>;
 }
 
 #[async_trait]

@@ -262,3 +262,18 @@ impl Request for OrderDetailsRequest {
     const HAS_PAYLOAD: bool = true;
     type Response = [OrderDetailsResponse; 1];
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OrderHistoryRequest {
+    pub inst_type: String,
+    pub inst_id: Option<String>,
+}
+
+impl Request for OrderHistoryRequest {
+    const METHOD: Method = Method::GET;
+    const SIGNED: bool = true;
+    const ENDPOINT: &'static str = "/api/v5/trade/orders-history";
+    const HAS_PAYLOAD: bool = true;
+    type Response = Vec<OrderDetailsResponse>;
+}

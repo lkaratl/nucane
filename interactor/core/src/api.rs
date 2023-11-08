@@ -5,10 +5,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use tracing::{debug, trace, warn};
 
-use domain_model::{
-    Action, Candle, InstrumentId, OrderAction, OrderActionType, Subscription, Subscriptions,
-    Timeframe,
-};
+use domain_model::{Action, Candle, Exchange, InstrumentId, Order, OrderAction, OrderActionType, Subscription, Subscriptions, Timeframe};
 use interactor_core_api::InteractorApi;
 use interactor_exchange_api::ExchangeApi;
 use interactor_persistence_api::SubscriptionRepository;
@@ -101,5 +98,10 @@ impl<S: StorageApi, R: SubscriptionRepository> InteractorApi for Interactor<S, R
     ) -> Result<f64> {
         let price = self.service_facade.price(instrument_id, timestamp).await;
         Ok(price)
+    }
+
+    async fn get_order(&self, exchange: Exchange, order_id: &str) -> Result<Option<Order>> {
+        let order = self.service_facade.order(exchange, order_id).await;
+        Ok(order)
     }
 }

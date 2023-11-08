@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use domain_model::Order;
+use domain_model::{Exchange, Order};
 use plugin_api::OrdersInternalApi;
 use storage_core_api::StorageApi;
 
@@ -18,12 +18,12 @@ impl<S: StorageApi> DefaultOrderInternals<S> {
 
 #[async_trait]
 impl<S: StorageApi> OrdersInternalApi for DefaultOrderInternals<S> {
-    async fn get_order_by_id(&self, id: &str) -> Option<Order> {
+    async fn get_order_by_id(&self, exchange: Exchange, id: &str) -> Option<Order> {
         self.storage_client
             .get_orders(
                 Some(id.to_string()),
                 None,
-                None,
+                Some(exchange),
                 None,
                 None,
                 None,

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tracing::info;
 
-use domain_model::{Action, OrderActionType, OrderStatus, Tick, Trigger};
+use domain_model::{Action, Exchange, OrderActionType, OrderStatus, Tick, Trigger};
 use domain_model::MarginMode::Isolated;
 use domain_model::OrderMarketType::Margin;
 use domain_model::OrderType::Market;
@@ -94,7 +94,7 @@ impl E2EPlugin {
 
     async fn check_margin_market_order(&mut self, api: Arc<dyn PluginInternalApi>) {
         if let Some(order_id) = &self.state.margin_market_order_id {
-            let order = api.orders().get_order_by_id(order_id).await;
+            let order = api.orders().get_order_by_id(Exchange::OKX, order_id).await;
             if let Some(market_order) = order {
                 if market_order.status == OrderStatus::Completed {
                     info!("Successfully complete market order with id: {}, market type: {:?}, target currency: {}, source currency: {}",
@@ -119,7 +119,7 @@ impl E2EPlugin {
         {
             let order = api
                 .orders()
-                .get_order_by_id(order_id)
+                .get_order_by_id(Exchange::OKX, order_id)
                 .await;
             if let Some(limit_order_with_sl_tp) = order {
                 assert!(limit_order_with_sl_tp.stop_loss.is_some());

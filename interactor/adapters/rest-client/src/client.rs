@@ -5,10 +5,10 @@ use reqwest::{Client, Url};
 use serde_urlencoded::to_string;
 use tracing::trace;
 
-use domain_model::{Action, Candle, InstrumentId, Subscription, Subscriptions, Timeframe};
+use domain_model::{Action, Candle, Exchange, InstrumentId, Order, Subscription, Subscriptions, Timeframe};
 use interactor_core_api::InteractorApi;
-use interactor_rest_api::endpoints::{DELETE_UNSUBSCRIBE, GET_CANDLES, GET_PRICE, GET_SUBSCRIPTIONS, POST_EXECUTE_ACTIONS, POST_SUBSCRIBE};
-use interactor_rest_api::path_queries::{CandlesQuery, PriceQuery};
+use interactor_rest_api::endpoints::{DELETE_UNSUBSCRIBE, GET_CANDLES, GET_ORDER, GET_PRICE, GET_SUBSCRIPTIONS, POST_EXECUTE_ACTIONS, POST_SUBSCRIBE};
+use interactor_rest_api::path_queries::{CandlesQuery, OrderQuery, PriceQuery};
 
 pub struct InteractorRestClient {
     url: String,
@@ -111,6 +111,24 @@ impl InteractorApi for InteractorRestClient {
         let endpoint = format!("{}{}", self.url, GET_PRICE);
         let mut url = Url::parse(&endpoint)?;
         url.set_query(Some(&to_string(&query)?));
+        trace!("Request url: {url:?}");
+        let result = self.client.get(url)
+            .send()
+            .await?
+            .json()
+            .await?;
+        Ok(result)
+    }
+
+    async fn get_order(&self, exchange: Exchange, order_id: &str) -> Result<Option<Order>> {
+        let query = OrderQuery {
+            order_id: order_id.to_string(),
+            exchange,
+        };
+
+        let endpoint = format!("{}{}", self.url, GET_ORDER);
+        let mut url = Url::parse(&endpoint)?;
+        url.set_query(Some(&to_string(query)?));
         trace!("Request url: {url:?}");
         let result = self.client.get(url)
             .send()

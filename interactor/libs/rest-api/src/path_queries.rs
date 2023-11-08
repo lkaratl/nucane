@@ -26,3 +26,9 @@ pub struct PriceQuery {
     pub target: Currency,
     pub source: Currency,
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct OrderQuery {
+    pub order_id: String,
+    pub exchange: Exchange,
+}

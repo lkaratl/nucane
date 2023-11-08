@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -7,15 +8,10 @@ use chrono::{DateTime, Utc};
 use tokio::sync::Mutex;
 use tracing::{debug, error};
 
-use domain_model::{
-    Candle, CandleStatus, CreateOrder, CurrencyPair, Exchange, InstrumentId, MarginMode,
-    MarketType, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Timeframe,
-};
+use domain_model::{Candle, CandleStatus, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, LP, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Timeframe};
 use eac::{enums, rest};
-use eac::enums::{InstType, TdMode};
-use eac::rest::{
-    CandlesHistoryRequest, OkExRest, PlaceOrderRequest, RateLimitedRestClient, Trigger,
-};
+use eac::enums::{InstType, OrdState, OrdType, TdMode};
+use eac::rest::{CandlesHistoryRequest, OkExRest, OrderDetailsResponse, OrderHistoryRequest, PlaceOrderRequest, RateLimitedRestClient, Trigger};
 use eac::websocket::{Channel, Command, OkxWsClient};
 use engine_core_api::api::EngineApi;
 use interactor_exchange_api::ExchangeApi;
@@ -65,6 +61,32 @@ impl<E: EngineApi, S: StorageApi> OkxExchange<E, S> {
             engine_client,
             storage_client,
         }
+    }
+
+    async fn get_order_by_market(&self, market_type: MarketType, order_id: &str) -> Option<Order> {
+        let inst_type = match market_type {
+            MarketType::Spot => "SPOT".to_string(),
+            MarketType::Margin => "MARGIN".to_string()
+        };
+        let request = OrderHistoryRequest {
+            inst_type,
+            inst_id: None,
+        };
+        let mut main_order = None;
+        let mut lp = None;
+        self.private_client.request(request)
+            .await
+            .unwrap()
+            .into_iter()
+            .filter(|info| info.cl_ord_id == order_id || info.tag == order_id)
+            .for_each(|info| {
+                if !info.cl_ord_id.is_empty() && info.source.is_none() {
+                    main_order = Some(info);
+                } else if !info.tag.is_empty() && info.source == Some(7) {
+                    lp = Some(info);
+                }
+            });
+        main_order.map(|order| convert_order_details_to_order(order, lp))
     }
 }
 
@@ -397,4 +419,187 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
             .rev()
             .collect()
     }
+
+    async fn get_order(&self, order_id: &str) -> Option<Order> {
+        let order = self.get_order_by_market(MarketType::Spot, order_id).await;
+        if order.is_some() {
+            order
+        } else {
+            self.get_order_by_market(MarketType::Margin, order_id).await
+        }
+    }
+}
+
+fn convert_order_details_to_order(order_details: OrderDetailsResponse, lp: Option<OrderDetailsResponse>) -> Order {
+    let status = match order_details.state {
+        OrdState::Canceled => OrderStatus::Canceled,
+        OrdState::Live => OrderStatus::InProgress,
+        OrdState::PartiallyFilled => OrderStatus::InProgress,
+        OrdState::Filled => {
+            if order_details.sl_trigger_px.is_none() && order_details.tp_trigger_px.is_none() {
+                OrderStatus::Completed
+            } else {
+                OrderStatus::InProgress
+            }
+        }
+    };
+    let pair = {
+        let mut inst_id = order_details.inst_id.split('-');
+        CurrencyPair {
+            target: Currency::from_str(inst_id.next().unwrap()).unwrap(),
+            source: Currency::from_str(inst_id.next().unwrap()).unwrap(),
+        }
+    };
+    let market_type = {
+        match order_details.td_mode {
+            TdMode::Cross => OrderMarketType::Margin(MarginMode::Cross),
+            TdMode::Isolated => OrderMarketType::Margin(MarginMode::Isolated),
+            TdMode::Cash => OrderMarketType::Spot,
+        }
+    };
+    let side = match order_details.side {
+        enums::Side::Buy => Side::Buy,
+        enums::Side::Sell => Side::Sell,
+    };
+    let order_type = match order_details.ord_type {
+        OrdType::Market => OrderType::Market,
+        OrdType::Limit => OrderType::Limit(order_details.px.unwrap()),
+        order_type => panic!("Unsupported order type: {order_type:?}"),
+    };
+    let size = match order_details.ord_type {
+        OrdType::Market => match order_details.tgt_ccy.as_str() {
+            "quote_ccy" => Size::Source(order_details.sz),
+            "base_ccy" => Size::Target(order_details.sz),
+            _ => match side {
+                Side::Buy => Size::Source(order_details.sz),
+                Side::Sell => Size::Target(order_details.sz)
+            },
+        },
+        OrdType::Limit => Size::Target(order_details.sz),
+        order_type => panic!("Unsupported order type: {order_type:?}"),
+    };
+    let stop_loss =
+        if order_details.sl_trigger_px.is_some() && order_details.sl_ord_px.is_some() {
+            let sl_order_px = order_details.sl_ord_px.unwrap();
+            let sl_order_px = if sl_order_px == -1. {
+                OrderType::Market
+            } else {
+                OrderType::Limit(sl_order_px)
+            };
+            domain_model::Trigger::new(
+                order_details.sl_trigger_px.unwrap(),
+                sl_order_px,
+            )
+        } else {
+            None
+        };
+    let take_profit =
+        if order_details.tp_trigger_px.is_some() && order_details.tp_ord_px.is_some() {
+            let tp_order_px = order_details.sl_ord_px.unwrap();
+            let tp_order_px = if tp_order_px == -1. {
+                OrderType::Market
+            } else {
+                OrderType::Limit(tp_order_px)
+            };
+            domain_model::Trigger::new(
+                order_details.tp_trigger_px.unwrap(),
+                tp_order_px,
+            )
+        } else {
+            None
+        };
+    let order = Order {
+        id: order_details.cl_ord_id,
+        timestamp: Utc::now(),
+        simulation_id: None,
+        status,
+        exchange: Exchange::OKX,
+        pair,
+        market_type,
+        order_type,
+        side,
+        size,
+        fee: order_details.fee.abs(),
+        avg_fill_price: order_details.avg_px,
+        stop_loss,
+        avg_sl_price: 0.,
+        take_profit,
+        avg_tp_price: 0.,
+    };
+
+    if let Some(lp_order) = lp {
+        let status = match lp_order.state {
+            OrdState::Canceled => OrderStatus::Canceled,
+            OrdState::Live => OrderStatus::InProgress,
+            OrdState::PartiallyFilled => OrderStatus::InProgress,
+            OrdState::Filled => {
+                if lp_order.sl_trigger_px.is_none() && lp_order.tp_trigger_px.is_none() {
+                    OrderStatus::Completed
+                } else {
+                    OrderStatus::InProgress
+                }
+            }
+        };
+        if status == OrderStatus::Completed {
+            let side = match lp_order.side {
+                enums::Side::Buy => Side::Buy,
+                enums::Side::Sell => Side::Sell,
+            };
+            let size = match lp_order.ord_type {
+                OrdType::Market => match lp_order.tgt_ccy.as_str() {
+                    "quote_ccy" => Size::Source(lp_order.sz),
+                    "base_ccy" => Size::Target(lp_order.sz),
+                    _ => match side {
+                        Side::Buy => Size::Source(lp_order.sz),
+                        Side::Sell => Size::Target(lp_order.sz)
+                    },
+                },
+                OrdType::Limit => Size::Target(lp_order.sz),
+                order_type => panic!("Unsupported order type: {order_type:?}"),
+            };
+
+            let lp = LP {
+                id: lp_order.tag,
+                price: lp_order.avg_px,
+                size,
+            };
+
+            add_lp_to_order(order, lp)
+        } else {
+            order
+        }
+    } else {
+        order
+    }
+}
+
+fn add_lp_to_order(order: Order, lp: LP) -> Order {
+    let mut order = order;
+    if order.stop_loss.is_some() && order.take_profit.is_some() {
+        let sl_price = match order.clone().stop_loss.unwrap().order_px {
+            OrderType::Limit(price) => price,
+            OrderType::Market => order.clone().stop_loss.unwrap().trigger_px
+        };
+        let tp_price = match order.clone().take_profit.unwrap().order_px {
+            OrderType::Limit(price) => price,
+            OrderType::Market => order.clone().take_profit.unwrap().trigger_px
+        };
+        let sl_offset = (lp.price - sl_price).abs();
+        let tp_offset = (lp.price - tp_price).abs();
+        if tp_offset < sl_offset {
+            order.avg_tp_price = lp.price;
+            order.size = lp.size;
+        } else {
+            order.avg_sl_price = lp.price;
+            order.size = lp.size;
+        }
+    } else if order.stop_loss.is_some() {
+        order.avg_sl_price = lp.price;
+        order.size = lp.size;
+    } else if order.take_profit.is_some() {
+        order.avg_tp_price = lp.price;
+        order.size = lp.size;
+    }
+    order.status = OrderStatus::Completed;
+    order
 }
