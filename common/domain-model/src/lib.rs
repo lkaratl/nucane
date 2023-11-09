@@ -722,13 +722,15 @@ impl From<CreateSimulation> for Simulation {
 pub enum Indicator {
     SMA(u64),
     EMA(u64),
+    BB(u64, f64) // period & multiplier
 }
 
 impl Indicator {
     pub fn as_multiplier(&self) -> u64 {
         match self {
-            Indicator::SMA(multiplier) => *multiplier,
-            Indicator::EMA(multiplier) => *multiplier
+            Indicator::SMA(period) => *period,
+            Indicator::EMA(period) => *period,
+            Indicator::BB(period, _) => *period,
         }
     }
 }

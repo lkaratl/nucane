@@ -11,6 +11,7 @@ use tracing::Level;
 
 use domain_model::{Action, Candle, Currency, CurrencyPair, Exchange, Indicator, InstrumentId, Order, OrderMarketType, OrderType, PluginId, Position, Side, Size, Tick, Timeframe, Trigger};
 use domain_model::drawing::{Color, Coord, Icon, LineStyle};
+use indicators::api::BollingerBand;
 
 #[async_trait]
 pub trait PluginApi: Send + Sync {
@@ -117,6 +118,7 @@ pub trait CandlesInternalApi: Send + Sync {
 pub trait IndicatorsInternalApi: Send + Sync {
     async fn sma(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64) -> f64;
     async fn ema(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64) -> f64;
+    async fn bb(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64, multiplier: f64) -> BollingerBand;
 }
 
 #[async_trait]

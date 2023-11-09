@@ -59,8 +59,8 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
         let mut series = Vec::new();
         for indicator in indicators {
             debug!("Calculate indicator: '{indicator:?}'");
-            let set = self.get_indicator_series(timeframe, timestamps, instrument_id, indicator).await;
-            series.push(set);
+            let mut set = self.get_indicator_series(timeframe, timestamps, instrument_id, indicator).await;
+            series.append(&mut set);
         }
         series.push(self.get_candle_series(candles));
         series
@@ -85,31 +85,59 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
         )
     }
 
-    async fn get_indicator_series(&self, timeframe: Timeframe, timestamps: &[DateTime<Utc>], instrument_id: &InstrumentId, indicator: Indicator) -> Series {
-        let data = match indicator {
-            Indicator::SMA(multiplier) => {
+    async fn get_indicator_series(&self, timeframe: Timeframe, timestamps: &[DateTime<Utc>], instrument_id: &InstrumentId, indicator: Indicator) -> Vec<Series> {
+        let mut series = Vec::new();
+        match indicator {
+            Indicator::SMA(period) => {
                 let mut data = Vec::new();
                 for timestamp in timestamps {
                     let value = self.indicators
-                        .simple_moving_average(instrument_id, timeframe, *timestamp, multiplier).await;
+                        .simple_moving_average(instrument_id, timeframe, *timestamp, period).await;
                     data.push(value);
                 }
-                data
-            },
-            Indicator::EMA(multiplier) => {
+                series.push(Series::new(
+                    &indicator.to_string(),
+                    Data::Line(data),
+                ))
+            }
+            Indicator::EMA(period) => {
                 let mut data = Vec::new();
                 for timestamp in timestamps {
                     let value = self.indicators
-                        .exponential_moving_average(instrument_id, timeframe, *timestamp, multiplier).await;
+                        .exponential_moving_average(instrument_id, timeframe, *timestamp, period).await;
                     data.push(value);
                 }
-                data
+                series.push(Series::new(
+                    &indicator.to_string(),
+                    Data::Line(data),
+                ))
+            }
+            Indicator::BB(period, multiplier) => {
+                let mut upper_data = Vec::new();
+                let mut average_data = Vec::new();
+                let mut lower_data = Vec::new();
+                for timestamp in timestamps {
+                    let value = self.indicators
+                        .bollinger_bands(instrument_id, timeframe, *timestamp, period, multiplier).await;
+                    upper_data.push(value.upper);
+                    average_data.push(value.average);
+                    lower_data.push(value.lower);
+                }
+                series.push(Series::new(
+                    &indicator.to_string(),
+                    Data::Line(upper_data),
+                ));
+                series.push(Series::new(
+                    &indicator.to_string(),
+                    Data::Line(average_data),
+                ));
+                series.push(Series::new(
+                    &indicator.to_string(),
+                    Data::Line(lower_data),
+                ));
             }
         };
-        Series::new(
-            &indicator.to_string(),
-            Data::Line(data),
-        )
+        series
     }
 
     async fn get_points(

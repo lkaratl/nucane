@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 
 use domain_model::{InstrumentId, Timeframe};
+use indicators::api::BollingerBand;
 use indicators::Indicators;
 use plugin_api::IndicatorsInternalApi;
 use storage_core_api::StorageApi;
@@ -34,5 +35,8 @@ impl<S: StorageApi> IndicatorsInternalApi for DefaultIndicatorInternals<S> {
         self.indicators
             .exponential_moving_average(instrument_id, timeframe, self.timestamp, period)
             .await
+    }
+    async fn bb(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64, multiplier: f64) -> BollingerBand {
+        self.indicators.bollinger_bands(instrument_id, timeframe, self.timestamp, period, multiplier).await
     }
 }

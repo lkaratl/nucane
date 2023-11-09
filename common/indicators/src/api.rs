@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use chrono::{DateTime, Duration, Utc};
-use ta::indicators::ExponentialMovingAverage;
+use ta::indicators::{BollingerBands, BollingerBandsOutput, ExponentialMovingAverage};
 use ta::Next;
 
-use domain_model::{InstrumentId, Timeframe};
+use domain_model::{Candle, InstrumentId, Timeframe};
 use storage_core_api::StorageApi;
 
 use crate::calculation::simple_moving_average;
@@ -18,10 +18,9 @@ impl<S: StorageApi> Indicators<S> {
         Self { storage_client }
     }
 
-    async fn get_prices(&self, instrument_id: &InstrumentId, timeframe: Timeframe, timestamp: DateTime<Utc>, period: u64) -> Vec<f64> {
+    async fn get_candles(&self, instrument_id: &InstrumentId, timeframe: Timeframe, timestamp: DateTime<Utc>, period: u64) -> Vec<Candle> {
         let from = timestamp - Duration::seconds(timeframe.as_sec() * period as i64);
-        let candles = self
-            .storage_client
+        self.storage_client
             .get_candles(
                 instrument_id,
                 Some(timeframe),
@@ -30,7 +29,11 @@ impl<S: StorageApi> Indicators<S> {
                 Some(period),
             )
             .await
-            .unwrap();
+            .unwrap()
+    }
+
+    async fn get_prices(&self, instrument_id: &InstrumentId, timeframe: Timeframe, timestamp: DateTime<Utc>, period: u64) -> Vec<f64> {
+        let candles = self.get_candles(instrument_id, timeframe, timestamp, period).await;
         candles.into_iter()
             .map(|candle| candle.close_price)
             .collect()
@@ -62,5 +65,33 @@ impl<S: StorageApi> Indicators<S> {
             result = ema.next(price);
         }
         result
+    }
+
+    pub async fn bollinger_bands(&self, instrument_id: &InstrumentId, timeframe: Timeframe, timestamp: DateTime<Utc>,
+                                 period: u64, multiplier: f64) -> BollingerBand {
+        let values = self.get_prices(instrument_id, timeframe, timestamp, period).await;
+        let mut bb = BollingerBands::new(period as usize, multiplier).unwrap();
+        let mut result = BollingerBand::default();
+        for value in values {
+            result = bb.next(value).into()
+        }
+        result
+    }
+}
+
+#[derive(Default)]
+pub struct BollingerBand {
+    pub upper: f64,
+    pub average: f64,
+    pub lower: f64,
+}
+
+impl From<BollingerBandsOutput> for BollingerBand {
+    fn from(value: BollingerBandsOutput) -> Self {
+        Self {
+            upper: value.upper,
+            average: value.average,
+            lower: value.lower,
+        }
     }
 }
