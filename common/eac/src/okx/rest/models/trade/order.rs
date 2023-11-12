@@ -82,6 +82,7 @@ impl PlaceOrderRequest {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn limit(inst_id: &str, td_mode: TdMode, ccy: Option<String>, side: Side, price: f64, qty: Size, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
         let qty = match qty {
             Size::Target(qty) => qty,
