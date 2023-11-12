@@ -626,6 +626,7 @@ fn add_lp_to_order(order: Order, lp: LP) -> Order {
         order.avg_tp_price = lp.price;
         order.size = lp.size;
     }
+    order.fee += lp.fee;
     order.status = OrderStatus::Completed;
     order
 }
