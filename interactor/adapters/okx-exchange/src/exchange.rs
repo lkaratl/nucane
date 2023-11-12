@@ -581,7 +581,7 @@ fn convert_order_details_to_order(order_details: OrderDetailsResponse, lp: Optio
                 lp_order.fee
             } else {
                 lp_order.fee * lp_order.avg_px
-            };
+            }.abs();
 
             let lp = LP {
                 id: lp_order.tag,
