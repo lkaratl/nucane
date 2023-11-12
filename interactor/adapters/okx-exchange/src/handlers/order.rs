@@ -62,9 +62,10 @@ impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
                         source: Currency::from_str(inst_id.next().unwrap()).unwrap(),
                     }
                 };
+                let margin_ccy = order_details.ccy;
                 let market_type = {
                     match order_details.td_mode {
-                        TdMode::Cross => OrderMarketType::Margin(MarginMode::Cross),
+                        TdMode::Cross => OrderMarketType::Margin(MarginMode::Cross(Currency::from_str(&margin_ccy).unwrap())),
                         TdMode::Isolated => OrderMarketType::Margin(MarginMode::Isolated),
                         TdMode::Cash => OrderMarketType::Spot,
                     }

@@ -35,7 +35,7 @@ pub struct PlaceOrderRequest {
 }
 
 impl PlaceOrderRequest {
-    pub fn market(inst_id: &str, td_mode: TdMode, side: Side, qty: Size, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
+    pub fn market(inst_id: &str, td_mode: TdMode, ccy: Option<String>, side: Side, qty: Size, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
         let qty = match qty {
             Size::Target(qty) => {
                 if side == Side::Buy {
@@ -63,7 +63,7 @@ impl PlaceOrderRequest {
         Self {
             inst_id: inst_id.into(),
             td_mode,
-            ccy: None,
+            ccy,
             tgt_ccy: None,
             tag: None,
             side,
@@ -82,7 +82,7 @@ impl PlaceOrderRequest {
         }
     }
 
-    pub fn limit(inst_id: &str, td_mode: TdMode, side: Side, price: f64, qty: Size, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
+    pub fn limit(inst_id: &str, td_mode: TdMode, ccy: Option<String>, side: Side, price: f64, qty: Size, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
         let qty = match qty {
             Size::Target(qty) => qty,
             Size::Source(qty) => qty / price
@@ -100,7 +100,7 @@ impl PlaceOrderRequest {
         Self {
             inst_id: inst_id.into(),
             td_mode,
-            ccy: None,
+            ccy,
             tgt_ccy: None,
             tag: None,
             side,

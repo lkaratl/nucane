@@ -3,7 +3,8 @@ use std::sync::Arc;
 use tracing::info;
 
 use domain_model::{Action, Exchange, OrderActionType, OrderStatus, Tick, Trigger};
-use domain_model::MarginMode::Isolated;
+use domain_model::Currency::USDT;
+use domain_model::MarginMode::{Cross, Isolated};
 use domain_model::OrderMarketType::Margin;
 use domain_model::OrderType::Market;
 use domain_model::Side::Sell;
@@ -70,7 +71,7 @@ impl E2EPlugin {
         let order_action = api.actions().create_order_action(
             tick.instrument_id.exchange,
             tick.instrument_id.pair,
-            Margin(Isolated),
+            Margin(Cross(USDT)),
             Market,
             Target(100.0 / tick.price),
             Sell,

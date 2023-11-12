@@ -461,6 +461,8 @@ pub enum Currency {
     JFI,
     OKB,
     DOGE,
+    SOL,
+    MATIC,
 }
 
 impl fmt::Display for Currency {
@@ -639,7 +641,7 @@ pub enum OrderMarketType {
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Copy, Clone)]
 pub enum MarginMode {
-    Cross,
+    Cross(Currency),
     Isolated,
 }
 

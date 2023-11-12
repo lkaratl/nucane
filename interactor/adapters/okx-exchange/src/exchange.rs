@@ -237,9 +237,13 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
 
     async fn place_order(&self, create_order: &CreateOrder) -> Order {
         let inst_id = format!("{}-{}", create_order.pair.target, create_order.pair.source);
+        let mut margin_ccy = None;
         let td_mode = match create_order.market_type {
             OrderMarketType::Spot => TdMode::Cash,
-            OrderMarketType::Margin(MarginMode::Cross) => TdMode::Cross,
+            OrderMarketType::Margin(MarginMode::Cross(ccy)) => {
+                margin_ccy = ccy.to_string().into();
+                TdMode::Cross
+            },
             OrderMarketType::Margin(MarginMode::Isolated) => TdMode::Isolated,
         };
         let side = match create_order.side {
@@ -272,6 +276,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
             OrderType::Limit(price) => PlaceOrderRequest::limit(
                 &inst_id,
                 td_mode,
+                margin_ccy,
                 side,
                 price,
                 size,
@@ -281,6 +286,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
             OrderType::Market => PlaceOrderRequest::market(
                 &inst_id,
                 td_mode,
+                margin_ccy,
                 side,
                 size,
                 stop_loss,
@@ -458,9 +464,10 @@ fn convert_order_details_to_order(order_details: OrderDetailsResponse, lp: Optio
             source: Currency::from_str(inst_id.next().unwrap()).unwrap(),
         }
     };
+    let margin_ccy = order_details.ccy;
     let market_type = {
         match order_details.td_mode {
-            TdMode::Cross => OrderMarketType::Margin(MarginMode::Cross),
+            TdMode::Cross => OrderMarketType::Margin(MarginMode::Cross(Currency::from_str(&margin_ccy).unwrap())),
             TdMode::Isolated => OrderMarketType::Margin(MarginMode::Isolated),
             TdMode::Cash => OrderMarketType::Spot,
         }
