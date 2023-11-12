@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use tracing::debug;
+use tracing::trace;
 use uuid::Uuid;
 
 use domain_model::{Currency, Exchange, LP, MarketType, OrderStatus, OrderType, Side};
@@ -55,6 +55,7 @@ impl<R: OrderRepository, I: InteractorApi> OrderService<R, I> {
                 order.avg_tp_price = lp.price;
                 order.size = lp.size;
             }
+            order.fee += lp.fee;
             order.status = OrderStatus::Completed;
             self.save(order).await;
         }
@@ -75,7 +76,7 @@ impl<R: OrderRepository, I: InteractorApi> OrderService<R, I> {
     ) -> Vec<domain_model::Order> {
         if let Some(order_id) = &id {
             if let Some(exchange) = exchange {
-                debug!("Sync order with id: '{order_id}'");
+                trace!("Sync order with id: '{order_id}'");
                 if let Ok(Some(order)) = self.interactor_client.get_order(exchange, order_id).await {
                     self.repository.save(order).await
                         .expect("Error during order sync");

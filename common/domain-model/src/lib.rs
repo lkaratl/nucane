@@ -230,7 +230,7 @@ pub struct LP {
     pub id: String,
     pub price: f64,
     pub size: Size,
-
+    pub fee: f64,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

@@ -121,11 +121,17 @@ impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
                     } else {
                         None
                     };
+                let fee = if Currency::from_str(&order_details.fee_ccy).unwrap() == pair.source {
+                    order_details.fee
+                } else {
+                    order_details.fee * order_details.avg_px
+                }.abs();
                 let order = if let Some(7) = order_details.source {
                     OrderInfo::LP(LP {
                         id: order_details.tag,
                         price: order_details.avg_px,
                         size,
+                        fee
                     })
                 } else {
                     OrderInfo::Order(Order {
@@ -139,7 +145,7 @@ impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
                         order_type,
                         side,
                         size,
-                        fee: order_details.fee.abs(),
+                        fee,
                         avg_fill_price: order_details.avg_px,
                         stop_loss,
                         avg_sl_price: 0.,

@@ -523,6 +523,11 @@ fn convert_order_details_to_order(order_details: OrderDetailsResponse, lp: Optio
         } else {
             None
         };
+    let fee = if Currency::from_str(&order_details.fee_ccy).unwrap() == pair.source {
+        order_details.fee
+    } else {
+        order_details.fee * order_details.avg_px
+    }.abs();
     let order = Order {
         id: order_details.cl_ord_id,
         timestamp: Utc::now(),
@@ -534,7 +539,7 @@ fn convert_order_details_to_order(order_details: OrderDetailsResponse, lp: Optio
         order_type,
         side,
         size,
-        fee: order_details.fee.abs(),
+        fee,
         avg_fill_price: order_details.avg_px,
         stop_loss,
         avg_sl_price: 0.,
@@ -572,11 +577,17 @@ fn convert_order_details_to_order(order_details: OrderDetailsResponse, lp: Optio
                 OrdType::Limit => Size::Target(lp_order.sz),
                 order_type => panic!("Unsupported order type: {order_type:?}"),
             };
+            let fee = if Currency::from_str(&lp_order.fee_ccy).unwrap() == pair.source {
+                lp_order.fee
+            } else {
+                lp_order.fee * lp_order.avg_px
+            };
 
             let lp = LP {
                 id: lp_order.tag,
                 price: lp_order.avg_px,
                 size,
+                fee
             };
 
             add_lp_to_order(order, lp)
