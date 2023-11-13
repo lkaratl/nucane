@@ -232,8 +232,8 @@ pub struct OrderDetailsResponse {
     pub fill_sz: f64,
     pub fill_time: String,
     pub state: OrdState,
-    #[serde(deserialize_with = "crate::okx::parser::from_str")]
-    pub avg_px: f64,
+    #[serde(deserialize_with = "crate::okx::parser::from_str_opt")]
+    pub avg_px: Option<f64>,
     pub lever: String,
     #[serde(deserialize_with = "crate::okx::parser::from_str_opt")]
     pub sl_trigger_px: Option<f64>,

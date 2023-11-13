@@ -526,7 +526,7 @@ fn convert_order_details_to_order(order_details: OrderDetailsResponse, lp: Optio
     let fee = if Currency::from_str(&order_details.fee_ccy).unwrap() == pair.source {
         order_details.fee
     } else {
-        order_details.fee * order_details.avg_px
+        order_details.fee * order_details.avg_px.unwrap()
     }.abs();
     let order = Order {
         id: order_details.cl_ord_id,
@@ -540,7 +540,7 @@ fn convert_order_details_to_order(order_details: OrderDetailsResponse, lp: Optio
         side,
         size,
         fee,
-        avg_fill_price: order_details.avg_px,
+        avg_fill_price: order_details.avg_px.unwrap(),
         stop_loss,
         avg_sl_price: 0.,
         take_profit,
@@ -580,12 +580,12 @@ fn convert_order_details_to_order(order_details: OrderDetailsResponse, lp: Optio
             let fee = if Currency::from_str(&lp_order.fee_ccy).unwrap() == pair.source {
                 lp_order.fee
             } else {
-                lp_order.fee * lp_order.avg_px
+                lp_order.fee * lp_order.avg_px.unwrap()
             }.abs();
 
             let lp = LP {
                 id: lp_order.tag,
-                price: lp_order.avg_px,
+                price: lp_order.avg_px.unwrap(),
                 size,
                 fee
             };
