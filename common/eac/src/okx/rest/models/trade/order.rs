@@ -269,6 +269,7 @@ impl Request for OrderDetailsRequest {
 pub struct OrderHistoryRequest {
     pub inst_type: String,
     pub inst_id: Option<String>,
+    pub state: OrdState,
 }
 
 impl Request for OrderHistoryRequest {

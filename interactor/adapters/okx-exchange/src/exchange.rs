@@ -71,6 +71,7 @@ impl<E: EngineApi, S: StorageApi> OkxExchange<E, S> {
         let request = OrderHistoryRequest {
             inst_type,
             inst_id: None,
+            state: OrdState::Filled,
         };
         let mut main_order = None;
         let mut lp = None;
@@ -427,11 +428,11 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
     }
 
     async fn get_order(&self, order_id: &str) -> Option<Order> {
-        let order = self.get_order_by_market(MarketType::Spot, order_id).await;
+        let order = self.get_order_by_market(MarketType::Margin, order_id).await;
         if order.is_some() {
             order
         } else {
-            self.get_order_by_market(MarketType::Margin, order_id).await
+            self.get_order_by_market(MarketType::Spot, order_id).await
         }
     }
 
