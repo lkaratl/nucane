@@ -43,21 +43,13 @@ impl PluginApi for E2EPlugin {
                 target: Currency::BTC,
                 source: Currency::USDT,
             },
-        },
-             InstrumentId {
-                 exchange: Exchange::OKX,
-                 market_type: MarketType::Margin,
-                 pair: CurrencyPair {
-                     target: Currency::BTC,
-                     source: Currency::USDT,
-                 },
-             }]
+        }]
     }
 
     fn indicators(&self) -> Vec<Indicator> {
         vec![
             Indicator::SMA(7),
-            Indicator::BB(20, 2.)
+            Indicator::BB(20, 2.),
         ]
     }
 

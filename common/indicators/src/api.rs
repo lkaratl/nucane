@@ -79,7 +79,7 @@ impl<S: StorageApi> Indicators<S> {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct BollingerBand {
     pub upper: f64,
     pub average: f64,
