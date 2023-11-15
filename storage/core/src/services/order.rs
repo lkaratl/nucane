@@ -78,8 +78,28 @@ impl<R: OrderRepository, I: InteractorApi> OrderService<R, I> {
             if let Some(exchange) = exchange {
                 trace!("Sync order with id: '{order_id}'");
                 if let Ok(Some(order)) = self.interactor_client.get_order(exchange, order_id).await {
-                    self.repository.save(order).await
-                        .expect("Error during order sync");
+                    let status = if let Some(existing_order) = self.repository
+                        .get(
+                            id.clone(),
+                            simulation_id,
+                            Some(exchange),
+                            market_type,
+                            target,
+                            source,
+                            status.clone(),
+                            side,
+                            order_type,
+                        )
+                        .await
+                        .unwrap().first() {
+                        existing_order.status.clone()
+                    } else {
+                        OrderStatus::InProgress
+                    };
+                    if !status.is_finished() {
+                        self.repository.save(order).await
+                            .expect("Error during order sync");
+                    }
                 }
             }
         }
