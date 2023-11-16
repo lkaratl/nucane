@@ -724,7 +724,7 @@ impl From<CreateSimulation> for Simulation {
 pub enum Indicator {
     SMA(u64),
     EMA(u64),
-    BB(u64, f64) // period & multiplier
+    BB(u64, f64), // period & multiplier
 }
 
 impl Indicator {

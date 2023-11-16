@@ -76,6 +76,7 @@ Simulator<E, S, I, SR>
         logger.log(format!("Start simulation: '{:?}'", simulation));
         self.create_positions(&simulation).await;
         self.create_deployments(&mut simulation).await;
+        let mut simulation_stats = SimulationStats::default();
 
         let mut batch_start = simulation.start;
         let mut batch_end = simulation.start;
@@ -88,14 +89,14 @@ Simulator<E, S, I, SR>
                 simulation.end
             };
 
-            self.run_simulation_batch(logger, &mut simulation, batch_start, batch_end)
+            self.run_simulation_batch(logger, &mut simulation, &mut simulation_stats, batch_start, batch_end)
                 .await;
 
             batch_start += Duration::days(7);
         }
         self.delete_deployments(&simulation.deployments).await;
 
-        let report = self.build_report(simulation).await;
+        let report = self.build_report(simulation, simulation_stats).await;
         self.simulation_report_repository
             .save(report.clone())
             .await
@@ -108,6 +109,7 @@ Simulator<E, S, I, SR>
         &self,
         logger: &mut Logger,
         simulation: &mut Simulation,
+        simulation_stats: &mut SimulationStats,
         batch_start: DateTime<Utc>,
         batch_end: DateTime<Utc>,
     ) {
@@ -128,7 +130,7 @@ Simulator<E, S, I, SR>
                 tick.instrument_id.pair.source,
                 tick.price
             ));
-            self.check_active_orders(active_orders, tick, positions, logger)
+            self.check_active_orders(active_orders, tick, positions, simulation_stats, logger)
                 .await;
             let actions = self.engine_client.get_actions(tick).await;
             for action in &actions {
@@ -145,12 +147,12 @@ Simulator<E, S, I, SR>
                 self.execute_action(tick.timestamp, action, active_orders, logger)
                     .await;
             }
-            self.check_active_orders(active_orders, tick, positions, logger)
+            self.check_active_orders(active_orders, tick, positions, simulation_stats, logger)
                 .await;
         }
     }
 
-    async fn build_report(&self, simulation: Simulation) -> SimulationReport {
+    async fn build_report(&self, simulation: Simulation, simulation_stats: SimulationStats) -> SimulationReport {
         let mut positions = simulation.positions;
         positions
             .iter_mut()
@@ -159,6 +161,10 @@ Simulator<E, S, I, SR>
         let profit = self.calculate_profit(&positions, simulation.end).await;
         let profit_clear = self.calculate_profit(&positions, simulation.start).await;
         let fees = self.calculate_fees(&positions, simulation.end).await;
+
+        let sl_tp_percent = (simulation_stats.sl_count + simulation_stats.tp_count) as f64 / 100.;
+        let sl_percent = simulation_stats.sl_count as f64 / sl_tp_percent;
+        let tp_percent = simulation_stats.tp_count as f64 / sl_tp_percent;
 
         SimulationReport {
             simulation_id: simulation.id,
@@ -172,6 +178,12 @@ Simulator<E, S, I, SR>
             assets: positions,
             fees,
             active_orders: simulation.active_orders,
+            sl_count: simulation_stats.sl_count,
+            tp_count: simulation_stats.tp_count,
+            sl_percent,
+            tp_percent,
+            max_sl_streak: simulation_stats.max_sl_streak,
+            max_tp_streak: simulation_stats.max_tp_streak,
         }
     }
 
@@ -336,24 +348,19 @@ Simulator<E, S, I, SR>
         active_orders: &mut Vec<Order>,
         tick: &Tick,
         positions: &mut Vec<SimulationPosition>,
+        simulation_stats: &mut SimulationStats,
         logger: &mut Logger,
     ) {
         let mut completed_orders = Vec::new();
         for order in &mut *active_orders {
             match order.order_type {
                 OrderType::Limit(price) => {
-                    if self
-                        .check_limit_order(order, price, tick, positions, logger)
-                        .await
-                    {
+                    if self.check_limit_order(order, price, tick, positions, simulation_stats, logger).await {
                         completed_orders.push(order.id.clone());
                     }
                 }
                 OrderType::Market => {
-                    if self
-                        .check_market_order(order, tick, positions, logger)
-                        .await
-                    {
+                    if self.check_market_order(order, tick, positions, simulation_stats, logger).await {
                         completed_orders.push(order.id.clone());
                     }
                 }
@@ -378,6 +385,7 @@ Simulator<E, S, I, SR>
         price: f64,
         tick: &Tick,
         positions: &mut Vec<SimulationPosition>,
+        simulation_stats: &mut SimulationStats,
         logger: &mut Logger,
     ) -> bool {
         if order.status == OrderStatus::Created {
@@ -401,7 +409,7 @@ Simulator<E, S, I, SR>
             }
             false
         } else {
-            self.check_sl_and_tp(order, tick, positions, logger).await
+            self.check_sl_and_tp(order, tick, positions, simulation_stats, logger).await
         }
     }
 
@@ -410,6 +418,7 @@ Simulator<E, S, I, SR>
         order: &mut Order,
         tick: &Tick,
         positions: &mut Vec<SimulationPosition>,
+        simulation_stats: &mut SimulationStats,
         logger: &mut Logger,
     ) -> bool {
         if order.status == OrderStatus::Created {
@@ -421,7 +430,7 @@ Simulator<E, S, I, SR>
                 .await;
             false
         } else {
-            self.check_sl_and_tp(order, tick, positions, logger).await
+            self.check_sl_and_tp(order, tick, positions, simulation_stats, logger).await
         }
     }
 
@@ -430,6 +439,7 @@ Simulator<E, S, I, SR>
         order: &mut Order,
         tick: &Tick,
         positions: &mut Vec<SimulationPosition>,
+        simulation_stats: &mut SimulationStats,
         logger: &mut Logger,
     ) -> bool {
         let mut fully_completed = true;
@@ -439,6 +449,7 @@ Simulator<E, S, I, SR>
                 OrderType::Market => stop_loss.trigger_px
             };
             if self.check_sl(order, price, tick, positions, logger).await {
+                simulation_stats.add_sl();
                 let size = match order.size {
                     Size::Target(size) => size,
                     Size::Source(size) => size,
@@ -458,10 +469,8 @@ Simulator<E, S, I, SR>
                 OrderType::Limit(limit) => limit,
                 OrderType::Market => take_profit.trigger_px
             };
-            if self
-                .check_tp(order, price, tick, positions, logger)
-                .await
-            {
+            if self.check_tp(order, price, tick, positions, logger).await {
+                simulation_stats.add_tp();
                 let size = match order.size {
                     Size::Target(size) => size,
                     Size::Source(size) => size,
@@ -785,4 +794,35 @@ fn convert_to_create_deployment_dto(
 enum CurrencyConversion {
     ToTarget,
     ToSource,
+}
+
+#[derive(Default)]
+struct SimulationStats {
+    sl_count: u64,
+    tp_count: u64,
+    current_sl_streak: u64,
+    current_tp_streak: u64,
+    max_sl_streak: u64,
+    max_tp_streak: u64,
+}
+
+
+impl SimulationStats {
+    pub fn add_sl(&mut self) {
+        self.sl_count += 1;
+        self.current_sl_streak += 1;
+        if self.current_sl_streak > self.max_sl_streak {
+            self.max_sl_streak = self.current_sl_streak;
+        }
+        self.current_tp_streak = 0;
+    }
+
+    pub fn add_tp(&mut self) {
+        self.tp_count += 1;
+        self.current_tp_streak += 1;
+        if self.current_tp_streak > self.max_tp_streak {
+            self.max_tp_streak = self.current_tp_streak;
+        }
+        self.current_sl_streak = 0;
+    }
 }

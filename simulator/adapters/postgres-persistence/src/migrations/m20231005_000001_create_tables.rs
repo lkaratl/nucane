@@ -51,6 +51,36 @@ impl MigrationTrait for Migration {
                             .json()
                             .not_null(),
                     )
+                    .col(
+                        ColumnDef::new(SimulationReport::SlCount)
+                            .unsigned()
+                            .not_null()
+                    )
+                    .col(
+                        ColumnDef::new(SimulationReport::TpCount)
+                            .unsigned()
+                            .not_null()
+                    )
+                    .col(
+                        ColumnDef::new(SimulationReport::SlPercent)
+                            .double()
+                            .not_null()
+                    )
+                    .col(
+                        ColumnDef::new(SimulationReport::TpPercent)
+                            .double()
+                            .not_null()
+                    )
+                    .col(
+                        ColumnDef::new(SimulationReport::MaxSlStreak)
+                            .unsigned()
+                            .not_null()
+                    )
+                    .col(
+                        ColumnDef::new(SimulationReport::MaxTpStreak)
+                            .unsigned()
+                            .not_null()
+                    )
                     .to_owned(),
             )
             .await?;
@@ -81,4 +111,10 @@ enum SimulationReport {
     Fees,
     Assets,
     ActiveOrders,
+    SlCount,
+    TpCount,
+    SlPercent,
+    TpPercent,
+    MaxSlStreak,
+    MaxTpStreak
 }
