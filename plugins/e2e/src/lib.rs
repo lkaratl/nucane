@@ -48,8 +48,9 @@ impl PluginApi for E2EPlugin {
 
     fn indicators(&self) -> Vec<Indicator> {
         vec![
-            Indicator::SMA(7),
-            Indicator::BB(20, 2.),
+            // Indicator::SMA(7),
+            // Indicator::BB(20, 2.),
+            Indicator::PSAR
         ]
     }
 

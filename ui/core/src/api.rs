@@ -59,7 +59,7 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
         let mut series = Vec::new();
         for indicator in indicators {
             debug!("Calculate indicator: '{indicator:?}'");
-            let mut set = self.get_indicator_series(timeframe, timestamps, instrument_id, indicator).await;
+            let mut set = self.get_indicator_series(timeframe, timestamps, &candles, instrument_id, indicator).await;
             series.append(&mut set);
         }
         series.push(self.get_candle_series(candles));
@@ -85,7 +85,7 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
         )
     }
 
-    async fn get_indicator_series(&self, timeframe: Timeframe, timestamps: &[DateTime<Utc>], instrument_id: &InstrumentId, indicator: Indicator) -> Vec<Series> {
+    async fn get_indicator_series(&self, timeframe: Timeframe, timestamps: &[DateTime<Utc>], candles: &[Candle], instrument_id: &InstrumentId, indicator: Indicator) -> Vec<Series> {
         let mut series = Vec::new();
         match indicator {
             Indicator::SMA(period) => {
@@ -135,6 +135,32 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
                     &indicator.to_string(),
                     Data::Line(lower_data),
                 ));
+            }
+            Indicator::PSAR => {
+                let avg_candle_prices: Vec<_> = candles.iter()
+                    .map(|candle| candle.avg_price())
+                    .collect();
+                let mut data = Vec::new();
+                for (i, timestamp) in timestamps.iter().enumerate() {
+                    let value = self.indicators.parabolic_sar(instrument_id, timeframe, *timestamp).await;
+                    if let Some(value) = value {
+                        let color = match value {
+                            Side::Buy => Color::Green,
+                            Side::Sell => Color::Red
+                        };
+                        let price = match value {
+                            Side::Buy => avg_candle_prices.get(i).unwrap() * 0.98,
+                            Side::Sell => avg_candle_prices.get(i).unwrap() * 1.02,
+                        };
+                        let coord = (*timestamp, price).into();
+                        let point = Point::new(&indicator.to_string(), Icon::Pin.into(), color.into(), None, coord);
+                        data.push(point)
+                    }
+                }
+                series.push(Series::new(
+                    &indicator.to_string(),
+                    Data::Points(data),
+                ))
             }
         };
         series

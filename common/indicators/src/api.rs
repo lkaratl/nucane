@@ -3,8 +3,9 @@ use std::sync::Arc;
 use chrono::{DateTime, Duration, Utc};
 use ta::indicators::{BollingerBands, BollingerBandsOutput, ExponentialMovingAverage};
 use ta::Next;
+use yata::core::{Action, IndicatorConfig, IndicatorInstance};
 
-use domain_model::{Candle, InstrumentId, Timeframe};
+use domain_model::{Candle, InstrumentId, Side, Timeframe};
 use storage_core_api::StorageApi;
 
 use crate::calculation::simple_moving_average;
@@ -74,6 +75,35 @@ impl<S: StorageApi> Indicators<S> {
         let mut result = BollingerBand::default();
         for value in values {
             result = bb.next(value).into()
+        }
+        result
+    }
+
+    pub async fn parabolic_sar(&self, instrument_id: &InstrumentId, timeframe: Timeframe, timestamp: DateTime<Utc>) -> Option<Side> {
+        let candles: Vec<_> = self.get_candles(instrument_id, timeframe, timestamp, 100).await
+            .into_iter()
+            .map(|candle| (candle.open_price, candle.highest_price, candle.lowest_price, candle.close_price, 0.))
+            .collect();
+
+        let psar = yata::indicators::ParabolicSAR::default();
+        let mut instance = psar.init(candles.first().unwrap()).unwrap();
+        let mut signals = Vec::new();
+        for candle in candles.iter().skip(1) {
+            signals = instance.next(candle).signals().to_vec();
+        }
+        let mut result = None;
+        for signal in signals.iter() {
+            match signal {
+                Action::Buy(_) => {
+                    result = Some(Side::Buy);
+                    break;
+                },
+                Action::Sell(_) => {
+                    result = Some(Side::Sell);
+                    break;
+                },
+                Action::None => {}
+            }
         }
         result
     }

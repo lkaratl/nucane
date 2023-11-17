@@ -2387,6 +2387,7 @@ dependencies = [
  "storage-core-api",
  "ta",
  "tokio",
+ "yata",
 ]
 
 [[package]]
@@ -6619,6 +6620,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56c1936c4cc7a1c9ab21a1ebb602eb942ba868cbd44a99cb7cdc5892335e1c85"
 dependencies = [
  "linked-hash-map",
+]
+
+[[package]]
+name = "yata"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a43fda1db0d3cf4fecfafc1bac316b091fe09814c8ea1294c26170777685200"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

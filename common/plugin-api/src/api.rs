@@ -119,6 +119,7 @@ pub trait IndicatorsInternalApi: Send + Sync {
     async fn sma(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64) -> f64;
     async fn ema(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64) -> f64;
     async fn bb(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64, multiplier: f64) -> BollingerBand;
+    async fn psar(&self, instrument_id: &InstrumentId, timeframe: Timeframe) -> Option<Side>;
 }
 
 #[async_trait]

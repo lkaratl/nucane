@@ -77,6 +77,12 @@ pub struct Candle {
     pub source_volume: f64,
 }
 
+impl Candle {
+    pub fn avg_price(&self) -> f64 {
+        (self.open_price + self.highest_price + self.lowest_price + self.close_price) / 4.
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
 pub enum CandleStatus {
     Open,
@@ -724,7 +730,9 @@ impl From<CreateSimulation> for Simulation {
 pub enum Indicator {
     SMA(u64),
     EMA(u64),
-    BB(u64, f64), // period & multiplier
+    // period & multiplier
+    BB(u64, f64),
+    PSAR,
 }
 
 impl Indicator {
@@ -733,6 +741,7 @@ impl Indicator {
             Indicator::SMA(period) => *period,
             Indicator::EMA(period) => *period,
             Indicator::BB(period, _) => *period,
+            Indicator::PSAR => 100
         }
     }
 }

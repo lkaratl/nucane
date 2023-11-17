@@ -183,4 +183,5 @@ pg-embed = "0.6" # newer versions don't support db creation yet
 charming = { version = "0.2.4", features = ["ssr"] }
 dashmap = { version = "5.5.3", features = ["inline", "serde"] }
 ta = "0.5.0"
+yata = "0.6.2"
 moka = { version = "0.12.1", features = ["future"] }

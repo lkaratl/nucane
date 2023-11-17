@@ -119,6 +119,9 @@ fn add_series(mut chart: Chart, series: Vec<Series>) -> Chart {
                     .smooth(true).show_symbol(false);
                 chart = chart.series(line);
             }
+            Data::Points(data) => {
+                chart = add_points(chart, data);
+            }
         };
     }
     chart

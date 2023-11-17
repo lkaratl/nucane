@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 
-use domain_model::{InstrumentId, Timeframe};
+use domain_model::{InstrumentId, Side, Timeframe};
 use indicators::api::BollingerBand;
 use indicators::Indicators;
 use plugin_api::IndicatorsInternalApi;
@@ -38,5 +38,8 @@ impl<S: StorageApi> IndicatorsInternalApi for DefaultIndicatorInternals<S> {
     }
     async fn bb(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64, multiplier: f64) -> BollingerBand {
         self.indicators.bollinger_bands(instrument_id, timeframe, self.timestamp, period, multiplier).await
+    }
+    async fn psar(&self, instrument_id: &InstrumentId, timeframe: Timeframe) -> Option<Side> {
+        self.indicators.parabolic_sar(instrument_id, timeframe, self.timestamp).await
     }
 }

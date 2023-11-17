@@ -162,10 +162,6 @@ Simulator<E, S, I, SR>
         let profit_clear = self.calculate_profit(&positions, simulation.start).await;
         let fees = self.calculate_fees(&positions, simulation.end).await;
 
-        let sl_tp_percent = (simulation_stats.sl_count + simulation_stats.tp_count) as f64 / 100.;
-        let sl_percent = simulation_stats.sl_count as f64 / sl_tp_percent;
-        let tp_percent = simulation_stats.tp_count as f64 / sl_tp_percent;
-
         SimulationReport {
             simulation_id: simulation.id,
             start: simulation.start,
@@ -180,8 +176,8 @@ Simulator<E, S, I, SR>
             active_orders: simulation.active_orders,
             sl_count: simulation_stats.sl_count,
             tp_count: simulation_stats.tp_count,
-            sl_percent,
-            tp_percent,
+            sl_percent: simulation_stats.sl_percent(),
+            tp_percent: simulation_stats.tp_percent(),
             max_sl_streak: simulation_stats.max_sl_streak,
             max_tp_streak: simulation_stats.max_tp_streak,
         }
@@ -824,5 +820,21 @@ impl SimulationStats {
             self.max_tp_streak = self.current_tp_streak;
         }
         self.current_sl_streak = 0;
+    }
+
+    pub fn sl_percent(&self) -> f64 {
+        let sl_tp_count = self.sl_count + self.tp_count;
+        if sl_tp_count > 0 {
+            let percent = sl_tp_count as f64 / 100.;
+            self.sl_count as f64 / percent
+        } else { 0. }
+    }
+
+    pub fn tp_percent(&self) -> f64 {
+        let sl_tp_count = self.sl_count + self.tp_count;
+        if sl_tp_count > 0 {
+            let percent = sl_tp_count as f64 / 100.;
+            self.tp_count as f64 / percent
+        } else { 0. }
     }
 }

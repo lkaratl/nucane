@@ -10,3 +10,4 @@ tokio = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 ta = { workspace = true }
+yata = { workspace = true }
