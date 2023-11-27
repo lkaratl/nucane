@@ -54,6 +54,7 @@ members = [
     "storage/adapters/postgres-persistence",
     "storage/adapters/rest-client",
     "storage/libs/rest-api",
+    "storage/libs/core-api-cache", # todo remove this hot fix
     "ui/config",
     "ui/app",
     "ui/core",
@@ -127,6 +128,7 @@ storage-rest-api-server = { path = "storage/adapters/rest-api-server" }
 storage-rest-client = { path = "storage/adapters/rest-client" }
 storage-postgres-persistence = { path = "storage/adapters/postgres-persistence" }
 storage-rest-api = { path = "storage/libs/rest-api" }
+storage-core-api-cache = { path = "storage/libs/core-api-cache" } # todo remove this hot fix
 
 ui-config = { path = "ui/config" }
 ui-app = { path = "ui/app" }
@@ -180,3 +182,6 @@ async-broadcast = "0.5.1"
 pg-embed = "0.6" # newer versions don't support db creation yet
 charming = { version = "0.2.4", features = ["ssr"] }
 dashmap = { version = "5.5.3", features = ["inline", "serde"] }
+ta = "0.5.0"
+yata = "0.6.2"
+moka = { version = "0.12.1", features = ["future"] }

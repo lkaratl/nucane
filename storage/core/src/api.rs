@@ -5,10 +5,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use domain_model::{
-    Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position,
-    Side, Timeframe,
-};
+use domain_model::{Candle, Currency, Exchange, InstrumentId, LP, MarketType, Order, OrderStatus, OrderType, Position, Side, Timeframe};
 use domain_model::drawing::{Line, Point};
 use interactor_core_api::InteractorApi;
 use storage_core_api::{StorageApi, SyncReport};
@@ -29,7 +26,7 @@ pub struct Storage<
     C: CandleRepository,
     D: DrawingRepository,
 > {
-    order_service: OrderService<O>,
+    order_service: OrderService<O, I>,
     position_service: PositionService<P>,
     candle_service: Arc<CandleService<C>>,
     candle_sync_service: CandleSyncService<I, C>,
@@ -52,7 +49,7 @@ impl<
         drawing_repository: D,
     ) -> Self {
         let interactor_client = Arc::new(interactor_client);
-        let order_service = OrderService::new(order_repository);
+        let order_service = OrderService::new(order_repository, Arc::clone(&interactor_client));
         let position_service = PositionService::new(position_repository);
         let candle_service = Arc::new(CandleService::new(candle_repository));
         let candle_sync_service =
@@ -69,16 +66,15 @@ impl<
 }
 
 #[async_trait]
-impl<
-    I: InteractorApi,
-    O: OrderRepository,
-    P: PositionRepository,
-    C: CandleRepository,
-    D: DrawingRepository,
-> StorageApi for Storage<I, O, P, C, D>
+impl<I: InteractorApi, O: OrderRepository, P: PositionRepository, C: CandleRepository, D: DrawingRepository> StorageApi for Storage<I, O, P, C, D>
 {
     async fn save_order(&self, order: Order) -> Result<()> {
         self.order_service.save(order).await;
+        Ok(())
+    }
+
+    async fn save_lp(&self, lp: LP) -> Result<()> {
+        self.order_service.save_lp(lp).await;
         Ok(())
     }
 

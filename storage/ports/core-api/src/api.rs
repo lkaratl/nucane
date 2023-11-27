@@ -4,15 +4,14 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use domain_model::{
-    Candle, Currency, Exchange, InstrumentId, MarketType, Order, OrderStatus, OrderType, Position,
-    Side, Timeframe,
-};
+use domain_model::{Candle, Currency, Exchange, InstrumentId, LP, MarketType, Order, OrderStatus, OrderType, Position, Side, Timeframe};
 use domain_model::drawing::{Line, Point};
 
 #[async_trait]
 pub trait StorageApi: Send + Sync + 'static {
     async fn save_order(&self, order: Order) -> Result<()>;
+
+    async fn save_lp(&self, lp: LP) -> Result<()>;
 
     #[allow(clippy::too_many_arguments)]
     async fn get_orders(

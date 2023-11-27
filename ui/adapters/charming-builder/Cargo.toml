@@ -8,3 +8,4 @@ ui-chart-builder-api = { workspace = true }
 charming = { workspace = true }
 async-trait = { workspace = true }
 chrono = { workspace = true }
+tracing = { workspace = true }

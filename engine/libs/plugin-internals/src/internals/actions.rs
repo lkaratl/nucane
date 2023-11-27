@@ -2,10 +2,7 @@ use async_trait::async_trait;
 use chrono::Utc;
 use uuid::Uuid;
 
-use domain_model::{
-    Action, CreateOrder, CurrencyPair, Exchange, OrderAction, OrderActionType, OrderMarketType,
-    OrderStatus, OrderType, PluginId, Side, Size, Trigger,
-};
+use domain_model::{Action, CreateOrder, CurrencyPair, Exchange, OrderAction, OrderActionType, OrderMarketType, OrderStatus, OrderType, PluginId, Side, Size, Trigger};
 use plugin_api::{ActionsInternalApi, utils};
 
 pub struct DefaultActionInternals {
@@ -26,7 +23,9 @@ impl DefaultActionInternals {
 impl ActionsInternalApi for DefaultActionInternals {
     fn create_order_action(
         &self,
+        exchange: Exchange,
         pair: CurrencyPair,
+        market_type: OrderMarketType,
         order_type: OrderType,
         size: Size,
         side: Side,
@@ -39,11 +38,11 @@ impl ActionsInternalApi for DefaultActionInternals {
             plugin_id: self.plugin_id.clone(),
             timestamp: Utc::now(),
             status: OrderStatus::Created,
-            exchange: Exchange::OKX,
+            exchange,
             order: OrderActionType::CreateOrder(CreateOrder {
                 id: utils::string_id(),
                 pair,
-                market_type: OrderMarketType::Spot,
+                market_type,
                 order_type,
                 side,
                 size,

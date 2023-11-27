@@ -11,7 +11,7 @@ use eac::websocket::{Action, Channel, WsMessageHandler};
 use engine_core_api::api::EngineApi;
 
 const TICK_PRICE_DEVIATION_MULTIPLIER: f64 = 1000.0;
-const TICK_PRICE_THRESHOLD: f64 = 2.0;
+const TICK_PRICE_THRESHOLD: f64 = 0.3;
 
 pub struct TickHandler<E: EngineApi> {
     deviation_percent: f64,

@@ -4,3 +4,5 @@ pub mod drawings;
 pub mod indicators;
 pub mod orders;
 pub mod positions;
+pub mod candles;
+pub mod account;

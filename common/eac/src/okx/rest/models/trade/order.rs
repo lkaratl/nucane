@@ -7,8 +7,9 @@ use crate::okx::parser::ts_milliseconds;
 
 use super::super::Request;
 
-const STOP_LOSS_TYPE: &str = "mark";
-const TAKE_PROFIT_TYPE: &str = "mark";
+const STOP_LOSS_TYPE: &str = "last";
+// todo mark
+const TAKE_PROFIT_TYPE: &str = "last"; // todo mark
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -34,10 +35,20 @@ pub struct PlaceOrderRequest {
 }
 
 impl PlaceOrderRequest {
-    pub fn market(inst_id: &str, td_mode: TdMode, side: Side, qty: Size, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
-        let (tgt_ccy, qty) = match qty {
-            Size::Target(qty) => ("base_ccy".to_string(), qty),
-            Size::Source(qty) => ("quote_ccy".to_string(), qty)
+    pub fn market(inst_id: &str, td_mode: TdMode, ccy: Option<String>, side: Side, qty: Size, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
+        let qty = match qty {
+            Size::Target(qty) => {
+                if side == Side::Buy {
+                    panic!("Can't create order with Target size and Buy side. Please use Source size");
+                }
+                qty
+            },
+            Size::Source(qty) => {
+                if side == Side::Sell {
+                    panic!("Can't create order with Source size and Sell side. Please use Target size");
+                }
+                qty
+            }
         };
         let (sl_trigger_px_type, sl_trigger_px, sl_ord_px) = if let Some(stop_loss) = stop_loss {
             (Some(STOP_LOSS_TYPE.to_string()), Some(stop_loss.trigger_px), Some(stop_loss.order_px))
@@ -52,8 +63,8 @@ impl PlaceOrderRequest {
         Self {
             inst_id: inst_id.into(),
             td_mode,
-            ccy: None,
-            tgt_ccy: Some(tgt_ccy),
+            ccy,
+            tgt_ccy: None,
             tag: None,
             side,
             pos_side: None,
@@ -71,7 +82,8 @@ impl PlaceOrderRequest {
         }
     }
 
-    pub fn limit(inst_id: &str, td_mode: TdMode, side: Side, price: f64, qty: Size, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
+    #[allow(clippy::too_many_arguments)]
+    pub fn limit(inst_id: &str, td_mode: TdMode, ccy: Option<String>, side: Side, price: f64, qty: Size, stop_loss: Option<Trigger>, take_profit: Option<Trigger>) -> Self {
         let qty = match qty {
             Size::Target(qty) => qty,
             Size::Source(qty) => qty / price
@@ -89,7 +101,7 @@ impl PlaceOrderRequest {
         Self {
             inst_id: inst_id.into(),
             td_mode,
-            ccy: None,
+            ccy,
             tgt_ccy: None,
             tag: None,
             side,
@@ -115,6 +127,11 @@ impl PlaceOrderRequest {
 
     pub fn set_cl_ord_id(&mut self, cl_ord_id: &str) -> &mut Self {
         self.cl_ord_id = Some(cl_ord_id.to_string());
+        self
+    }
+
+    pub fn set_tag(&mut self, tag: &str) -> &mut Self {
+        self.tag = Some(tag.to_string());
         self
     }
 }
@@ -200,6 +217,8 @@ pub struct OrderDetailsResponse {
     pub sz: f64,
     #[serde(deserialize_with = "crate::okx::parser::from_str")]
     pub pnl: f64,
+    #[serde(deserialize_with = "crate::okx::parser::from_str_opt")]
+    pub source: Option<u8>,
     pub ord_type: OrdType,
     pub side: Side,
     pub tgt_ccy: String,
@@ -213,8 +232,8 @@ pub struct OrderDetailsResponse {
     pub fill_sz: f64,
     pub fill_time: String,
     pub state: OrdState,
-    #[serde(deserialize_with = "crate::okx::parser::from_str")]
-    pub avg_px: f64,
+    #[serde(deserialize_with = "crate::okx::parser::from_str_opt")]
+    pub avg_px: Option<f64>,
     pub lever: String,
     #[serde(deserialize_with = "crate::okx::parser::from_str_opt")]
     pub sl_trigger_px: Option<f64>,
@@ -243,4 +262,20 @@ impl Request for OrderDetailsRequest {
     const ENDPOINT: &'static str = "/api/v5/trade/order";
     const HAS_PAYLOAD: bool = true;
     type Response = [OrderDetailsResponse; 1];
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OrderHistoryRequest {
+    pub inst_type: String,
+    pub inst_id: Option<String>,
+    pub state: OrdState,
+}
+
+impl Request for OrderHistoryRequest {
+    const METHOD: Method = Method::GET;
+    const SIGNED: bool = true;
+    const ENDPOINT: &'static str = "/api/v5/trade/orders-history";
+    const HAS_PAYLOAD: bool = true;
+    type Response = Vec<OrderDetailsResponse>;
 }

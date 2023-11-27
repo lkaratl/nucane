@@ -6,13 +6,10 @@ use axum::extract::{Query, State};
 use axum::routing::{delete, get, post};
 use chrono::{TimeZone, Utc};
 
-use domain_model::{Action, Candle, CurrencyPair, InstrumentId, Subscription, Subscriptions};
+use domain_model::{Action, Candle, CurrencyPair, InstrumentId, Order, Subscription, Subscriptions};
 use interactor_core_api::InteractorApi;
-use interactor_rest_api::endpoints::{
-    DELETE_UNSUBSCRIBE, GET_CANDLES, GET_PRICE, GET_SUBSCRIPTIONS, POST_EXECUTE_ACTIONS,
-    POST_SUBSCRIBE,
-};
-use interactor_rest_api::path_queries::{CandlesQuery, PriceQuery};
+use interactor_rest_api::endpoints::{DELETE_UNSUBSCRIBE, GET_CANDLES, GET_ORDER, GET_PRICE, GET_SUBSCRIPTIONS, GET_TOTAL_BALANCE, POST_EXECUTE_ACTIONS, POST_SUBSCRIBE};
+use interactor_rest_api::path_queries::{CandlesQuery, OrderQuery, PriceQuery, TotalBalanceQuery};
 
 pub async fn run(port: u16, interactor: impl InteractorApi) {
     let interactor = Arc::new(interactor);
@@ -23,6 +20,8 @@ pub async fn run(port: u16, interactor: impl InteractorApi) {
         .route(POST_EXECUTE_ACTIONS, post(execute_action))
         .route(GET_CANDLES, get(get_candles))
         .route(GET_PRICE, get(get_price))
+        .route(GET_ORDER, get(get_order))
+        .route(GET_TOTAL_BALANCE, get(get_total_balance))
         .with_state(interactor);
 
     let address = SocketAddr::new(IpAddr::from([0, 0, 0, 0]), port);
@@ -108,4 +107,29 @@ async fn get_price(
         .await
         .unwrap();
     Json(price)
+}
+
+async fn get_order(
+    Query(query_params): Query<OrderQuery>,
+    State(interactor): State<Arc<dyn InteractorApi>>,
+) -> Json<Option<Order>> {
+    let order_id = &query_params.order_id;
+    let exchange = query_params.exchange;
+    let order = interactor
+        .get_order(exchange, order_id)
+        .await
+        .unwrap();
+    Json(order)
+}
+
+async fn get_total_balance(
+    Query(query_params): Query<TotalBalanceQuery>,
+    State(interactor): State<Arc<dyn InteractorApi>>,
+) -> Json<f64> {
+    let exchange = query_params.exchange;
+    let total_balance = interactor
+        .get_total_balance(exchange)
+        .await
+        .unwrap();
+    Json(total_balance)
 }

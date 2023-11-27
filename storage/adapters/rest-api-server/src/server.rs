@@ -9,13 +9,10 @@ use axum::routing::{get, post};
 use chrono::{TimeZone, Utc};
 use tracing::error;
 
-use domain_model::{Candle, CurrencyPair, InstrumentId, Order, Position, Timeframe};
+use domain_model::{Candle, CurrencyPair, InstrumentId, LP, Order, Position, Timeframe};
 use domain_model::drawing::{Line, Point};
 use storage_core_api::{StorageApi, SyncReport};
-use storage_rest_api::endpoints::{
-    GET_CANDLES, GET_LINES, GET_ORDERS, GET_POINTS, GET_POSITIONS, POST_CANDLES, POST_LINE,
-    POST_ORDERS, POST_POINT, POST_POSITIONS, POST_SYNC,
-};
+use storage_rest_api::endpoints::{GET_CANDLES, GET_LINES, GET_ORDERS, GET_POINTS, GET_POSITIONS, POST_CANDLES, POST_LINE, POST_LP, POST_ORDERS, POST_POINT, POST_POSITIONS, POST_SYNC};
 use storage_rest_api::path_queries::{
     CandlesQuery, CandleSyncQuery, DrawingQuery, OrdersQuery, PositionsQuery,
 };
@@ -27,6 +24,7 @@ pub async fn run(port: u16, storage: impl StorageApi) {
         .route(POST_CANDLES, post(create_candle))
         .route(GET_ORDERS, get(get_orders))
         .route(POST_ORDERS, post(create_order))
+        .route(POST_LP, post(add_lp))
         .route(GET_POSITIONS, get(get_positions))
         .route(POST_POSITIONS, post(create_position))
         .route(POST_SYNC, post(sync))
@@ -98,6 +96,10 @@ async fn get_orders(
 
 async fn create_order(State(storage): State<Arc<dyn StorageApi>>, Json(order): Json<Order>) {
     storage.save_order(order).await.unwrap();
+}
+
+async fn add_lp(State(storage): State<Arc<dyn StorageApi>>, Json(lp): Json<LP>) {
+    storage.save_lp(lp).await.unwrap();
 }
 
 async fn get_positions(

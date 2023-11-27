@@ -20,6 +20,14 @@ pub struct Model {
     pub fees: f64,
     pub assets: Json,
     pub active_orders: Json,
+    pub sl_count: i32,
+    pub tp_count: i32,
+    #[sea_orm(column_type = "Double")]
+    pub sl_percent: f64,
+    #[sea_orm(column_type = "Double")]
+    pub tp_percent: f64,
+    pub max_sl_streak: i32,
+    pub max_tp_streak: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use super::super::Request;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct BalanceRequest {
     pub ccy: Option<String>,
 }
@@ -26,8 +26,11 @@ impl BalanceRequest {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BalanceResponse {
     pub imr: String,
+    #[serde(deserialize_with = "crate::okx::parser::from_str")]
+    pub total_eq: f64,
 }
 
 impl Request for BalanceRequest {

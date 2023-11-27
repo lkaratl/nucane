@@ -17,9 +17,15 @@ pub struct Model {
     pub side: String,
     pub size: Json,
     #[sea_orm(column_type = "Double")]
-    pub avg_price: f64,
+    pub fee: f64,
+    #[sea_orm(column_type = "Double")]
+    pub avg_fill_price: f64,
     pub stop_loss: Option<Json>,
+    #[sea_orm(column_type = "Double")]
+    pub avg_sl_price: f64,
     pub take_profit: Option<Json>,
+    #[sea_orm(column_type = "Double")]
+    pub avg_tp_price: f64,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

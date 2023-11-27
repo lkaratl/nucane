@@ -9,8 +9,9 @@ use tokio::time::error::Elapsed;
 use tracing::{error, span};
 use tracing::Level;
 
-use domain_model::{Action, Currency, CurrencyPair, Exchange, Indicator, InstrumentId, Order, OrderType, PluginId, Position, Side, Size, Tick, Timeframe, Trigger};
+use domain_model::{Action, Candle, Currency, CurrencyPair, Exchange, Indicator, InstrumentId, Order, OrderMarketType, OrderType, PluginId, Position, Side, Size, Tick, Timeframe, Trigger};
 use domain_model::drawing::{Color, Coord, Icon, LineStyle};
+use indicators::api::BollingerBand;
 
 #[async_trait]
 pub trait PluginApi: Send + Sync {
@@ -20,8 +21,8 @@ pub trait PluginApi: Send + Sync {
     fn indicators(&self) -> Vec<Indicator> {
         Vec::new()
     }
-    fn get_state(&self) -> Value;
-    fn set_state(&mut self, state: Value);
+    async fn get_state(&self) -> Option<Value> { None }
+    async fn set_state(&mut self, _state: Value) {}
     fn on_tick_sync(&mut self, tick: &Tick, api: Arc<dyn PluginInternalApi>) -> Vec<Action> {
         let tick_id = format!(
             "{} '{}' {}-{}='{}'",
@@ -65,8 +66,10 @@ pub trait PluginInternalApi: Send + Sync {
     fn actions(&self) -> Arc<dyn ActionsInternalApi>;
     fn orders(&self) -> Arc<dyn OrdersInternalApi>;
     fn positions(&self) -> Arc<dyn PositionsInternalApi>;
+    fn candles(&self) -> Arc<dyn CandlesInternalApi>;
     fn indicators(&self) -> Arc<dyn IndicatorsInternalApi>;
     fn drawings(&self) -> Arc<dyn DrawingsInternalApi>;
+    fn account(&self) -> Arc<dyn AccountInternalApi>;
 }
 
 #[async_trait]
@@ -75,11 +78,14 @@ pub trait StateInternalApi: Send + Sync {
     async fn get(&self, key: &str) -> Option<Value>;
 }
 
+#[allow(clippy::too_many_arguments)]
 #[async_trait]
 pub trait ActionsInternalApi: Send + Sync {
     fn create_order_action(
         &self,
+        exchange: Exchange,
         pair: CurrencyPair,
+        market_type: OrderMarketType,
         order_type: OrderType,
         size: Size,
         side: Side,
@@ -90,7 +96,7 @@ pub trait ActionsInternalApi: Send + Sync {
 
 #[async_trait]
 pub trait OrdersInternalApi: Send + Sync {
-    async fn get_order_by_id(&self, id: &str) -> Option<Order>;
+    async fn get_order_by_id(&self, exchange: Exchange, id: &str) -> Option<Order>;
 }
 
 #[async_trait]
@@ -99,13 +105,21 @@ pub trait PositionsInternalApi: Send + Sync {
 }
 
 #[async_trait]
+pub trait AccountInternalApi: Send + Sync {
+    async fn total_balance(&self, exchange: Exchange) -> f64;
+}
+
+#[async_trait]
+pub trait CandlesInternalApi: Send + Sync {
+    async fn get_candles(&self, instrument_id: &InstrumentId, timeframe: Timeframe, limit: u64) -> Vec<Candle>;
+}
+
+#[async_trait]
 pub trait IndicatorsInternalApi: Send + Sync {
-    async fn moving_avg(
-        &self,
-        instrument_id: &InstrumentId,
-        timeframe: Timeframe,
-        length: u64,
-    ) -> f64;
+    async fn sma(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64) -> f64;
+    async fn ema(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64) -> f64;
+    async fn bb(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64, multiplier: f64) -> BollingerBand;
+    async fn psar(&self, instrument_id: &InstrumentId, timeframe: Timeframe) -> Option<Side>;
 }
 
 #[async_trait]

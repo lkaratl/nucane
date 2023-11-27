@@ -26,4 +26,11 @@ pub struct SimulationReport {
     pub fees: f64,
     pub assets: Vec<SimulationPosition>,
     pub active_orders: Vec<Order>,
+
+    pub sl_count: u64,
+    pub tp_count: u64,
+    pub sl_percent: f64,
+    pub tp_percent: f64,
+    pub max_sl_streak: u64,
+    pub max_tp_streak: u64,
 }

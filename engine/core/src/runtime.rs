@@ -7,22 +7,25 @@ use uuid::Uuid;
 use domain_model::{Action, DeploymentInfo, PluginId, Tick};
 use engine_core_api::api::Deployment;
 use engine_plugin_internals::api::DefaultPluginInternals;
+use interactor_core_api::InteractorApi;
 use plugin_api::PluginApi;
 use storage_core_api::StorageApi;
 
 use crate::fs_state_manager::FsStateManager;
 
-pub struct Runtime<S: StorageApi> {
+pub struct Runtime<S: StorageApi, I: InteractorApi> {
     deployments: Arc<RwLock<Vec<Deployment>>>,
     storage_client: Arc<S>,
+    interactor_client: Arc<I>,
     state_manager: Arc<FsStateManager>,
 }
 
-impl<S: StorageApi> Runtime<S> {
-    pub fn new(storage_client: Arc<S>) -> Self {
+impl<S: StorageApi, I: InteractorApi> Runtime<S, I> {
+    pub fn new(storage_client: Arc<S>, interactor_client: Arc<I>) -> Self {
         Self {
             deployments: Default::default(),
             storage_client,
+            interactor_client,
             state_manager: Default::default(),
         }
     }
@@ -75,7 +78,7 @@ impl<S: StorageApi> Runtime<S> {
                 if let Some(state_id) = deployment.state_id {
                     let state = self.state_manager.get(&state_id.to_string());
                     if let Some(state) = state {
-                        plugin.set_state(state);
+                        plugin.set_state(state).await;
                     }
                 }
 
@@ -89,8 +92,9 @@ impl<S: StorageApi> Runtime<S> {
                 result.append(&mut actions);
 
                 if let Some(state_id) = deployment.state_id {
-                    let state = plugin.get_state();
-                    self.state_manager.set(&state_id.to_string(), state);
+                    if let Some(state) = plugin.get_state().await {
+                        self.state_manager.set(&state_id.to_string(), state);
+                    }
                 }
             }
         }
@@ -98,13 +102,15 @@ impl<S: StorageApi> Runtime<S> {
     }
 
     fn build_plugin_internal_api(&self, deployment_id: Uuid, plugin_id: PluginId,
-                                 simulation_id: Option<Uuid>, tick: &Tick) -> Arc<DefaultPluginInternals<S>> {
+                                 simulation_id: Option<Uuid>, tick: &Tick) -> Arc<DefaultPluginInternals<S, I>> {
         let storage_client = Arc::clone(&self.storage_client);
+        let interactor_client = Arc::clone(&self.interactor_client);
         Arc::new(DefaultPluginInternals::new(
             deployment_id,
             plugin_id,
             simulation_id,
             storage_client,
+            interactor_client,
             tick.timestamp,
         ))
     }

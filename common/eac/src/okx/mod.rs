@@ -67,6 +67,7 @@ mod tests {
             let request = PlaceOrderRequest::market(
                 "BTC-USDT",
                 TdMode::Cash,
+                None,
                 Side::Buy,
                 Source(100.0),
                 None,
@@ -87,6 +88,7 @@ mod tests {
             let request = PlaceOrderRequest::market(
                 "BTC-USDT",
                 TdMode::Cash,
+                None,
                 Side::Sell,
                 Target(0.0038),
                 None,
@@ -106,6 +108,7 @@ mod tests {
             let request = PlaceOrderRequest::limit(
                 "BTC-USDT",
                 TdMode::Cash,
+                None,
                 Side::Buy,
                 26000.0,
                 Target(0.0038),
@@ -126,6 +129,7 @@ mod tests {
             let request = PlaceOrderRequest::limit(
                 "BTC-USDT",
                 TdMode::Cash,
+                None,
                 Side::Sell,
                 26000.0,
                 Target(0.0038),
@@ -147,6 +151,7 @@ mod tests {
             let request = PlaceOrderRequest::market(
                 "BTC-USDT",
                 TdMode::Isolated,
+                None,
                 Side::Buy,
                 Source(100.0),
                 None,
@@ -167,6 +172,7 @@ mod tests {
             let request = PlaceOrderRequest::market(
                 "BTC-USDT",
                 TdMode::Isolated,
+                None,
                 Side::Sell,
                 Target(0.0038),
                 None,
@@ -186,6 +192,7 @@ mod tests {
             let request = PlaceOrderRequest::limit(
                 "BTC-USDT",
                 TdMode::Cash,
+                None,
                 Side::Buy,
                 26_000.0,
                 Target(0.0038),
@@ -206,6 +213,7 @@ mod tests {
             let request = PlaceOrderRequest::limit(
                 "BTC-USDT",
                 TdMode::Cash,
+                None,
                 Side::Buy,
                 26_000.0,
                 Target(0.0038),
@@ -226,6 +234,7 @@ mod tests {
             let request = PlaceOrderRequest::limit(
                 "BTC-USDT",
                 TdMode::Cash,
+                None,
                 Side::Sell,
                 26_000.0,
                 Target(0.0038),
@@ -247,6 +256,7 @@ mod tests {
             let request = PlaceOrderRequest::market(
                 "BTC-USDT",
                 TdMode::Isolated,
+                None,
                 Side::Buy,
                 Source(100.0),
                 Trigger::new(10_000.0, 9_900.0),
@@ -267,6 +277,7 @@ mod tests {
             let request = PlaceOrderRequest::market(
                 "BTC-USDT",
                 TdMode::Isolated,
+                None,
                 Side::Buy,
                 Source(100.0),
                 None,
@@ -287,6 +298,7 @@ mod tests {
             let request = PlaceOrderRequest::market(
                 "BTC-USDT",
                 TdMode::Isolated,
+                None,
                 Side::Sell,
                 Target(0.0038),
                 Trigger::new(100_000.0, 100_100.0),
@@ -435,6 +447,7 @@ mod tests {
             let mut request = PlaceOrderRequest::market(
                 "BTC-USDT",
                 TdMode::Cash,
+                None,
                 Side::Buy,
                 Source(100.0),
                 None,

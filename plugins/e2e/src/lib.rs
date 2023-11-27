@@ -10,6 +10,8 @@ use plugin_api::{PluginApi, PluginInternalApi};
 use crate::plugin::E2EPlugin;
 
 mod plugin;
+mod margin;
+mod spot;
 
 #[allow(improper_ctypes_definitions)]
 #[no_mangle]
@@ -32,12 +34,12 @@ impl PluginApi for E2EPlugin {
         config.get(PARAMETER_NAME).unwrap().to_string();
     }
 
+    // todo make configurable
     fn instruments(&self) -> Vec<InstrumentId> {
         vec![InstrumentId {
             exchange: Exchange::OKX,
             market_type: MarketType::Spot,
             pair: CurrencyPair {
-                // todo make configurable
                 target: Currency::BTC,
                 source: Currency::USDT,
             },
@@ -46,15 +48,17 @@ impl PluginApi for E2EPlugin {
 
     fn indicators(&self) -> Vec<Indicator> {
         vec![
-            Indicator::MovingAVG(7)
+            // Indicator::SMA(7),
+            // Indicator::BB(20, 2.),
+            Indicator::PSAR
         ]
     }
 
-    fn get_state(&self) -> Value {
-        self.get_state()
+    async fn get_state(&self) -> Option<Value> {
+        Some(self.get_state())
     }
 
-    fn set_state(&mut self, state: Value) {
+    async fn set_state(&mut self, state: Value) {
         self.set_state(state);
     }
 

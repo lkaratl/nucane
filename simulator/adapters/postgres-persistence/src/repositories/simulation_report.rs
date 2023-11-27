@@ -40,6 +40,12 @@ for SimulationReportPostgresRepository<T>
             fees: ActiveValue::Set(simulation_report.fees),
             assets: ActiveValue::Set(json!(simulation_report.assets)),
             active_orders: ActiveValue::Set(json!(simulation_report.active_orders)),
+            sl_count: ActiveValue::Set(simulation_report.sl_count as i32),
+            tp_count: ActiveValue::Set(simulation_report.tp_count as i32),
+            sl_percent: ActiveValue::Set(simulation_report.sl_percent),
+            tp_percent: ActiveValue::Set(simulation_report.tp_percent),
+            max_sl_streak: ActiveValue::Set(simulation_report.max_sl_streak as i32),
+            max_tp_streak: ActiveValue::Set(simulation_report.max_tp_streak as i32),
         };
         SimulationReport::insert(simulation_report)
             .on_conflict(
@@ -53,6 +59,12 @@ for SimulationReportPostgresRepository<T>
                         simulation_report::Column::Fees,
                         simulation_report::Column::Assets,
                         simulation_report::Column::ActiveOrders,
+                        simulation_report::Column::SlCount,
+                        simulation_report::Column::TpCount,
+                        simulation_report::Column::SlPercent,
+                        simulation_report::Column::TpPercent,
+                        simulation_report::Column::MaxSlStreak,
+                        simulation_report::Column::MaxTpStreak,
                     ])
                     .to_owned(),
             )
@@ -84,6 +96,12 @@ for SimulationReportPostgresRepository<T>
                 fees: model.fees,
                 assets: serde_json::from_value(model.assets).unwrap(),
                 active_orders: serde_json::from_value(model.active_orders).unwrap(),
+                sl_count: model.sl_count as u64,
+                tp_count: model.tp_count as u64,
+                sl_percent: model.sl_percent,
+                tp_percent: model.tp_percent,
+                max_sl_streak: model.max_sl_streak as u64,
+                max_tp_streak: model.max_sl_streak as u64,
             })
             .collect()
     }

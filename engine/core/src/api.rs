@@ -21,16 +21,16 @@ pub struct Engine<I: InteractorApi, R: RegistryApi, S: StorageApi> {
     interactor_client: Arc<I>,
     registry_client: Arc<R>,
     storage_client: Arc<S>,
-    runtime: Runtime<S>,
+    runtime: Runtime<S, I>,
 }
 
 impl<I: InteractorApi, R: RegistryApi, S: StorageApi> Engine<I, R, S> {
     pub fn new(interactor_client: Arc<I>, registry_client: Arc<R>, storage_client: Arc<S>) -> Self {
         Self {
-            interactor_client,
+            interactor_client: Arc::clone(&interactor_client),
             registry_client,
             storage_client: Arc::clone(&storage_client),
-            runtime: Runtime::new(storage_client),
+            runtime: Runtime::new(storage_client, Arc::clone(&interactor_client)),
         }
     }
 
