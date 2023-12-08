@@ -8,21 +8,21 @@ use tracing::debug;
 use uuid::Uuid;
 
 use domain_model::{Candle, Indicator, InstrumentId, Order, OrderStatus, OrderType, Side, Timeframe};
-use indicators::Indicators;
+use indicators::api::IndicatorsApi;
 use simulator_core_api::SimulatorApi;
 use storage_core_api::StorageApi;
 use ui_chart_builder_api::{ChartBuilderApi, Color, Data, Icon, Line, Point, Series};
 use ui_core_api::UiApi;
 
-pub struct Ui<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> {
+pub struct Ui<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi, I: IndicatorsApi> {
     simulator_client: Arc<S>,
     storage_client: Arc<R>,
     chart_builder: Arc<C>,
-    indicators: Arc<Indicators<R>>,
+    indicators: Arc<I>,
 }
 
-impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
-    pub fn new(simulator_client: Arc<S>, storage_client: Arc<R>, chart_builder: Arc<C>, indicators: Arc<Indicators<R>>) -> Self {
+impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi, I: IndicatorsApi> Ui<S, R, C, I> {
+    pub fn new(simulator_client: Arc<S>, storage_client: Arc<R>, chart_builder: Arc<C>, indicators: Arc<I>) -> Self {
         Self {
             simulator_client,
             storage_client,
@@ -262,7 +262,7 @@ impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> Ui<S, R, C> {
 }
 
 #[async_trait]
-impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi> UiApi for Ui<S, R, C> {
+impl<S: SimulatorApi, R: StorageApi, C: ChartBuilderApi, I: IndicatorsApi + Sync + Send + 'static> UiApi for Ui<S, R, C, I> {
     async fn get_simulation_chart_html(
         &self,
         simulation_id: Uuid,

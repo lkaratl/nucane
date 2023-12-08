@@ -6,8 +6,10 @@ edition.workspace = true
 [dependencies]
 domain-model = { workspace = true }
 storage-core-api = { workspace = true }
+async-trait = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 ta = { workspace = true }
 yata = { workspace = true }
+moka = { workspace = true }

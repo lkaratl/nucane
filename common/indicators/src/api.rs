@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use chrono::{DateTime, Duration, Utc};
 use ta::indicators::{BollingerBands, BollingerBandsOutput, ExponentialMovingAverage};
 use ta::Next;
@@ -9,6 +10,14 @@ use domain_model::{Candle, InstrumentId, Side, Timeframe};
 use storage_core_api::StorageApi;
 
 use crate::calculation::simple_moving_average;
+
+#[async_trait]
+pub trait IndicatorsApi {
+    async fn simple_moving_average(&self, instrument_id: &InstrumentId, timeframe: Timeframe, timestamp: DateTime<Utc>, period: u64) -> f64;
+    async fn exponential_moving_average(&self, instrument_id: &InstrumentId, timeframe: Timeframe, timestamp: DateTime<Utc>, period: u64) -> f64;
+    async fn bollinger_bands(&self, instrument_id: &InstrumentId, timeframe: Timeframe, timestamp: DateTime<Utc>, period: u64, multiplier: f64) -> BollingerBand;
+    async fn parabolic_sar(&self, instrument_id: &InstrumentId, timeframe: Timeframe, timestamp: DateTime<Utc>) -> Option<Side>;
+}
 
 pub struct Indicators<S: StorageApi> {
     storage_client: Arc<S>,
@@ -39,8 +48,11 @@ impl<S: StorageApi> Indicators<S> {
             .map(|candle| candle.close_price)
             .collect()
     }
+}
 
-    pub async fn simple_moving_average(
+#[async_trait]
+impl<S: StorageApi> IndicatorsApi for Indicators<S> {
+    async fn simple_moving_average(
         &self,
         instrument_id: &InstrumentId,
         timeframe: Timeframe,
@@ -51,7 +63,7 @@ impl<S: StorageApi> Indicators<S> {
         *simple_moving_average(&prices, period).unwrap().get(period as usize).unwrap()
     }
 
-    pub async fn exponential_moving_average(
+    async fn exponential_moving_average(
         &self,
         instrument_id: &InstrumentId,
         timeframe: Timeframe,
@@ -68,8 +80,8 @@ impl<S: StorageApi> Indicators<S> {
         result
     }
 
-    pub async fn bollinger_bands(&self, instrument_id: &InstrumentId, timeframe: Timeframe, timestamp: DateTime<Utc>,
-                                 period: u64, multiplier: f64) -> BollingerBand {
+    async fn bollinger_bands(&self, instrument_id: &InstrumentId, timeframe: Timeframe, timestamp: DateTime<Utc>,
+                             period: u64, multiplier: f64) -> BollingerBand {
         let values = self.get_prices(instrument_id, timeframe, timestamp, period).await;
         let mut bb = BollingerBands::new(period as usize, multiplier).unwrap();
         let mut result = BollingerBand::default();
@@ -79,7 +91,7 @@ impl<S: StorageApi> Indicators<S> {
         result
     }
 
-    pub async fn parabolic_sar(&self, instrument_id: &InstrumentId, timeframe: Timeframe, timestamp: DateTime<Utc>) -> Option<Side> {
+    async fn parabolic_sar(&self, instrument_id: &InstrumentId, timeframe: Timeframe, timestamp: DateTime<Utc>) -> Option<Side> {
         let candles: Vec<_> = self.get_candles(instrument_id, timeframe, timestamp, 100).await
             .into_iter()
             .map(|candle| (candle.open_price, candle.highest_price, candle.lowest_price, candle.close_price, 0.))
@@ -97,11 +109,11 @@ impl<S: StorageApi> Indicators<S> {
                 Action::Buy(_) => {
                     result = Some(Side::Buy);
                     break;
-                },
+                }
                 Action::Sell(_) => {
                     result = Some(Side::Sell);
                     break;
-                },
+                }
                 Action::None => {}
             }
         }
@@ -109,7 +121,7 @@ impl<S: StorageApi> Indicators<S> {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct BollingerBand {
     pub upper: f64,
     pub average: f64,

@@ -2382,8 +2382,10 @@ name = "indicators"
 version = "0.1.7"
 dependencies = [
  "anyhow",
+ "async-trait",
  "chrono",
  "domain-model",
+ "moka",
  "storage-core-api",
  "ta",
  "tokio",

@@ -1,22 +1,17 @@
-use std::sync::Arc;
-
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 
 use domain_model::{InstrumentId, Side, Timeframe};
-use indicators::api::BollingerBand;
-use indicators::Indicators;
+use indicators::api::{BollingerBand, IndicatorsApi};
 use plugin_api::IndicatorsInternalApi;
-use storage_core_api::StorageApi;
 
-pub struct DefaultIndicatorInternals<S: StorageApi> {
+pub struct DefaultIndicatorInternals<I: IndicatorsApi> {
     timestamp: DateTime<Utc>,
-    indicators: Indicators<S>,
+    indicators: I,
 }
 
-impl<S: StorageApi> DefaultIndicatorInternals<S> {
-    pub fn new(storage_client: Arc<S>, timestamp: DateTime<Utc>) -> Self {
-        let indicators = Indicators::new(storage_client);
+impl<I: IndicatorsApi> DefaultIndicatorInternals<I> {
+    pub fn new(indicators: I, timestamp: DateTime<Utc>) -> Self {
         Self {
             indicators,
             timestamp,
@@ -25,7 +20,7 @@ impl<S: StorageApi> DefaultIndicatorInternals<S> {
 }
 
 #[async_trait]
-impl<S: StorageApi> IndicatorsInternalApi for DefaultIndicatorInternals<S> {
+impl<I: IndicatorsApi + Sync + Send> IndicatorsInternalApi for DefaultIndicatorInternals<I> {
     async fn sma(&self, instrument_id: &InstrumentId, timeframe: Timeframe, period: u64) -> f64 {
         self.indicators
             .simple_moving_average(instrument_id, timeframe, self.timestamp, period)
