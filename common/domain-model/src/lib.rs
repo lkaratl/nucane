@@ -421,6 +421,7 @@ impl Tick {
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Copy, Clone)]
 pub enum Exchange {
     OKX,
+    BYBIT
 }
 
 impl fmt::Display for Exchange {

@@ -7,8 +7,8 @@ use tracing::trace;
 use domain_model::{
     Candle, CandleStatus, CurrencyPair, Exchange, InstrumentId, MarketType, Timeframe,
 };
-use eac::rest::CandleResponse;
-use eac::websocket::{Action, Channel, WsMessageHandler};
+use eac::okx::rest::CandleResponse;
+use eac::okx::websocket::{Action, Channel, WsMessageHandler};
 use storage_core_api::StorageApi;
 
 pub struct CandleHandler<S: StorageApi> {

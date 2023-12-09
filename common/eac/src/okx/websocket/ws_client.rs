@@ -13,8 +13,8 @@ use tungstenite::Message as WsMessage;
 use url::Url;
 
 use crate::okx::credential::Credential;
-use crate::websocket::{Command, Message};
-use crate::websocket::handler::WsMessageHandler;
+use crate::okx::websocket::{Command, Message};
+use crate::okx::websocket::handler::WsMessageHandler;
 
 pub struct OkxWsClient {
     sender: Sender<WsMessage>,

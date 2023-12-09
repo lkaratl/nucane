@@ -767,6 +767,16 @@ fn get_fee_percent(exchange: Exchange, market_type: OrderMarketType, side: Side)
                 Side::Sell => 0.1,
             },
         },
+        Exchange::BYBIT => match market_type {
+            OrderMarketType::Spot => match side {
+                Side::Buy => 0.1,
+                Side::Sell => 0.1,
+            },
+            OrderMarketType::Margin(_) => match side {
+                Side::Buy => 0.1,
+                Side::Sell => 0.1,
+            },
+        }
     }
 }
 

@@ -6,8 +6,8 @@ use tracing::trace;
 use uuid::Uuid;
 
 use domain_model::{CurrencyPair, Exchange, InstrumentId, MarketType, Tick};
-use eac::rest::MarkPriceResponse;
-use eac::websocket::{Action, Channel, WsMessageHandler};
+use eac::okx::rest::MarkPriceResponse;
+use eac::okx::websocket::{Action, Channel, WsMessageHandler};
 use engine_core_api::api::EngineApi;
 
 const TICK_PRICE_DEVIATION_MULTIPLIER: f64 = 1000.0;

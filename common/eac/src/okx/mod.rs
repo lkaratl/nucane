@@ -37,12 +37,12 @@ mod tests {
 
         use tracing::debug;
 
-        use crate::enums::{Side, TdMode};
-        use crate::okx::tests::{init_logger, LOGGING_LEVEL};
-        use crate::rest::{
+        use crate::okx::enums::{Side, TdMode};
+        use crate::okx::rest::{
             CandlesHistoryRequest, OkExRest, PlaceOrderRequest, RateLimitedRestClient, Trigger,
         };
-        use crate::rest::Size::{Source, Target};
+        use crate::okx::rest::Size::{Source, Target};
+        use crate::okx::tests::{init_logger, LOGGING_LEVEL};
 
         pub fn build_private_rest_client() -> OkExRest {
             OkExRest::with_credential(
@@ -349,11 +349,11 @@ mod tests {
         use async_trait::async_trait;
         use serde_json::{from_value, Value};
 
-        use crate::enums::{InstType, Side, TdMode};
+        use crate::okx::enums::{InstType, Side, TdMode};
+        use crate::okx::rest::{MarkPriceResponse, OrderDetailsResponse, PlaceOrderRequest};
+        use crate::okx::rest::Size::Source;
         use crate::okx::tests::rest::build_private_rest_client;
-        use crate::rest::{MarkPriceResponse, OrderDetailsResponse, PlaceOrderRequest};
-        use crate::rest::Size::Source;
-        use crate::websocket::{Action, Channel, Command, OkxWsClient, WsMessageHandler};
+        use crate::okx::websocket::{Action, Channel, Command, OkxWsClient, WsMessageHandler};
 
         struct MarkPriceHandler;
 

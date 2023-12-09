@@ -5,8 +5,8 @@ use serde::de::DeserializeOwned;
 use tokio::sync::Mutex;
 use tracing::debug;
 
-use crate::OkExError;
-use crate::rest::{OkExRest, Request};
+use crate::okx::OkExError;
+use crate::okx::rest::{OkExRest, Request};
 
 pub struct RateLimitedRestClient {
     client: OkExRest,

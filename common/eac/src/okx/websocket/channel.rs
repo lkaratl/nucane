@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::enums::InstType;
+use crate::okx::enums::InstType;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(tag = "channel")]

@@ -9,10 +9,10 @@ use tokio::sync::Mutex;
 use tracing::{debug, error};
 
 use domain_model::{Candle, CandleStatus, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, LP, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Timeframe};
-use eac::{enums, rest};
-use eac::enums::{InstType, OrdState, OrdType, TdMode};
-use eac::rest::{BalanceRequest, CandlesHistoryRequest, OkExRest, OrderDetailsResponse, OrderHistoryRequest, PlaceOrderRequest, RateLimitedRestClient, Trigger};
-use eac::websocket::{Channel, Command, OkxWsClient};
+use eac::okx::{enums, rest};
+use eac::okx::enums::{InstType, OrdState, OrdType, TdMode};
+use eac::okx::rest::{BalanceRequest, CandlesHistoryRequest, OkExRest, OrderDetailsResponse, OrderHistoryRequest, PlaceOrderRequest, RateLimitedRestClient, Trigger};
+use eac::okx::websocket::{Channel, Command, OkxWsClient};
 use engine_core_api::api::EngineApi;
 use interactor_exchange_api::ExchangeApi;
 use storage_core_api::StorageApi;

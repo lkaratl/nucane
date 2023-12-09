@@ -7,8 +7,8 @@ use serde_json::{from_value, Value};
 use tracing::trace;
 
 use domain_model::{Currency, Exchange, Position, Side};
-use eac::rest::Account;
-use eac::websocket::{Action, Channel, WsMessageHandler};
+use eac::okx::rest::Account;
+use eac::okx::websocket::{Action, Channel, WsMessageHandler};
 use storage_core_api::StorageApi;
 
 pub struct PositionHandler<S: StorageApi> {

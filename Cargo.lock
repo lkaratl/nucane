@@ -2435,6 +2435,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "interactor-bybit-exchange"
+version = "0.1.7"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "domain-model",
+ "eac",
+ "engine-core-api",
+ "interactor-exchange-api",
+ "serde",
+ "serde_json",
+ "storage-core-api",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "interactor-config"
 version = "0.1.7"
 dependencies = [
