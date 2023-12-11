@@ -7,19 +7,18 @@ use chrono::{DateTime, Utc};
 use tokio::sync::Mutex;
 
 use domain_model::{Candle, CreateOrder, CurrencyPair, Exchange, MarketType, Order, Timeframe};
-use eac::rest::{OkExRest, RateLimitedRestClient};
-use eac::websocket::OkxWsClient;
+use eac::bybit::rest::{BybitRest, RateLimitedRestClient};
+use eac::bybit::websocket::BybitWsClient;
 use engine_core_api::api::EngineApi;
 use interactor_exchange_api::ExchangeApi;
 use storage_core_api::StorageApi;
 
 pub struct BybitExchange<E: EngineApi, S: StorageApi> {
-    is_demo: bool,
     api_key: String,
     api_secret: String,
     api_passphrase: String,
     ws_url: String,
-    sockets: Arc<Mutex<RefCell<HashMap<String, OkxWsClient>>>>,
+    sockets: Arc<Mutex<RefCell<HashMap<String, BybitWsClient>>>>,
     private_client: RateLimitedRestClient,
     public_client: RateLimitedRestClient,
 
@@ -30,7 +29,6 @@ pub struct BybitExchange<E: EngineApi, S: StorageApi> {
 impl<E: EngineApi, S: StorageApi> BybitExchange<E, S> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        is_demo: bool,
         http_url: &str,
         ws_url: &str,
         api_key: &str,
@@ -40,11 +38,10 @@ impl<E: EngineApi, S: StorageApi> BybitExchange<E, S> {
         storage_client: Arc<S>,
     ) -> Self {
         let private_client =
-            OkExRest::with_credential(http_url, is_demo, api_key, api_secret, api_passphrase);
+            BybitRest::with_credential(http_url, api_key, api_secret);
         let public_client =
-            OkExRest::new(http_url, false);
+            BybitRest::new(http_url);
         Self {
-            is_demo,
             api_key: api_key.to_owned(),
             api_secret: api_secret.to_owned(),
             api_passphrase: api_passphrase.to_owned(),

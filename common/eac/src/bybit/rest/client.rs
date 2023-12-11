@@ -1,10 +1,11 @@
-use chrono::{SecondsFormat, Utc};
+use chrono::Utc;
 use derive_builder::Builder;
 use fehler::{throw, throws};
 use hyper::Method;
 use reqwest::{Client, Response};
-use serde::{de::DeserializeOwned, Deserialize};
-use serde_json::{from_str, to_string as to_jstring};
+use serde::Deserialize;
+use serde::de::DeserializeOwned;
+use serde_json::from_str;
 use serde_urlencoded::to_string as to_ustring;
 use tracing::{error, trace};
 use url::Url;
@@ -15,35 +16,32 @@ use crate::bybit::error::BybitError;
 use super::models::Request;
 
 #[derive(Clone, Builder)]
-pub struct OkExRest {
+pub struct BybitRest {
     url: String,
     client: Client,
     #[builder(default, setter(strip_option))]
     credential: Option<Credential>,
-    demo: bool,
 }
 
-impl OkExRest {
-    pub fn new(url: &str, demo: bool) -> Self {
-        OkExRest {
+impl BybitRest {
+    pub fn new(url: &str) -> Self {
+        BybitRest {
             url: url.to_string(),
             client: Client::new(),
             credential: None,
-            demo,
         }
     }
 
-    pub fn with_credential(url: &str, demo: bool, api_key: &str, api_secret: &str) -> Self {
-        OkExRest {
+    pub fn with_credential(url: &str, api_key: &str, api_secret: &str) -> Self {
+        BybitRest {
             url: url.to_string(),
             client: Client::new(),
             credential: Some(Credential::new(api_key, api_secret)),
-            demo,
         }
     }
 
-    pub fn builder() -> OkExRestBuilder {
-        OkExRestBuilder::default()
+    pub fn builder() -> BybitRestBuilder {
+        BybitRestBuilder::default()
     }
 
     #[throws(BybitError)]
@@ -59,7 +57,7 @@ impl OkExRest {
         }
         trace!("Request url: {url:?}");
         let body = match R::METHOD {
-            Method::PUT | Method::POST => to_jstring(&req)?,
+            Method::PUT | Method::POST => to_ustring(&req)?,
             _ => "".to_string(),
         };
         trace!("Request body: {body:?}");
@@ -68,22 +66,17 @@ impl OkExRest {
 
         if R::SIGNED {
             let cred = self.get_credential()?;
-            let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
-            let (key, signature) = cred.signature(R::METHOD, &timestamp, &url, &body);
+            let timestamp = (Utc::now().timestamp() * 1000).to_string();
+            let (key, signature) = cred.signature(R::METHOD, &timestamp, &url, &body, false);
 
             builder = builder
-                .header("OK-ACCESS-KEY", key)
-                .header("OK-ACCESS-SIGN", signature)
-                .header("OK-ACCESS-TIMESTAMP", timestamp)
+                .header("X-BAPI-API-KEY", key)
+                .header("X-BAPI-SIGN", signature)
+                .header("X-BAPI-TIMESTAMP", timestamp)
         }
-        if self.demo {
-            builder = builder
-                .header("x-simulated-trading", "1");
-        }
-
         let resp = builder
-            .header("content-type", "application/json")
-            .header("user-agent", "okex-rs")
+            .header("content-type", "application/x-www-form-urlencoded")
+            .header("user-agent", "bybit-rs")
             .body(body)
             .send()
             .await?;
@@ -103,8 +96,8 @@ impl OkExRest {
         let payload = resp.text().await?;
         trace!("Response: {payload}");
 
-        match from_str::<OkExResponseEnvolope<T>>(&payload) {
-            Ok(v) => v.data,
+        match from_str::<BybitResponseEnvelope<T>>(&payload) {
+            Ok(v) => v.result,
             Err(e) => {
                 error!("Cannot deserialize response from {}: {}", payload, e);
                 throw!(BybitError::CannotDeserializeResponse(payload))
@@ -115,8 +108,10 @@ impl OkExRest {
 
 #[allow(unused)]
 #[derive(Clone, Debug, Deserialize)]
-pub struct OkExResponseEnvolope<T> {
-    code: String,
-    msg: String,
-    data: T,
+#[serde(rename_all = "camelCase")]
+pub struct BybitResponseEnvelope<T> {
+    pub ret_code: i64,
+    pub ret_msg: String,
+    pub time: i64,
+    pub result: T,
 }

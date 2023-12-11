@@ -6,15 +6,15 @@ use tokio::sync::Mutex;
 use tracing::debug;
 
 use crate::bybit::BybitError;
-use crate::bybit::rest::{OkExRest, Request};
+use crate::bybit::rest::{BybitRest, Request};
 
 pub struct RateLimitedRestClient {
-    client: OkExRest,
+    client: BybitRest,
     requests_rate: Mutex<HashMap<String, Rate>>,
 }
 
 impl RateLimitedRestClient {
-    pub fn new(client: OkExRest) -> Self {
+    pub fn new(client: BybitRest) -> Self {
         Self {
             client,
             requests_rate: Mutex::new(HashMap::new()),

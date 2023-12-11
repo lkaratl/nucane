@@ -1,4 +1,4 @@
-use chrono::{Duration, Utc};
+use chrono::Utc;
 use fehler::throws;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -26,13 +26,14 @@ impl Command {
 
     #[throws(BybitError)]
     pub fn login(cred: Credential) -> Command {
-        let timestamp = ((Utc::now() + Duration::seconds(1)).timestamp() * 1000).to_string();
+        let timestamp = (Utc::now().timestamp() * 1000).to_string();
 
         let (key, sign) = cred.signature(
             http::Method::GET,
             &timestamp,
             &Url::parse("https://example.com/realtime").unwrap(), // the domain name doesn't matter
             "",
+            true,
         );
         Self::Auth(vec![
             key.into(),

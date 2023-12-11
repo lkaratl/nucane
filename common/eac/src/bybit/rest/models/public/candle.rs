@@ -1,45 +1,41 @@
 use http::Method;
 use serde::{Deserialize, Serialize};
 
+use crate::bybit::enums::Category;
 use crate::bybit::rest::Request;
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CandleResponse {
-    pub start: u64,
-    pub end: u64,
-    pub timestamp: u64,
-    pub interval: String,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub open: f64,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub close: f64,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub high: f64,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub low: f64,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub volume: f64,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub turnover: f64,
-    pub confirm: bool,
+    pub symbol: String,
+    pub category: Category,
+    pub list: Vec<(
+        String, // start time
+        String, // open price
+        String, // highest price
+        String, // lowest price
+        String, // close price
+        String, // volume
+        String, // turnover
+    )>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CandlesHistoryRequest {
-    pub inst_id: String,
-    pub bar: Option<String>,
-    pub after: Option<String>,
-    pub before: Option<String>,
-    pub limit: Option<u8>,
+pub struct CandlesRequest {
+    pub category: Category,
+    pub symbol: String,
+    pub interval: String,
+    pub start: Option<i64>,
+    pub end: Option<i64>,
+    pub limit: Option<u16>,
 }
 
-impl Request for CandlesHistoryRequest {
+impl Request for CandlesRequest {
     const METHOD: Method = Method::GET;
     const SIGNED: bool = false;
-    const ENDPOINT: &'static str = "/api/v5/market/history-candles";
+    const ENDPOINT: &'static str = "/v5/market/kline";
     const HAS_PAYLOAD: bool = true;
     const REQUESTS_PER_SECOND: u8 = 10;
-    type Response = Vec<CandleResponse>;
+    type Response = CandleResponse;
 }

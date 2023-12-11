@@ -28,309 +28,114 @@ mod tests {
     }
 
     mod rest {
-        use std::env;
+        use chrono::Utc;
+        use uuid::Uuid;
 
-        use crate::bybit::enums::{Side, TdMode};
-        use crate::bybit::rest::{
-            OkExRest, PlaceOrderRequest, RateLimitedRestClient, Trigger,
-        };
+        use crate::bybit::enums::{Category, Side, Timeframe};
+        use crate::bybit::rest::{BybitRest, CandlesRequest, OrderDetailsRequest, PlaceOrderRequest, RateLimitedRestClient};
         use crate::bybit::rest::Size::{Source, Target};
+        use crate::bybit::tests::{init_logger, LOGGING_LEVEL};
 
-        pub fn build_private_rest_client() -> OkExRest {
-            OkExRest::with_credential(
-                "https://www.okx.com",
-                true,
-                &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-KEY").unwrap(),
-                &env::var("INTERACTOR_EAC_EXCHANGES_OKX_AUTH_API-SECRET").unwrap(),
+        pub fn build_private_rest_client() -> BybitRest {
+            BybitRest::with_credential(
+                "https://api-testnet.bybit.com",
+                "",
+                "",
             )
         }
 
         #[allow(unused)]
         pub fn build_public_rest_rate_limited_client() -> RateLimitedRestClient {
-            RateLimitedRestClient::new(OkExRest::new("https://www.okx.com", true))
+            RateLimitedRestClient::new(BybitRest::new("https://api-testnet.bybit.com"))
         }
 
-        #[ignore = "failed ci"]
         #[tokio::test]
-        async fn test_place_spot_market_buy_order() {
-            // init_logger(LOGGING_LEVEL);
-            let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::market(
-                "BTC-USDT",
-                TdMode::Cash,
-                None,
-                Side::Buy,
-                Source(100.0),
-                None,
-                None,
-            );
-            let [response] = rest_client.request(request).await.unwrap();
-            if response.s_code != 0 {
+        async fn test_get_candles_history() {
+            init_logger(LOGGING_LEVEL);
+            let rest_client = build_public_rest_rate_limited_client();
+            let request = CandlesRequest {
+                symbol: "BTCUSDT".to_string(),
+                interval: Timeframe::Min5.as_topic(),
+                category: Category::Spot,
+                start: Utc::now().timestamp_millis().into(),
+                end: None,
+                limit: 1000.into(),
+            };
+
+            if let Ok(response) = rest_client.request(request).await {
                 dbg!(response);
-                panic!("Error during order creation");
+            } else {
+                panic!("Error during candles retrieving");
             }
         }
 
-        #[ignore = "failed ci"]
         #[tokio::test]
-        async fn test_place_spot_market_sell_order() {
-            // init_logger(LOGGING_LEVEL);
+        async fn test_get_orders() {
+            init_logger(LOGGING_LEVEL);
             let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::market(
-                "BTC-USDT",
-                TdMode::Cash,
-                None,
-                Side::Sell,
-                Target(0.0038),
-                None,
-                None,
-            );
-            let [response] = rest_client.request(request).await.unwrap();
-            if response.s_code != 0 {
-                dbg!(response);
-                panic!("Error during order creation");
-            }
-        }
+            let request = OrderDetailsRequest {
+                symbol: "BTCUSDT".to_string().into(),
+                category: Category::Spot,
+                base_coin: None,
+                settle_coin: None,
+                order_id: None,
+                order_link_id: None,
+                order_filter: None,
+                order_status: None,
+                start_time: None,
+                end_time: None,
+                limit: None,
+                cursor: None,
+            };
 
-        #[ignore = "failed ci"]
-        #[tokio::test]
-        async fn test_place_spot_limit_buy_order() {
-            let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::limit(
-                "BTC-USDT",
-                TdMode::Cash,
-                None,
-                Side::Buy,
-                26000.0,
-                Target(0.0038),
-                None,
-                None,
-            );
-            let [response] = rest_client.request(request).await.unwrap();
-            if response.s_code != 0 {
+            if let Ok(response) = rest_client.request(request).await {
                 dbg!(response);
-                panic!("Error during order creation");
-            }
-        }
-
-        #[ignore = "failed ci"]
-        #[tokio::test]
-        async fn test_place_spot_limit_sell_order() {
-            let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::limit(
-                "BTC-USDT",
-                TdMode::Cash,
-                None,
-                Side::Sell,
-                26000.0,
-                Target(0.0038),
-                None,
-                None,
-            );
-            let [response] = rest_client.request(request).await.unwrap();
-            if response.s_code != 0 {
-                dbg!(response);
-                panic!("Error during order creation");
+            } else {
+                panic!("Error during orders retrieving");
             }
         }
 
         #[allow(unused)]
-        // todo fix isolated orders
-        // #[tokio::test]
+        #[tokio::test]
         async fn test_place_margin_market_buy_order() {
+            init_logger(LOGGING_LEVEL);
             let rest_client = build_private_rest_client();
             let request = PlaceOrderRequest::market(
-                "BTC-USDT",
-                TdMode::Isolated,
-                None,
+                Some(Uuid::new_v4().to_string()),
+                "BTCUSDT",
+                Category::Spot,
                 Side::Buy,
                 Source(100.0),
-                None,
-                None,
+                true,
             );
-            let [response] = rest_client.request(request).await.unwrap();
-            if response.s_code != 0 {
+            let response = rest_client.request(request).await;
+            if let Ok(response) = response {
                 dbg!(response);
+            } else {
                 panic!("Error during order creation");
             }
         }
 
         #[allow(unused)]
-        // todo fix isolated orders
-        // #[tokio::test]
+        #[tokio::test]
         async fn test_place_margin_market_sell_order() {
+            init_logger(LOGGING_LEVEL);
             let rest_client = build_private_rest_client();
             let request = PlaceOrderRequest::market(
-                "BTC-USDT",
-                TdMode::Isolated,
-                None,
+                Some(Uuid::new_v4().to_string()),
+                "BTCUSDT",
+                Category::Spot,
                 Side::Sell,
-                Target(0.0038),
-                None,
-                None,
+                Target(0.0034),
+                true,
             );
-            let [response] = rest_client.request(request).await.unwrap();
-            if response.s_code != 0 {
+            let response = rest_client.request(request).await;
+            if let Ok(response) = response {
                 dbg!(response);
+            } else {
                 panic!("Error during order creation");
             }
         }
-
-        #[ignore = "failed ci"]
-        #[tokio::test]
-        async fn test_place_spot_limit_buy_order_with_sl() {
-            let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::limit(
-                "BTC-USDT",
-                TdMode::Cash,
-                None,
-                Side::Buy,
-                26_000.0,
-                Target(0.0038),
-                Trigger::new(10_000.0, 9_900.0),
-                None,
-            );
-            let [response] = rest_client.request(request).await.unwrap();
-            if response.s_code != 0 {
-                dbg!(response);
-                panic!("Error during order creation");
-            }
-        }
-
-        #[ignore = "failed ci"]
-        #[tokio::test]
-        async fn test_place_spot_limit_buy_order_with_tp() {
-            let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::limit(
-                "BTC-USDT",
-                TdMode::Cash,
-                None,
-                Side::Buy,
-                26_000.0,
-                Target(0.0038),
-                None,
-                Trigger::new(100_000.0, 100_100.0),
-            );
-            let [response] = rest_client.request(request).await.unwrap();
-            if response.s_code != 0 {
-                dbg!(response);
-                panic!("Error during order creation");
-            }
-        }
-
-        #[ignore = "failed ci"]
-        #[tokio::test]
-        async fn test_place_spot_limit_sell_order_with_sl_and_tp() {
-            let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::limit(
-                "BTC-USDT",
-                TdMode::Cash,
-                None,
-                Side::Sell,
-                26_000.0,
-                Target(0.0038),
-                Trigger::new(100_000.0, 100_100.0),
-                Trigger::new(10_000.0, 9_900.0),
-            );
-            let [response] = rest_client.request(request).await.unwrap();
-            if response.s_code != 0 {
-                dbg!(response);
-                panic!("Error during order creation");
-            }
-        }
-
-        #[allow(unused)]
-        // todo fix isolated orders
-        // #[tokio::test]
-        async fn test_place_margin_market_buy_order_with_sl() {
-            let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::market(
-                "BTC-USDT",
-                TdMode::Isolated,
-                None,
-                Side::Buy,
-                Source(100.0),
-                Trigger::new(10_000.0, 9_900.0),
-                None,
-            );
-            let [response] = rest_client.request(request).await.unwrap();
-            if response.s_code != 0 {
-                dbg!(response);
-                panic!("Error during order creation");
-            }
-        }
-
-        #[allow(unused)]
-        // todo fix isolated orders
-        // #[tokio::test]
-        async fn test_place_margin_market_buy_order_with_tp() {
-            let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::market(
-                "BTC-USDT",
-                TdMode::Isolated,
-                None,
-                Side::Buy,
-                Source(100.0),
-                None,
-                Trigger::new(100_000.0, 100_100.0),
-            );
-            let [response] = rest_client.request(request).await.unwrap();
-            if response.s_code != 0 {
-                dbg!(response);
-                panic!("Error during order creation");
-            }
-        }
-
-        #[allow(unused)]
-        // todo fix isolated orders
-        // #[tokio::test]
-        async fn test_place_margin_market_sell_order_with_sl_and_tp() {
-            let rest_client = build_private_rest_client();
-            let request = PlaceOrderRequest::market(
-                "BTC-USDT",
-                TdMode::Isolated,
-                None,
-                Side::Sell,
-                Target(0.0038),
-                Trigger::new(100_000.0, 100_100.0),
-                Trigger::new(10_000.0, 9_900.0),
-            );
-            let [response] = rest_client.request(request).await.unwrap();
-            if response.s_code != 0 {
-                dbg!(response);
-                panic!("Error during order creation");
-            }
-        }
-
-        // #[allow(unused)]
-        // // todo try to break this test
-        // // #[tokio::test]
-        // async fn test_request_rate_limit() {
-        //     init_logger(LOGGING_LEVEL);
-        //     let rest_client = Arc::new(tokio::sync::Mutex::new(
-        //         build_public_rest_rate_limited_client(),
-        //     ));
-        //     let request = CandlesHistoryRequest {
-        //         inst_id: "BTC-USDT".to_string(),
-        //         bar: Some("1H".to_string()),
-        //         before: Some(1682899200000u64.to_string()),
-        //         after: Some(1682899200000u64.to_string()),
-        //         limit: Some(100),
-        //     };
-        //     let mut handles = Vec::new();
-        //     for _ in 0..=100 {
-        //         let handle = tokio::spawn({
-        //             let rest_client = Arc::clone(&rest_client);
-        //             let request = request.clone();
-        //             async move {
-        //                 let response = rest_client.lock().await.request(request).await.unwrap();
-        //                 debug!("{:?}", response)
-        //             }
-        //         });
-        //         handles.push(handle);
-        //     }
-        //     futures::future::join_all(handles).await;
-        // }
     }
 
     mod websocket {
@@ -340,6 +145,7 @@ mod tests {
         use serde_json::{from_value, Value};
         use tracing::error;
 
+        use crate::bybit::enums::Timeframe;
         use crate::bybit::tests::{init_logger, LOGGING_LEVEL};
         use crate::bybit::websocket::{CandleResponse, OrderDetailsResponse, TickerResponse};
         use crate::bybit::websocket::*;
@@ -350,7 +156,7 @@ mod tests {
         impl WsMessageHandler for TickerLtHandler {
             type Type = TickerResponse;
 
-            async fn convert_data(&mut self, topic: String, data: Value,
+            async fn convert_data(&mut self, _topic: String, data: Value,
             ) -> Option<Self::Type> {
                 from_value(data).map_err(|err| error!("Error during message conversation: {err}")).ok()
             }
@@ -366,7 +172,7 @@ mod tests {
         impl WsMessageHandler for OrderHandler {
             type Type = Vec<OrderDetailsResponse>;
 
-            async fn convert_data(&mut self, topic: String, data: Value) -> Option<Self::Type> {
+            async fn convert_data(&mut self, _topic: String, data: Value) -> Option<Self::Type> {
                 from_value(data).map_err(|err| error!("Error during message conversation: {err}")).ok()
             }
 
@@ -381,7 +187,7 @@ mod tests {
         impl WsMessageHandler for CandlesHandler {
             type Type = Vec<CandleResponse>;
 
-            async fn convert_data(&mut self, topic: String, data: Value) -> Option<Self::Type> {
+            async fn convert_data(&mut self, _topic: String, data: Value) -> Option<Self::Type> {
                 from_value(data).map_err(|err| error!("Error during message conversation: {err}")).ok()
             }
 
@@ -451,7 +257,7 @@ mod tests {
             init_logger(LOGGING_LEVEL);
             let client = build_public_ws_client(CandlesHandler).await;
             client
-                .send(Command::subscribe(vec![Channel::Candles((CandleTimeframe::Min1, "BTCUSDT").into())]))
+                .send(Command::subscribe(vec![Channel::Candles((Timeframe::Min1, "BTCUSDT").into())]))
                 .await;
 
             tokio::time::sleep(Duration::from_secs(30)).await;

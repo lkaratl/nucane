@@ -1,12 +1,13 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::bybit::enums::{OrderCancelType, OrderCategory, OrderRejectReason, OrderStatus, OrderTimeInForce, OrderType, Side};
+use crate::bybit::enums::{Category, OrderCancelType, OrderStatus, OrderTimeInForce, OrderType, Side};
+use crate::bybit::parser::ts_milliseconds;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderDetailsResponse {
-    pub category: OrderCategory,
+    pub category: Category,
     pub order_id: String,
     pub order_link_id: String,
     pub is_leverage: String,
@@ -20,7 +21,7 @@ pub struct OrderDetailsResponse {
     pub position_idx: u8,
     pub order_status: OrderStatus,
     pub cancel_type: OrderCancelType,
-    pub reject_reason: OrderRejectReason,
+    pub reject_reason: String,
     #[serde(deserialize_with = "crate::bybit::parser::from_str")]
     pub avg_price: f64,
     pub leaves_qty: String,

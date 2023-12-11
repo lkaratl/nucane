@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
-pub enum OrderCategory {
+pub enum Category {
     Spot,
     Linear,
     Inverse,
@@ -45,33 +45,6 @@ pub enum OrderCancelType {
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Eq, PartialEq)]
-pub enum OrderRejectReason {
-    EC_NoError,
-    EC_Others,
-    EC_UnknownMessageType,
-    EC_MissingClOrdID,
-    EC_MissingOrigClOrdID,
-    EC_ClOrdIDOrigClOrdIDAreTheSame,
-    EC_DuplicatedClOrdID,
-    EC_OrigClOrdIDDoesNotExist,
-    EC_TooLateToCancel,
-    EC_UnknownOrderType,
-    EC_UnknownSide,
-    EC_UnknownTimeInForce,
-    EC_WronglyRouted,
-    EC_MarketOrderPriceIsNotZero,
-    EC_LimitOrderInvalidPrice,
-    EC_NoEnoughQtyToFill,
-    EC_NoImmediateQtyToFill,
-    EC_PerCancelRequest,
-    EC_MarketOrderCannotBePostOnly,
-    EC_PostOnlyWillTakeLiquidity,
-    EC_CancelReplaceOrder,
-    EC_InvalidSymbolStatus,
-    EC_CancelForNoFullFill,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub enum OrderTimeInForce {
     GTC,
     IOC,
@@ -86,84 +59,46 @@ pub enum OrderType {
     UNKNOWN,
 }
 
-/////////////////////////
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Alias {
-    ThisWeek,
-    NextWeek,
-    Quarter,
-    NextQuarter,
+pub enum OrderFilter {
+    Order,
+    TpslOrder,
+    StopOrder,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-pub enum ExecType {
-    T,
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum Timeframe {
+    Min1,
+    Min3,
+    Min5,
+    Min15,
+    Min30,
+    H1,
+    H2,
+    H4,
+    H6,
+    H12,
+    D,
+    W,
     M,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "UPPERCASE")]
-pub enum InstType {
-    Spot,
-    Margin,
-    Swap,
-    Futures,
-    Option,
-    Any,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum MgnMode {
-    Cross,
-    Isolated,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum TdMode {
-    Cross,
-    Isolated,
-    Cash,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum PosSide {
-    Long,
-    Short,
-    Net,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum OrdState {
-    Canceled,
-    Live,
-    PartiallyFilled,
-    Filled,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "UPPERCASE")]
-pub enum OptType {
-    C,
-    P,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum CtType {
-    Linear,
-    Inverse,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum InstrumentState {
-    Live,
-    Suspend,
-    Preopen,
-    Settlement,
+impl Timeframe {
+    pub fn as_topic(&self) -> String {
+        match self {
+            Timeframe::Min1 => "1",
+            Timeframe::Min3 => "3",
+            Timeframe::Min5 => "5",
+            Timeframe::Min15 => "15",
+            Timeframe::Min30 => "30",
+            Timeframe::H1 => "60",
+            Timeframe::H2 => "120",
+            Timeframe::H4 => "240",
+            Timeframe::H6 => "360",
+            Timeframe::H12 => "720",
+            Timeframe::D => "D",
+            Timeframe::W => "W",
+            Timeframe::M => "M",
+        }.into()
+    }
 }
