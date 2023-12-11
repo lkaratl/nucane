@@ -1,4 +1,4 @@
-pub use error::{OkExError, Result};
+pub use error::{BybitError, Result};
 
 mod credential;
 pub mod enums;
@@ -7,10 +7,6 @@ mod parser;
 pub mod rest;
 pub mod websocket;
 
-// todo created order verification
-// account settings:
-// - single-currency margin
-// - isolated margin auto transfer
 #[cfg(test)]
 mod tests {
     use tracing_subscriber::EnvFilter;
@@ -342,20 +338,21 @@ mod tests {
 
         use async_trait::async_trait;
         use serde_json::{from_value, Value};
+        use tracing::error;
 
-        use crate::bybit::rest::TickerLtResponse;
         use crate::bybit::tests::{init_logger, LOGGING_LEVEL};
-        use crate::bybit::websocket::{BybitWsClient, Channel, Command, WsMessageHandler};
+        use crate::bybit::websocket::{CandleResponse, OrderDetailsResponse, TickerResponse};
+        use crate::bybit::websocket::*;
 
-        struct MarkPriceHandler;
+        struct TickerLtHandler;
 
         #[async_trait]
-        impl WsMessageHandler for MarkPriceHandler {
-            type Type = TickerLtResponse;
+        impl WsMessageHandler for TickerLtHandler {
+            type Type = TickerResponse;
 
             async fn convert_data(&mut self, topic: String, data: Value,
             ) -> Option<Self::Type> {
-                from_value(data).ok()
+                from_value(data).map_err(|err| error!("Error during message conversation: {err}")).ok()
             }
 
             async fn handle(&mut self, message: Self::Type) {
@@ -365,31 +362,40 @@ mod tests {
 
         struct OrderHandler;
 
-        // #[async_trait]
-        // impl WsMessageHandler for OrderHandler {
-        //     type Type = OrderDetailsResponse;
-        //
-        //     async fn convert_data(
-        //         &mut self,
-        //         arg: Channel,
-        //         _action: Option<Action>,
-        //         mut data: Vec<Value>,
-        //     ) -> Option<Self::Type> {
-        //         assert!(matches!(arg, Channel::Orders { .. }));
-        //         let data = data.pop().unwrap();
-        //         from_value(data).ok()
-        //     }
-        //
-        //     async fn handle(&mut self, message: Self::Type) {
-        //         dbg!(&message);
-        //     }
-        // }
+        #[async_trait]
+        impl WsMessageHandler for OrderHandler {
+            type Type = Vec<OrderDetailsResponse>;
+
+            async fn convert_data(&mut self, topic: String, data: Value) -> Option<Self::Type> {
+                from_value(data).map_err(|err| error!("Error during message conversation: {err}")).ok()
+            }
+
+            async fn handle(&mut self, message: Self::Type) {
+                dbg!(&message);
+            }
+        }
+
+        struct CandlesHandler;
+
+        #[async_trait]
+        impl WsMessageHandler for CandlesHandler {
+            type Type = Vec<CandleResponse>;
+
+            async fn convert_data(&mut self, topic: String, data: Value) -> Option<Self::Type> {
+                from_value(data).map_err(|err| error!("Error during message conversation: {err}")).ok()
+            }
+
+            async fn handle(&mut self, message: Self::Type) {
+                dbg!(&message);
+            }
+        }
 
         async fn build_private_ws_client<H: WsMessageHandler>(handler: H) -> BybitWsClient {
             BybitWsClient::private(
                 "wss://stream-testnet.bybit.com",
-                "vQU4uWbU3V4VROyVqq",
-                "gACukoe74WBZBApClNsSOjNhEPrWhRMkFVGu",
+                // todo remove credentials before commit
+                "",
+                "",
                 handler,
             ).await
         }
@@ -402,48 +408,54 @@ mod tests {
         #[tokio::test]
         async fn test_handle_mark_price() {
             init_logger(LOGGING_LEVEL);
-            let client = build_public_ws_client(MarkPriceHandler).await;
+            let client = build_public_ws_client(TickerLtHandler).await;
             client
-                .send(Command::subscribe(vec![Channel::TickerLt("BTC3SUSDT".into())]))
+                .send(Command::subscribe(vec![Channel::Ticker("BTCUSDT".into())]))
                 .await;
 
             tokio::time::sleep(Duration::from_secs(3)).await;
         }
 
-        // #[ignore = "failed ci"]
-        // #[tokio::test]
-        // async fn test_handle_order() {
-        //     // init_logger(LOGGING_LEVEL);
-        //     let client = build_private_ws_client(OrderHandler).await;
-        //     client
-        //         .send(Command::subscribe(vec![Channel::Orders {
-        //             inst_type: InstType::Any,
-        //             inst_id: None,
-        //             uly: None,
-        //         }]))
-        //         .await;
-        //
-        //     tokio::time::sleep(Duration::from_secs(30)).await;
-        //
-        //     let rest_client = build_private_rest_client();
-        //     let mut request = PlaceOrderRequest::market(
-        //         "BTC-USDT",
-        //         TdMode::Cash,
-        //         None,
-        //         Side::Buy,
-        //         Source(100.0),
-        //         None,
-        //         None,
-        //     );
-        //     let order_id = "test";
-        //     request.cl_ord_id = Some(order_id.to_string());
-        //     let [response] = rest_client.request(request).await.unwrap();
-        //     if response.s_code != 0 {
-        //         dbg!(response);
-        //         panic!("Error during order creation");
-        //     }
-        //     tokio::time::sleep(Duration::from_secs(1)).await;
-        // }
+        #[tokio::test]
+        async fn test_handle_order() {
+            init_logger(LOGGING_LEVEL);
+            let client = build_private_ws_client(OrderHandler).await;
+            client
+                .send(Command::subscribe(vec![Channel::Orders]))
+                .await;
+
+            tokio::time::sleep(Duration::from_secs(30)).await;
+
+            // let rest_client = build_private_rest_client();
+            // let mut request = PlaceOrderRequest::market(
+            //     "BTC-USDT",
+            //     TdMode::Cash,
+            //     None,
+            //     Side::Buy,
+            //     Source(100.0),
+            //     None,
+            //     None,
+            // );
+            // let order_id = "test";
+            // request.cl_ord_id = Some(order_id.to_string());
+            // let [response] = rest_client.request(request).await.unwrap();
+            // if response.s_code != 0 {
+            //     dbg!(response);
+            //     panic!("Error during order creation");
+            // }
+            // tokio::time::sleep(Duration::from_secs(1)).await;
+        }
+
+        #[tokio::test]
+        async fn test_handle_candles() {
+            init_logger(LOGGING_LEVEL);
+            let client = build_public_ws_client(CandlesHandler).await;
+            client
+                .send(Command::subscribe(vec![Channel::Candles((CandleTimeframe::Min1, "BTCUSDT").into())]))
+                .await;
+
+            tokio::time::sleep(Duration::from_secs(30)).await;
+        }
 
         // #[allow(unused, unused_assignments)]
         // // #[tokio::test] // todo not implemented yet

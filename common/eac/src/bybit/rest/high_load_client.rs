@@ -5,7 +5,7 @@ use serde::de::DeserializeOwned;
 use tokio::sync::Mutex;
 use tracing::debug;
 
-use crate::bybit::OkExError;
+use crate::bybit::BybitError;
 use crate::bybit::rest::{OkExRest, Request};
 
 pub struct RateLimitedRestClient {
@@ -21,7 +21,7 @@ impl RateLimitedRestClient {
         }
     }
 
-    pub async fn request<R>(&self, request: R) -> Result<R::Response, OkExError>
+    pub async fn request<R>(&self, request: R) -> Result<R::Response, BybitError>
         where
             R: Request,
             R::Response: DeserializeOwned

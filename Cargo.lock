@@ -1380,6 +1380,7 @@ dependencies = [
  "derive_builder",
  "fehler",
  "futures",
+ "hex",
  "hmac 0.12.1",
  "http",
  "hyper 1.0.0-rc.4",

@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use http::Method;
 use serde::{Deserialize, Serialize};
 
@@ -6,26 +5,25 @@ use crate::bybit::rest::Request;
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct CandleResponse(
-    #[serde(deserialize_with = "crate::bybit::parser::ts_milliseconds")]
-    pub DateTime<Utc>, // ts
+pub struct CandleResponse {
+    pub start: u64,
+    pub end: u64,
+    pub timestamp: u64,
+    pub interval: String,
     #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub f64, // Open price
+    pub open: f64,
     #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub f64, // Highest price
+    pub close: f64,
     #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub f64, // Lowest price
+    pub high: f64,
     #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub f64, // Close price
+    pub low: f64,
     #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub f64, // Volume
+    pub volume: f64,
     #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub f64, // Target volume
-    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub f64, // Source volume
-    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub String, // Status
-);
+    pub turnover: f64,
+    pub confirm: bool,
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]

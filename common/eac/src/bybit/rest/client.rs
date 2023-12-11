@@ -10,7 +10,7 @@ use tracing::{error, trace};
 use url::Url;
 
 use crate::bybit::credential::Credential;
-use crate::bybit::error::OkExError;
+use crate::bybit::error::BybitError;
 
 use super::models::Request;
 
@@ -46,7 +46,7 @@ impl OkExRest {
         OkExRestBuilder::default()
     }
 
-    #[throws(OkExError)]
+    #[throws(BybitError)]
     pub async fn request<R>(&self, req: R) -> R::Response
         where
             R: Request,
@@ -90,15 +90,15 @@ impl OkExRest {
         self.handle_response(resp).await?
     }
 
-    #[throws(OkExError)]
+    #[throws(BybitError)]
     fn get_credential(&self) -> &Credential {
         match self.credential.as_ref() {
-            None => throw!(OkExError::NoApiKeySet),
+            None => throw!(BybitError::NoApiKeySet),
             Some(c) => c,
         }
     }
 
-    #[throws(OkExError)]
+    #[throws(BybitError)]
     async fn handle_response<T: DeserializeOwned>(&self, resp: Response) -> T {
         let payload = resp.text().await?;
         trace!("Response: {payload}");
@@ -107,7 +107,7 @@ impl OkExRest {
             Ok(v) => v.data,
             Err(e) => {
                 error!("Cannot deserialize response from {}: {}", payload, e);
-                throw!(OkExError::CannotDeserializeResponse(payload))
+                throw!(BybitError::CannotDeserializeResponse(payload))
             }
         }
     }

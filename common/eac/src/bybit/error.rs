@@ -1,10 +1,10 @@
 use thiserror::Error;
 use tungstenite::protocol::CloseFrame;
 
-pub type Result<T> = std::result::Result<T, OkExError>;
+pub type Result<T> = std::result::Result<T, BybitError>;
 
 #[derive(Debug, Error)]
-pub enum OkExError {
+pub enum BybitError {
     #[error("Cannot deserialize response from {0}")]
     CannotDeserializeResponse(String),
 

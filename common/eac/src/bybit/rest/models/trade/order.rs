@@ -2,8 +2,7 @@ use chrono::{DateTime, Utc};
 use http::Method;
 use serde::{Deserialize, Serialize};
 
-use crate::bybit::enums::{InstType, OrdState, OrdType, PosSide, Side, TdMode};
-use crate::bybit::parser::ts_milliseconds;
+use crate::bybit::enums::{OrderCancelType, OrderCategory, OrderRejectReason, OrderStatus, OrderTimeInForce, OrderType, OrdState, PosSide, Side, TdMode};
 
 use super::super::Request;
 
@@ -21,7 +20,6 @@ pub struct PlaceOrderRequest {
     pub tag: Option<String>,
     pub side: Side,
     pub pos_side: Option<PosSide>,
-    pub ord_type: OrdType,
     pub sz: String,
     pub px: Option<String>,
     pub ban_amend: bool,
@@ -68,7 +66,6 @@ impl PlaceOrderRequest {
             tag: None,
             side,
             pos_side: None,
-            ord_type: OrdType::Market,
             sz: qty.to_string(),
             px: None,
             ban_amend: true,
@@ -106,7 +103,6 @@ impl PlaceOrderRequest {
             tag: None,
             side,
             pos_side: None,
-            ord_type: OrdType::Limit,
             sz: qty.to_string(),
             px: Some(price.to_string()),
             ban_amend: true,
@@ -205,55 +201,55 @@ impl OrderDetailsRequest {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderDetailsResponse {
-    pub inst_type: InstType,
-    pub inst_id: String,
-    pub ccy: String,
-    pub ord_id: String,
-    pub cl_ord_id: String,
-    pub tag: String,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str_opt")]
-    pub px: Option<f64>,
+    pub category: OrderCategory,
+    pub order_id: String,
+    pub order_link_id: String,
+    pub is_leverage: String,
+    pub block_trade_id: String,
+    pub symbol: String,
     #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub sz: f64,
+    pub price: f64,
     #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub pnl: f64,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str_opt")]
-    pub source: Option<u8>,
-    pub ord_type: OrdType,
+    pub qty: f64,
     pub side: Side,
-    pub tgt_ccy: String,
-    // pub pos_side: PosSide,
-    pub td_mode: TdMode,
+    pub position_idx: u8,
+    pub order_status: OrderStatus,
+    pub cancel_type: OrderCancelType,
+    pub reject_reason: OrderRejectReason,
     #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub acc_fill_sz: f64,
-    pub fill_px: String,
-    pub trade_id: String,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub fill_sz: f64,
-    pub fill_time: String,
-    pub state: OrdState,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str_opt")]
-    pub avg_px: Option<f64>,
-    pub lever: String,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str_opt")]
-    pub sl_trigger_px: Option<f64>,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str_opt")]
-    pub sl_ord_px: Option<f64>,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str_opt")]
-    pub tp_trigger_px: Option<f64>,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str_opt")]
-    pub tp_ord_px: Option<f64>,
-    pub fee_ccy: String,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub fee: f64,
-    pub rebate_ccy: String,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub rebate: f64,
-    pub category: String,
+    pub avg_price: f64,
+    pub leaves_qty: String,
+    pub leaves_value: String,
+    pub cum_exec_qty: String,
+    pub cum_exec_value: String,
+    pub cum_exec_fee: String,
+    pub fee_currency: String,
+    pub time_in_force: OrderTimeInForce,
+    pub order_type: OrderType,
+    pub stop_order_type: String,
+    pub oco_trigger_type: Option<String>,
+    pub order_iv: String,
+    pub trigger_price: String,
+    pub take_profit: String,
+    pub stop_loss: String,
+    pub tpsl_mode: Option<String>,
+    pub tp_limit_price: Option<String>,
+    pub sl_limit_price: Option<String>,
+    pub tp_trigger_by: Option<String>,
+    pub sl_trigger_by: Option<String>,
+    pub trigger_direction: u8,
+    pub trigger_by: String,
+    pub last_price_on_created: String,
+    pub reduce_only: bool,
+    pub close_on_trigger: bool,
+    pub place_type: String,
+    pub smp_type: String,
+    pub smp_group: i64,
+    pub smp_order_id: String,
     #[serde(deserialize_with = "ts_milliseconds")]
-    pub u_time: DateTime<Utc>,
+    pub updated_time: DateTime<Utc>,
     #[serde(deserialize_with = "ts_milliseconds")]
-    pub c_time: DateTime<Utc>,
+    pub created_time: DateTime<Utc>,
 }
 
 impl Request for OrderDetailsRequest {

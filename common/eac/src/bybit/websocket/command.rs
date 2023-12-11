@@ -1,10 +1,10 @@
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use fehler::throws;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
+use crate::bybit::BybitError;
 use crate::bybit::credential::Credential;
-use crate::bybit::error::OkExError;
 
 use super::Channel;
 
@@ -13,7 +13,7 @@ use super::Channel;
 #[serde(rename_all = "snake_case")]
 pub enum Command {
     Subscribe(Vec<String>),
-    Auth(Vec<LoginArgs>),
+    Auth(Vec<String>),
 }
 
 impl Command {
@@ -24,28 +24,20 @@ impl Command {
         Command::Subscribe(topics)
     }
 
-    #[throws(OkExError)]
+    #[throws(BybitError)]
     pub fn login(cred: Credential) -> Command {
-        let timestamp = Utc::now().timestamp().to_string();
+        let timestamp = ((Utc::now() + Duration::seconds(1)).timestamp() * 1000).to_string();
 
         let (key, sign) = cred.signature(
             http::Method::GET,
             &timestamp,
-            &Url::parse("https://example.com/users/self/verify").unwrap(), // the domain name doesn't matter
+            &Url::parse("https://example.com/realtime").unwrap(), // the domain name doesn't matter
             "",
         );
-        Self::Auth(vec![LoginArgs {
-            api_key: key.into(),
-            timestamp,
+        Self::Auth(vec![
+            key.into(),
+            timestamp.to_string(),
             sign,
-        }])
+        ])
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LoginArgs {
-    api_key: String,
-    timestamp: String,
-    sign: String,
 }
