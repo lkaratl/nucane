@@ -8,9 +8,12 @@ interactor-config = { workspace = true }
 interactor-core = { workspace = true }
 interactor-rest-api-server = { workspace = true }
 interactor-inmemory-persistence = { workspace = true }
+engine-core-api = { workspace = true }
+storage-core-api = { workspace = true }
 storage-rest-client = { workspace = true }
 engine-rest-client = { workspace = true }
 interactor-exchange-api = { workspace = true }
+interactor-bybit-exchange = { workspace = true }
 interactor-okx-exchange = { workspace = true }
 domain-model = { workspace = true }
 eac = { workspace = true }

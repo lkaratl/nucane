@@ -158,9 +158,12 @@ pub struct OrderDetailsResponse {
     pub avg_price: f64,
     pub leaves_qty: String,
     pub leaves_value: String,
-    pub cum_exec_qty: String,
-    pub cum_exec_value: String,
-    pub cum_exec_fee: String,
+    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
+    pub cum_exec_qty: f64,
+    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
+    pub cum_exec_value: f64,
+    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
+    pub cum_exec_fee: f64,
     pub fee_currency: Option<String>,
     pub time_in_force: OrderTimeInForce,
     pub order_type: OrderType,

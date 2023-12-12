@@ -33,6 +33,7 @@ impl Command {
             &timestamp,
             &Url::parse("https://example.com/realtime").unwrap(), // the domain name doesn't matter
             "",
+            0,
             true,
         );
         Self::Auth(vec![

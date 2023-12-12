@@ -3,8 +3,8 @@ use derive_builder::Builder;
 use fehler::{throw, throws};
 use hyper::Method;
 use reqwest::{Client, Response};
-use serde::Deserialize;
 use serde::de::DeserializeOwned;
+use serde::Deserialize;
 use serde_json::from_str;
 use serde_urlencoded::to_string as to_ustring;
 use tracing::{error, trace};
@@ -66,13 +66,15 @@ impl BybitRest {
 
         if R::SIGNED {
             let cred = self.get_credential()?;
-            let timestamp = (Utc::now().timestamp() * 1000).to_string();
-            let (key, signature) = cred.signature(R::METHOD, &timestamp, &url, &body, false);
+            let timestamp = (Utc::now().timestamp() * 1000 - 1000).to_string();
+            let receive_window = 10000;
+            let (key, signature) = cred.signature(R::METHOD, &timestamp, &url, &body, receive_window, false);
 
             builder = builder
                 .header("X-BAPI-API-KEY", key)
                 .header("X-BAPI-SIGN", signature)
                 .header("X-BAPI-TIMESTAMP", timestamp)
+                .header("X-BAPI-RECV-WINDOW", receive_window)
         }
         let resp = builder
             .header("content-type", "application/x-www-form-urlencoded")

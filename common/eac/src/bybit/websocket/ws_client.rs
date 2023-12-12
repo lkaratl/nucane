@@ -154,7 +154,7 @@ async fn read<H: WsMessageHandler>(
                 match message {
                     Ok(message) => match message {
                         WsMessage::Text(message) => {
-                            info!("Received text: {message:?}");
+                            trace!("Received text: {message:?}");
                             let message: Message = serde_json::from_str(&message.clone())
                                 .expect("Cannot deserialize message from BYBIT");
                             let mut handler = handler.lock().await;

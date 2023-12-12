@@ -7,8 +7,7 @@ use tracing::trace;
 use uuid::Uuid;
 
 use domain_model::{CurrencyPair, Exchange, InstrumentId, MarketType, Tick};
-use eac::okx::rest::MarkPriceResponse;
-use eac::okx::websocket::{Action, Channel, WsMessageHandler};
+use eac::bybit::websocket::{TickerResponse, WsMessageHandler};
 use engine_core_api::api::EngineApi;
 
 const TICK_PRICE_DEVIATION_MULTIPLIER: f64 = 1000.0;
@@ -36,12 +35,11 @@ impl<E: EngineApi> TickHandler<E> {
 impl<E: EngineApi> WsMessageHandler for TickHandler<E> {
     type Type = Tick;
 
-    async fn convert_data(&mut self, _arg: Channel, _action: Option<Action>, mut data: Vec<Value>) -> Option<Self::Type> {
+    async fn convert_data(&mut self, _topic: String, data: Value) -> Option<Self::Type> {
         trace!("Retrieved massage with raw payload: {:?}", &data);
-        let data = data.pop().unwrap();
-        let mark_price: MarkPriceResponse = from_value(data).unwrap();
+        let ticker: TickerResponse = from_value(data).unwrap();
 
-        let price = mark_price.mark_px;
+        let price = ticker.last_price;
         let deviation = price / self.deviation_percent - TICK_PRICE_DEVIATION_MULTIPLIER;
         if !(TICK_PRICE_THRESHOLD * -1.0..=TICK_PRICE_THRESHOLD).contains(&deviation) {
             self.deviation_percent = price / TICK_PRICE_DEVIATION_MULTIPLIER;
@@ -50,7 +48,7 @@ impl<E: EngineApi> WsMessageHandler for TickHandler<E> {
                 simulation_id: None,
                 timestamp: Utc::now(),
                 instrument_id: InstrumentId {
-                    exchange: Exchange::OKX,
+                    exchange: Exchange::BYBIT,
                     market_type: self.market_type,
                     pair: self.currency_pair,
                 },

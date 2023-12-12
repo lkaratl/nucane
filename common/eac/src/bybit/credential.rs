@@ -22,13 +22,14 @@ impl Credential {
         timestamp: &str,
         url: &Url,
         body: &str,
+        receive_window: i64,
         ws: bool,
     ) -> (&str, String) {
         let signed_key = hmac::Key::new(hmac::HMAC_SHA256, self.secret.as_bytes());
         let sign_message = if ws {
             format!("{}{}{}", method.as_str(), url.path(), timestamp)
         } else {
-            format!("{}{}{}{}", timestamp, self.key, url.query().unwrap_or_default(), body,
+            format!("{}{}{}{}{}", timestamp, self.key, receive_window, url.query().unwrap_or_default(), body,
             )
         };
 

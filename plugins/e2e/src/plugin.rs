@@ -60,8 +60,8 @@ impl E2EPlugin {
 
     pub async fn handle_tick(
         &mut self,
-        _tick: &Tick,
-        _api: Arc<dyn PluginInternalApi>,
+        tick: &Tick,
+        api: Arc<dyn PluginInternalApi>,
     ) -> Vec<Action> {
         if !self.state.common_executed_once {
             self.state.common_executed_once = true;
@@ -73,10 +73,10 @@ impl E2EPlugin {
 
         vec![
             // self.handle_spot_tick(tick, api.clone()).await,
-            // self.handle_margin_tick(tick, api.clone()).await,
+            self.handle_margin_tick(tick, api.clone()).await,
         ]
             .into_iter()
-            // .flatten()
+            .flatten()
             .collect()
     }
 

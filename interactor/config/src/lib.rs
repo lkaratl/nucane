@@ -21,7 +21,31 @@ pub struct EAC {
 
 #[derive(Deserialize)]
 pub struct Exchanges {
+    pub bybit: Bybit,
     pub okx: OKX,
+}
+
+#[derive(Deserialize)]
+pub struct Bybit {
+    pub http: BybitHttp,
+    pub ws: BybitWs,
+    pub auth: BybitAuth,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct BybitHttp {
+    pub url: String,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct BybitWs {
+    pub url: String,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct BybitAuth {
+    pub key: String,
+    pub secret: String,
 }
 
 #[derive(Deserialize)]

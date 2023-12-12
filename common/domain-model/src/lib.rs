@@ -435,6 +435,7 @@ impl FromStr for Exchange {
     fn from_str(input: &str) -> Result<Exchange, Self::Err> {
         match input {
             "OKX" => Ok(Exchange::OKX),
+            "BYBIT" => Ok(Exchange::OKX),
             input => bail!("Unknown exchange: {input}"),
         }
     }

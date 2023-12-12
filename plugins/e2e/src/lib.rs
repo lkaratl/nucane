@@ -37,7 +37,7 @@ impl PluginApi for E2EPlugin {
     // todo make configurable
     fn instruments(&self) -> Vec<InstrumentId> {
         vec![InstrumentId {
-            exchange: Exchange::OKX,
+            exchange: Exchange::BYBIT,
             market_type: MarketType::Spot,
             pair: CurrencyPair {
                 target: Currency::BTC,
@@ -50,7 +50,7 @@ impl PluginApi for E2EPlugin {
         vec![
             // Indicator::SMA(7),
             // Indicator::BB(20, 2.),
-            Indicator::PSAR
+            // Indicator::PSAR
         ]
     }
 
