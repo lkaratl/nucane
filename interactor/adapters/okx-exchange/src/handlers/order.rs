@@ -7,10 +7,10 @@ use serde_json::{from_value, Value};
 use tracing::info;
 
 use domain_model::{Currency, CurrencyPair, Exchange, LP, MarginMode, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Trigger};
-use eac::enums;
-use eac::enums::{OrdState, OrdType, TdMode};
-use eac::rest::OrderDetailsResponse;
-use eac::websocket::{Action, Channel, WsMessageHandler};
+use eac::okx::enums;
+use eac::okx::enums::{OrdState, OrdType, TdMode};
+use eac::okx::rest::OrderDetailsResponse;
+use eac::okx::websocket::{Action, Channel, WsMessageHandler};
 use storage_core_api::StorageApi;
 
 pub enum OrderInfo {

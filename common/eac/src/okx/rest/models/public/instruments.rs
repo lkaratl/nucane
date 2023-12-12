@@ -1,7 +1,7 @@
 use http::Method;
 use serde::{Deserialize, Serialize};
 
-use crate::enums::{Alias, CtType, InstrumentState, InstType, OptType};
+use crate::okx::enums::{Alias, CtType, InstrumentState, InstType, OptType};
 
 use super::super::Request;
 

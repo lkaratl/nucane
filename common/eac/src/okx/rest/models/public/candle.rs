@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use http::Method;
 use serde::{Deserialize, Serialize};
 
-use crate::rest::Request;
+use crate::okx::rest::Request;
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]

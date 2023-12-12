@@ -11,6 +11,14 @@ engine.url: localhost:8081
 eac:
   demo: true
   exchanges:
+    bybit:
+      http:
+        url: # put value according to eac.demo value
+      ws:
+        url: # put value according to eac.demo value
+      auth:
+        key: # put value according to eac.demo value
+        secret: # put value according to eac.demo value
     okx:
       http:
         url: https://www.okx.com

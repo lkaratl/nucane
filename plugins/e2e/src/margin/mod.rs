@@ -7,8 +7,8 @@ use domain_model::Currency::USDT;
 use domain_model::MarginMode::{Cross, Isolated};
 use domain_model::OrderMarketType::Margin;
 use domain_model::OrderType::Market;
-use domain_model::Side::Sell;
-use domain_model::Size::Target;
+use domain_model::Side::{Buy, Sell};
+use domain_model::Size::{Source, Target};
 use plugin_api::PluginInternalApi;
 
 use crate::plugin::E2EPlugin;
@@ -22,7 +22,7 @@ impl E2EPlugin {
             self.create_margin_order_actions(tick, api).await
         } else {
             info!("Check margin orders");
-            self.check_margin_orders(api).await;
+            // self.check_margin_orders(api).await;
             Vec::new()
         }
     }
@@ -33,8 +33,8 @@ impl E2EPlugin {
         api: Arc<dyn PluginInternalApi>,
     ) -> Vec<Action> {
         vec![
-            // self.create_margin_market_order_action(tick, api.clone()).await,
-            self.create_margin_market_order_with_sl_tp_action(tick, api.clone()).await,
+            self.create_margin_market_order_action(tick, api.clone()).await,
+            // self.create_margin_market_order_with_sl_tp_action(tick, api.clone()).await,
         ]
     }
 
@@ -48,8 +48,8 @@ impl E2EPlugin {
             tick.instrument_id.pair,
             Margin(Isolated),
             Market,
-            Target(100.0 / tick.price),
-            Sell,
+            Source(100.0),
+            Buy,
             None,
             None,
         );

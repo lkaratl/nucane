@@ -4,6 +4,8 @@ use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use domain_model::PluginId;
+use indicators::cache::IndicatorCache;
+use indicators::Indicators;
 use interactor_core_api::InteractorApi;
 use plugin_api::{AccountInternalApi, ActionsInternalApi, CandlesInternalApi, DrawingsInternalApi, IndicatorsInternalApi, OrdersInternalApi, PluginInternalApi, PositionsInternalApi};
 use storage_core_api::StorageApi;
@@ -21,7 +23,7 @@ pub struct DefaultPluginInternals<S: StorageApi, I: InteractorApi> {
     orders: Arc<DefaultOrderInternals<S>>,
     positions: Arc<DefaultPositionInternals<S>>,
     candles: Arc<DefaultCandleInternals<S>>,
-    indicators: Arc<DefaultIndicatorInternals<S>>,
+    indicators: Arc<DefaultIndicatorInternals<IndicatorCache<Indicators<S>>>>,
     drawings: Arc<DefaultDrawingInternals<S>>,
     account: Arc<DefaultAccountInternals<I>>,
 }
@@ -40,7 +42,7 @@ impl<S: StorageApi, I: InteractorApi> DefaultPluginInternals<S, I> {
             orders: Arc::new(DefaultOrderInternals::new(Arc::clone(&storage_client))),
             positions: Arc::new(DefaultPositionInternals::new(Arc::clone(&storage_client))),
             candles: Arc::new(DefaultCandleInternals::new(Arc::clone(&storage_client), timestamp)),
-            indicators: Arc::new(DefaultIndicatorInternals::new(Arc::clone(&storage_client), timestamp)),
+            indicators: Arc::new(DefaultIndicatorInternals::new(IndicatorCache::new(Arc::new(Indicators::new(Arc::clone(&storage_client)))), timestamp)),
             drawings: Arc::new(DefaultDrawingInternals::new(
                 deployment_id,
                 Arc::clone(&storage_client),

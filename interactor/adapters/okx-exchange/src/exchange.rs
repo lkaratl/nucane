@@ -9,10 +9,10 @@ use tokio::sync::Mutex;
 use tracing::{debug, error};
 
 use domain_model::{Candle, CandleStatus, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, LP, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Timeframe};
-use eac::{enums, rest};
-use eac::enums::{InstType, OrdState, OrdType, TdMode};
-use eac::rest::{BalanceRequest, CandlesHistoryRequest, OkExRest, OrderDetailsResponse, OrderHistoryRequest, PlaceOrderRequest, RateLimitedRestClient, Trigger};
-use eac::websocket::{Channel, Command, OkxWsClient};
+use eac::okx::{enums, rest};
+use eac::okx::enums::{InstType, OrdState, OrdType, TdMode};
+use eac::okx::rest::{BalanceRequest, CandlesHistoryRequest, OkExRest, OrderDetailsResponse, OrderHistoryRequest, PlaceOrderRequest, RateLimitedRestClient, Trigger};
+use eac::okx::websocket::{Channel, Command, OkxWsClient};
 use engine_core_api::api::EngineApi;
 use interactor_exchange_api::ExchangeApi;
 use storage_core_api::StorageApi;
@@ -103,7 +103,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
         if !MarketType::Spot.eq(market_type) && !MarketType::Margin.eq(market_type) {
             inst_id = format!("{}-{}", inst_id, market_type);
         }
-        let id: &str = &format!("mark-price-{}", &inst_id);
+        let id: &str = &format!("ticks-{}", &inst_id);
         let already_exists = self.sockets.lock().await.borrow().contains_key(id);
         if !already_exists {
             let engine_client = Arc::clone(&self.engine_client);
@@ -123,7 +123,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
     async fn unsubscribe_ticks(&self, currency_pair: &CurrencyPair, market_type: &MarketType) {
         debug!("Remove socket for ticks");
         let mut socket_id = format!(
-            "mark-price-{}-{}",
+            "ticks-{}-{}",
             currency_pair.target, currency_pair.source
         );
         if !MarketType::Spot.eq(market_type) && !MarketType::Margin.eq(market_type) {
@@ -296,7 +296,6 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
         };
         place_order_request.set_cl_ord_id(&create_order.id);
         place_order_request.set_tag(&create_order.id);
-        dbg!(&place_order_request);
         let [response] = self.private_client.request(place_order_request).await.unwrap();
         debug!("Place order response: {response:?}");
         let error_message = if response.s_code != 0 {

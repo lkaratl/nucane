@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use http::Method;
 use serde::{Deserialize, Serialize};
 
-use crate::enums::{InstType, OrdState, OrdType, PosSide, Side, TdMode};
+use crate::okx::enums::{InstType, OrdState, OrdType, PosSide, Side, TdMode};
 use crate::okx::parser::ts_milliseconds;
 
 use super::super::Request;

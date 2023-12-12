@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use chrono::Utc;
 use serde_json::{from_value, Value};
 use tracing::trace;
 use uuid::Uuid;
 
 use domain_model::{CurrencyPair, Exchange, InstrumentId, MarketType, Tick};
-use eac::rest::MarkPriceResponse;
-use eac::websocket::{Action, Channel, WsMessageHandler};
+use eac::okx::rest::MarkPriceResponse;
+use eac::okx::websocket::{Action, Channel, WsMessageHandler};
 use engine_core_api::api::EngineApi;
 
 const TICK_PRICE_DEVIATION_MULTIPLIER: f64 = 1000.0;
@@ -47,7 +48,7 @@ impl<E: EngineApi> WsMessageHandler for TickHandler<E> {
             let tick = Tick {
                 id: Uuid::new_v4(),
                 simulation_id: None,
-                timestamp: mark_price.ts,
+                timestamp: Utc::now(),
                 instrument_id: InstrumentId {
                     exchange: Exchange::OKX,
                     market_type: self.market_type,
