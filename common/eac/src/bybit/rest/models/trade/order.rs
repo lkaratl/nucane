@@ -56,7 +56,7 @@ impl PlaceOrderRequest {
                 qty
             }
         };
-        qty = (qty * 100.).round() / 100.;
+        qty = (qty * 10000.).round() / 10000.;
         let is_leverage = if is_leverage { 1 } else { 0 }.into();
         Self {
             category,
