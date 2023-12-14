@@ -28,8 +28,8 @@ steps:
         options:
           - label: "demo"
             value: "demo.profile"
-          - label: "bybit-main"
-            value: "bybit-main.profile"
+          - label: "main"
+            value: "main.profile"
           - label: "alpha"
             value: "alpha.profile"
         default: "demo.profile"
