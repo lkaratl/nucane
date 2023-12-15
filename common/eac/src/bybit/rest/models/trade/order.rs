@@ -42,7 +42,7 @@ pub struct PlaceOrderRequest {
 
 impl PlaceOrderRequest {
     pub fn market(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: Size, is_leverage: bool) -> Self {
-        let mut qty = match qty {
+        let qty = match qty {
             Size::Target(qty) => {
                 if side == Side::Buy {
                     panic!("Can't create order with Target size and Buy side. Please use Source size");
@@ -56,7 +56,6 @@ impl PlaceOrderRequest {
                 qty
             }
         };
-        qty = (qty * 10000.).round() / 10000.;
         let is_leverage = if is_leverage { 1 } else { 0 }.into();
         Self {
             category,

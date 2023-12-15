@@ -7,7 +7,7 @@ use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde_json::from_str;
 use serde_urlencoded::to_string as to_ustring;
-use tracing::{error, info, trace};
+use tracing::{error, trace};
 use url::Url;
 
 use crate::bybit::credential::Credential;
@@ -60,7 +60,7 @@ impl BybitRest {
             Method::PUT | Method::POST => to_ustring(&req)?,
             _ => "".to_string(),
         };
-        info!("Request body: {body:?}");
+        trace!("Request body: {body:?}");
 
         let mut builder = self.client.request(R::METHOD, url.clone());
 
