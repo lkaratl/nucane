@@ -342,10 +342,17 @@ fn convert_order_details_to_order(item: &OrderDetailsResponse) -> Order {
             OrderStatus::Completed,
         enums::OrderStatus::Rejected => OrderStatus::Failed("Rejected".into())
     };
+    let mut target = Currency::from_str(&item.symbol[..3]);
+    let mut source = Currency::from_str(&item.symbol[3..]);
+    if target.is_err() {
+        target = Currency::from_str(&item.symbol[..4]);
+        source = Currency::from_str(&item.symbol[4..]);
+    }
+
     let pair = {
         CurrencyPair {
-            target: Currency::from_str(&item.symbol[..3]).unwrap_or(Currency::from_str(&item.symbol[..4]).unwrap()),
-            source: Currency::from_str(&item.symbol[3..]).unwrap_or(Currency::from_str(&item.symbol[4..]).unwrap()),
+            target: target.unwrap(),
+            source: source.unwrap(),
         }
     };
     let market_type = if item.is_leverage == "1" {
