@@ -344,8 +344,8 @@ fn convert_order_details_to_order(item: &OrderDetailsResponse) -> Order {
     };
     let pair = {
         CurrencyPair {
-            target: Currency::from_str(&item.symbol[0..2]).unwrap_or(Currency::from_str(&item.symbol[0..3]).unwrap()),
-            source: Currency::from_str(&item.symbol[2..]).unwrap_or(Currency::from_str(&item.symbol[3..]).unwrap()),
+            target: Currency::from_str(&item.symbol[..3]).unwrap_or(Currency::from_str(&item.symbol[..4]).unwrap()),
+            source: Currency::from_str(&item.symbol[3..]).unwrap_or(Currency::from_str(&item.symbol[4..]).unwrap()),
         }
     };
     let market_type = if item.is_leverage == "1" {
