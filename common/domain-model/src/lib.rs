@@ -471,6 +471,11 @@ pub enum Currency {
     DOGE,
     SOL,
     MATIC,
+    AVAX,
+    INJ,
+    IMX,
+    TIA,
+    GALA,
 }
 
 impl fmt::Display for Currency {
@@ -509,6 +514,11 @@ impl FromStr for Currency {
             "JFI" => Ok(Currency::JFI),
             "OKB" => Ok(Currency::OKB),
             "DOGE" => Ok(Currency::DOGE),
+            "AVAX" => Ok(Currency::AVAX),
+            "INJ" => Ok(Currency::INJ),
+            "IMX" => Ok(Currency::IMX),
+            "TIA" => Ok(Currency::TIA),
+            "GALA" => Ok(Currency::GALA),
             input => bail!("Unknown currency: {input}"),
         }
     }
