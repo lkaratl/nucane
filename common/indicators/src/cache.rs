@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -20,10 +21,22 @@ impl<I: IndicatorsApi> IndicatorCache<I> {
     pub fn new(indicators: Arc<I>) -> Self {
         Self {
             indicators,
-            sma_cache: Cache::new(u64::MAX),
-            ema_cache: Cache::new(u64::MAX),
-            bb_cache: Cache::new(u64::MAX),
-            psar_cache: Cache::new(u64::MAX),
+            sma_cache: Cache::builder()
+                .max_capacity(u64::MAX)
+                .time_to_idle(Duration::from_secs(21600))
+                .build(),
+            ema_cache: Cache::builder()
+                .max_capacity(u64::MAX)
+                .time_to_idle(Duration::from_secs(21600))
+                .build(),
+            bb_cache: Cache::builder()
+                .max_capacity(u64::MAX)
+                .time_to_idle(Duration::from_secs(21600))
+                .build(),
+            psar_cache: Cache::builder()
+                .max_capacity(u64::MAX)
+                .time_to_idle(Duration::from_secs(21600))
+                .build(),
         }
     }
 }
