@@ -520,6 +520,7 @@ impl FromStr for Currency {
             "DOGE" => Ok(Currency::DOGE),
             "AVAX" => Ok(Currency::AVAX),
             "SOL" => Ok(Currency::SOL),
+            "MATIC" => Ok(Currency::MATIC),
             "INJ" => Ok(Currency::INJ),
             "IMX" => Ok(Currency::IMX),
             "TIA" => Ok(Currency::TIA),
