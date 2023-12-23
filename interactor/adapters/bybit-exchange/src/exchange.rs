@@ -348,6 +348,10 @@ fn convert_order_details_to_order(item: &OrderDetailsResponse) -> Order {
         target = Currency::from_str(&item.symbol[..4]);
         source = Currency::from_str(&item.symbol[4..]);
     }
+    if target.is_err() {
+        target = Currency::from_str(&item.symbol[..5]);
+        source = Currency::from_str(&item.symbol[5..]);
+    }
 
     let pair = {
         CurrencyPair {

@@ -55,6 +55,10 @@ impl<S: StorageApi> WsMessageHandler for OrderHandler<S> {
                     target = Currency::from_str(&item.symbol[..4]);
                     source = Currency::from_str(&item.symbol[4..]);
                 }
+                if target.is_err() {
+                    target = Currency::from_str(&item.symbol[..5]);
+                    source = Currency::from_str(&item.symbol[5..]);
+                }
 
                 let pair = {
                     CurrencyPair {
