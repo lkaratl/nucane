@@ -133,6 +133,7 @@ async fn sync_batch<I: InteractorApi, R: CandleRepository>(candle_service: Arc<C
         if candles_for_save.len() > 5000 {
             debug!("Save batch of candles for time range: {} - {}",
                             candles_for_save.first().unwrap().timestamp, candles_for_save.last().unwrap().timestamp );
+            candles_for_save.dedup_by_key(|candle| candle.id.clone());
             synced_candles_count += candles_for_save.len();
             candle_service.save_many(candles_for_save).await;
             candles_for_save = Vec::new();
