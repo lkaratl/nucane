@@ -476,6 +476,10 @@ pub enum Currency {
     IMX,
     TIA,
     GALA,
+    APE,
+    FIL,
+    MANA,
+    SAND,
 }
 
 impl fmt::Display for Currency {
@@ -488,8 +492,8 @@ impl FromStr for Currency {
     type Err = Error;
     fn from_str(input: &str) -> Result<Currency, Self::Err> {
         match input {
-            "BTC" | "Btc" => Ok(Currency::BTC),
-            "USDT" | "Usdt" => Ok(Currency::USDT),
+            "BTC" => Ok(Currency::BTC),
+            "USDT" => Ok(Currency::USDT),
             "TON" => Ok(Currency::TON),
             "XRP" => Ok(Currency::XRP),
             "FTM" => Ok(Currency::FTM),
@@ -516,10 +520,15 @@ impl FromStr for Currency {
             "DOGE" => Ok(Currency::DOGE),
             "AVAX" => Ok(Currency::AVAX),
             "SOL" => Ok(Currency::SOL),
+            "MATIC" => Ok(Currency::MATIC),
             "INJ" => Ok(Currency::INJ),
             "IMX" => Ok(Currency::IMX),
             "TIA" => Ok(Currency::TIA),
             "GALA" => Ok(Currency::GALA),
+            "APE" => Ok(Currency::APE),
+            "FIL" => Ok(Currency::FIL),
+            "MANA" => Ok(Currency::MANA),
+            "SAND" => Ok(Currency::SAND),
             input => bail!("Unknown currency: {input}"),
         }
     }

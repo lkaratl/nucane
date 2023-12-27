@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -19,7 +20,10 @@ impl<S: StorageApi> StorageCoreApiCache<S> {
     pub async fn new(client: Arc<S>) -> Self {
         Self {
             client,
-            candles_cache: Cache::new(u64::MAX),
+            candles_cache: Cache::builder()
+                .max_capacity(u64::MAX)
+                .time_to_idle(Duration::from_secs(21600))
+                .build(),
         }
     }
 }
