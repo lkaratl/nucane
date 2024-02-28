@@ -6,7 +6,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use chrono::{DateTime, TimeZone, Utc};
 use tokio::sync::Mutex;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 use domain_model::{Candle, CandleStatus, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Timeframe};
 use domain_model::MarginMode::Isolated;
@@ -193,6 +193,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for BybitExchange<E, S> {
                 is_leveraged,
             )
         };
+        info!("Place order: {}", serde_json::to_string_pretty(&place_order_request).unwrap_or_default());
         let response = self.private_client.request(place_order_request).await;
         debug!("Place order response: {response:?}");
         if let Err(error_message) = response {
