@@ -133,11 +133,11 @@ impl PlaceOrderRequest {
 
 fn round_decimals(size: f64) -> f64 {
     if size < 1. {
-        (size * 10000.).round() / 10000.
+        (size * 100000.).round() / 100000.
     } else if size < 10. {
         (size * 1000.).round() / 1000.
     } else {
-        (size * 100.).round() / 100.
+        (size * 10.).round() / 10.
     }
 }
 
