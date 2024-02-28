@@ -2,7 +2,7 @@ use std::{env, fs};
 
 use dashmap::DashMap;
 use serde_json::Value;
-use tracing::warn;
+use tracing::{info, warn};
 
 pub struct FsStateManager {
     state: DashMap<String, Value>,
@@ -36,6 +36,7 @@ impl FsStateManager {
         let previous_state = self.state.insert(key.to_string(), state.clone());
         if let Some(previous_state) = previous_state {
             if state != previous_state {
+                info!("Prev state: {previous_state}, current state: {state}");
                 self.backup();
             }
         }
@@ -46,12 +47,14 @@ impl FsStateManager {
     }
 
     fn backup(&self) {
+        info!("State backup");
         let content = serde_json::to_string_pretty(&self.state).unwrap();
 
         let mut state_path = env::temp_dir();
         state_path.push(STATE_FOLDER_PATH);
         fs::create_dir_all(&state_path).unwrap();
         state_path.push(STATE_FILE_NAME);
+        info!("Write state");
         fs::write(state_path, content).unwrap();
     }
 }

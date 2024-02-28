@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use tokio::sync::RwLock;
-use tracing::debug;
+use tracing::{debug, info};
 use uuid::Uuid;
 
 use domain_model::{Action, DeploymentInfo, PluginId, Tick};
@@ -93,6 +93,7 @@ impl<S: StorageApi, I: InteractorApi> Runtime<S, I> {
 
                 if let Some(state_id) = deployment.state_id {
                     if let Some(state) = plugin.get_state().await {
+                        info!("State: {state}");
                         self.state_manager.set(&state_id.to_string(), state);
                     }
                 }
