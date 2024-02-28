@@ -78,7 +78,7 @@ impl<S: StorageApi, I: InteractorApi> Runtime<S, I> {
                 if let Some(state_id) = deployment.state_id {
                     let state = self.state_manager.get(&state_id.to_string());
                     if let Some(state) = state {
-                        plugin.set_state(state).await;
+                        plugin.set_state(state);
                     }
                 }
 
@@ -94,7 +94,7 @@ impl<S: StorageApi, I: InteractorApi> Runtime<S, I> {
                 info!("Check state");
                 if let Some(state_id) = deployment.state_id {
                     info!("Get state from plugin");
-                    if let Some(state) = plugin.get_state().await {
+                    if let Some(state) = plugin.get_state() {
                         info!("Set state: {state}");
                         self.state_manager.set(&state_id.to_string(), state);
                     }

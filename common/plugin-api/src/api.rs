@@ -21,8 +21,8 @@ pub trait PluginApi: Send + Sync {
     fn indicators(&self) -> Vec<Indicator> {
         Vec::new()
     }
-    async fn get_state(&self) -> Option<Value> { None }
-    async fn set_state(&mut self, _state: Value) {}
+    fn get_state(&self) -> Option<Value> { None }
+    fn set_state(&mut self, _state: Value) {}
     fn on_tick_sync(&mut self, tick: &Tick, api: Arc<dyn PluginInternalApi>) -> Vec<Action> {
         let tick_id = format!(
             "{} '{}' {}-{}='{}'",
