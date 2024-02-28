@@ -91,12 +91,15 @@ impl<S: StorageApi, I: InteractorApi> Runtime<S, I> {
                 let mut actions = plugin.on_tick_sync(tick, plugin_internal_api);
                 result.append(&mut actions);
 
+                info!("Check state");
                 if let Some(state_id) = deployment.state_id {
+                    info!("Get state from plugin");
                     if let Some(state) = plugin.get_state().await {
-                        info!("State: {state}");
+                        info!("Set state: {state}");
                         self.state_manager.set(&state_id.to_string(), state);
                     }
                 }
+                info!("Check state finished"); 
             }
         }
         result
