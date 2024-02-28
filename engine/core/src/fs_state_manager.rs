@@ -1,7 +1,7 @@
 use std::{env, fs};
 
 use dashmap::DashMap;
-use tracing::warn;
+use tracing::{info, warn};
 
 pub struct FsStateManager {
     state: DashMap<String, String>,
@@ -20,9 +20,12 @@ impl Default for FsStateManager {
 
 fn load_state() -> DashMap<String, String> {
     let mut state_path = env::temp_dir();
-    state_path.push(format!("{STATE_FOLDER_PATH}{STATE_FILE_NAME}"));
+    state_path.push(format!("{STATE_FOLDER_PATH}/{STATE_FILE_NAME}"));
     match fs::read_to_string(state_path) {
-        Ok(state) => serde_json::from_str(&state).unwrap(),
+        Ok(state) => {
+            info!("State loaded: {state}");
+            serde_json::from_str(&state).unwrap()
+        },
         Err(error) => {
             warn!("Failed to load state file: '{error}'. Plugins state will be empty");
             DashMap::new()
