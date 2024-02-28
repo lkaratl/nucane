@@ -1,11 +1,10 @@
 use std::{env, fs};
 
 use dashmap::DashMap;
-use serde_json::Value;
-use tracing::{info, warn};
+use tracing::warn;
 
 pub struct FsStateManager {
-    state: DashMap<String, Value>,
+    state: DashMap<String, String>,
 }
 
 const STATE_FOLDER_PATH: &str = "nucane/state";
@@ -19,7 +18,7 @@ impl Default for FsStateManager {
     }
 }
 
-fn load_state() -> DashMap<String, Value> {
+fn load_state() -> DashMap<String, String> {
     let mut state_path = env::temp_dir();
     state_path.push(format!("{STATE_FOLDER_PATH}{STATE_FILE_NAME}"));
     match fs::read_to_string(state_path) {
@@ -32,29 +31,26 @@ fn load_state() -> DashMap<String, Value> {
 }
 
 impl FsStateManager {
-    pub fn set(&self, key: &str, state: Value) {
+    pub fn set(&self, key: &str, state: String) {
         let previous_state = self.state.insert(key.to_string(), state.clone());
         if let Some(previous_state) = previous_state {
             if state != previous_state {
-                info!("Prev state: {previous_state}, current state: {state}");
                 self.backup();
             }
         }
     }
 
-    pub fn get(&self, key: &str) -> Option<Value> {
+    pub fn get(&self, key: &str) -> Option<String> {
         self.state.get(key).map(|value| value.value().clone())
     }
 
     fn backup(&self) {
-        info!("State backup");
         let content = serde_json::to_string_pretty(&self.state).unwrap();
 
         let mut state_path = env::temp_dir();
         state_path.push(STATE_FOLDER_PATH);
         fs::create_dir_all(&state_path).unwrap();
         state_path.push(STATE_FILE_NAME);
-        info!("Write state");
         fs::write(state_path, content).unwrap();
     }
 }
