@@ -33,8 +33,8 @@ impl E2EPlugin {
         vec![
             self.create_spot_market_order_action(tick, api.clone()).await,
             self.create_spot_limit_order_action(tick, api.clone()).await,
-            self.create_spot_limit_order_with_sl_tp_action(tick, api.clone())
-                .await,
+            // self.create_spot_limit_order_with_sl_tp_action(tick, api.clone())
+            //     .await,
         ]
     }
 

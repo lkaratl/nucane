@@ -42,7 +42,7 @@ pub struct PlaceOrderRequest {
 
 impl PlaceOrderRequest {
     pub fn market(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: Size, is_leverage: bool) -> Self {
-        let qty = match qty {
+        let qty = round_decimals(match qty {
             Size::Target(qty) => {
                 if side == Side::Buy {
                     panic!("Can't create order with Target size and Buy side. Please use Source size");
@@ -55,7 +55,7 @@ impl PlaceOrderRequest {
                 }
                 qty
             }
-        };
+        });
         let is_leverage = if is_leverage { 1 } else { 0 }.into();
         Self {
             category,
@@ -87,6 +87,57 @@ impl PlaceOrderRequest {
             tp_order_type: None,
             sl_order_type: None,
         }
+    }
+
+    pub fn limit(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: Size, price: f64, is_leverage: bool) -> Self {
+        let qty = round_decimals(match qty {
+            Size::Target(qty) => qty,
+            Size::Source(qty) => qty / price
+        });
+        let is_leverage = if is_leverage { 1 } else { 0 }.into();
+
+        let price = round_decimals(price).into();
+
+        Self {
+            category,
+            symbol: symbol.to_string(),
+            is_leverage,
+            side,
+            order_type: OrderType::Limit,
+            qty,
+            price,
+            trigger_direction: None,
+            order_filter: None,
+            trigger_price: None,
+            trigger_by: None,
+            order_iv: None,
+            time_in_force: None,
+            position_idx: None,
+            order_link_id: order_id,
+            take_profit: None,
+            stop_loss: None,
+            tp_trigger_by: None,
+            sl_trigger_by: None,
+            reduce_only: None,
+            close_on_trigger: None,
+            smp_type: None,
+            mmp: None,
+            tpsl_mode: None,
+            tp_limit_price: None,
+            sl_limit_price: None,
+            tp_order_type: None,
+            sl_order_type: None,
+        }
+    }
+}
+
+fn round_decimals(size: f64) -> f64 {
+    if size < 1. {
+        (size * 10000.).round() / 10000.
+    } else if size < 10. {
+        (size * 1000.).round() / 1000.
+    } else {
+        (size * 100.).round() / 100.
     }
 }
 

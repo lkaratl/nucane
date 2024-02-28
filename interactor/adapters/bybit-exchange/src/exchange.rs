@@ -175,7 +175,15 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for BybitExchange<E, S> {
             Size::Source(size) => rest::Size::Source(size),
         };
         let place_order_request = match create_order.order_type {
-            OrderType::Limit(_price) => unimplemented!("not supported yet"), // todo
+            OrderType::Limit(price) => PlaceOrderRequest::limit(
+                Some(create_order.id.clone()),
+                &inst_id,
+                Category::Spot,
+                side,
+                size,
+                price,
+                is_leveraged,
+            ),
             OrderType::Market => PlaceOrderRequest::market(
                 Some(create_order.id.clone()),
                 &inst_id,

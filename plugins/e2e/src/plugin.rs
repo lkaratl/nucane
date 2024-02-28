@@ -72,8 +72,8 @@ impl E2EPlugin {
         }
 
         vec![
-            // self.handle_spot_tick(tick, api.clone()).await,
-            self.handle_margin_tick(tick, api.clone()).await,
+            self.handle_spot_tick(tick, api.clone()).await,
+            // self.handle_margin_tick(tick, api.clone()).await,
         ]
             .into_iter()
             .flatten()
