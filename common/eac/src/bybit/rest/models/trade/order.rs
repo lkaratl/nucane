@@ -42,7 +42,7 @@ pub struct PlaceOrderRequest {
 
 impl PlaceOrderRequest {
     pub fn market(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: Size, is_leverage: bool) -> Self {
-        let qty = round_price(match qty {
+        let qty = round_qty(match qty {
             Size::Target(qty) => {
                 if side == Side::Buy {
                     panic!("Can't create order with Target size and Buy side. Please use Source size");
@@ -90,7 +90,7 @@ impl PlaceOrderRequest {
     }
 
     pub fn limit(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: Size, price: f64, is_leverage: bool) -> Self {
-        let qty = round_price(match qty {
+        let qty = round_qty(match qty {
             Size::Target(qty) => qty,
             Size::Source(qty) => qty / price
         });
