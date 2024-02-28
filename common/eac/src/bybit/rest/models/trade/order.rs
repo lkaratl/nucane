@@ -42,7 +42,7 @@ pub struct PlaceOrderRequest {
 
 impl PlaceOrderRequest {
     pub fn market(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: Size, is_leverage: bool) -> Self {
-        let qty = round_decimals(match qty {
+        let qty = round_price(match qty {
             Size::Target(qty) => {
                 if side == Side::Buy {
                     panic!("Can't create order with Target size and Buy side. Please use Source size");
@@ -90,13 +90,13 @@ impl PlaceOrderRequest {
     }
 
     pub fn limit(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: Size, price: f64, is_leverage: bool) -> Self {
-        let qty = round_decimals(match qty {
+        let qty = round_price(match qty {
             Size::Target(qty) => qty,
             Size::Source(qty) => qty / price
         });
         let is_leverage = if is_leverage { 1 } else { 0 }.into();
 
-        let price = round_decimals(price).into();
+        let price = round_price(price).into();
 
         Self {
             category,
@@ -131,14 +131,12 @@ impl PlaceOrderRequest {
     }
 }
 
-fn round_decimals(size: f64) -> f64 {
-    if size < 1. {
-        (size * 1000000.).round() / 1000000.
-    } else if size < 10. {
-        (size * 10000.).round() / 10000.
-    } else {
-        (size * 100.).round() / 100.
-    }
+fn round_price(value: f64) -> f64 {
+    (value * 10000.).round() / 100000.
+}
+
+fn round_qty(value: f64) -> f64 {
+    (value * 10000.).round() / 10000.
 }
 
 pub enum Size {
