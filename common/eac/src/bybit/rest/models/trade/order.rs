@@ -132,7 +132,7 @@ impl PlaceOrderRequest {
 }
 
 fn round_price(value: f64) -> f64 {
-    (value * 10000.).round() / 100000.
+    (value * 10000.).round() / 10000.
 }
 
 fn round_qty(value: f64) -> f64 {
