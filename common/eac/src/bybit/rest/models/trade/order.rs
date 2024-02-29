@@ -136,7 +136,11 @@ fn round_price(value: f64) -> f64 {
 }
 
 fn round_qty(value: f64) -> f64 {
-    (value * 1000.).round() / 1000.
+    if value < 1. {
+        (value * 10000.).round() / 10000.
+    } else {
+        (value * 1000.).round() / 1000.
+    }
 }
 
 pub enum Size {
