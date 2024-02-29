@@ -42,7 +42,7 @@ pub struct PlaceOrderRequest {
 
 impl PlaceOrderRequest {
     pub fn market(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: Size, is_leverage: bool) -> Self {
-        let qty = round_qty(match qty {
+        let qty = match qty {
             Size::Target(qty) => {
                 if side == Side::Buy {
                     panic!("Can't create order with Target size and Buy side. Please use Source size");
@@ -55,7 +55,7 @@ impl PlaceOrderRequest {
                 }
                 qty
             }
-        });
+        };
         let is_leverage = if is_leverage { 1 } else { 0 }.into();
         Self {
             category,
@@ -90,13 +90,11 @@ impl PlaceOrderRequest {
     }
 
     pub fn limit(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: Size, price: f64, is_leverage: bool) -> Self {
-        let qty = round_qty(match qty {
+        let qty = match qty {
             Size::Target(qty) => qty,
             Size::Source(qty) => qty / price
-        });
+        };
         let is_leverage = if is_leverage { 1 } else { 0 }.into();
-
-        let price = round_price(price).into();
 
         Self {
             category,
@@ -105,7 +103,7 @@ impl PlaceOrderRequest {
             side,
             order_type: OrderType::Limit,
             qty,
-            price,
+            price: price.into(),
             trigger_direction: None,
             order_filter: None,
             trigger_price: None,
@@ -128,18 +126,6 @@ impl PlaceOrderRequest {
             tp_order_type: None,
             sl_order_type: None,
         }
-    }
-}
-
-fn round_price(value: f64) -> f64 {
-    (value * 10000.).round() / 10000.
-}
-
-fn round_qty(value: f64) -> f64 {
-    if value < 1. {
-        (value * 10000.).round() / 10000.
-    } else {
-        (value * 1000.).round() / 1000.
     }
 }
 
