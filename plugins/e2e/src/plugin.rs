@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use chrono::Duration;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use tracing::info;
 
 use domain_model::{Action, CurrencyPair, Exchange, InstrumentId, MarketType, Tick, Timeframe};
@@ -50,12 +49,12 @@ impl Default for E2EPlugin {
 
 #[allow(dead_code)]
 impl E2EPlugin {
-    pub fn get_state(&self) -> Value {
-        serde_json::to_value(&self.state).unwrap()
+    pub fn get_state(&self) -> String {
+        serde_json::to_string_pretty(&self.state).unwrap()
     }
 
-    pub fn set_state(&mut self, state: Value) {
-        self.state = serde_json::from_value(state).unwrap()
+    pub fn set_state(&mut self, state: &str) {
+        self.state = serde_json::from_str(state).unwrap()
     }
 
     pub async fn handle_tick(

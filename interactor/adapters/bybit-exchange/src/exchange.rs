@@ -6,7 +6,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use chrono::{DateTime, TimeZone, Utc};
 use tokio::sync::Mutex;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 use domain_model::{Candle, CandleStatus, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Timeframe};
 use domain_model::MarginMode::Isolated;
@@ -19,6 +19,7 @@ use interactor_exchange_api::ExchangeApi;
 use storage_core_api::StorageApi;
 
 use crate::handlers::{CandleHandler, OrderHandler, TickHandler};
+use crate::rounding::{round_price, round_qty};
 
 pub struct BybitExchange<E: EngineApi, S: StorageApi> {
     api_key: String,
@@ -171,19 +172,29 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for BybitExchange<E, S> {
             Side::Sell => enums::Side::Sell,
         };
         let size = match create_order.size {
-            Size::Target(size) => rest::Size::Target(size),
-            Size::Source(size) => rest::Size::Source(size),
+            Size::Target(size) => {
+                let size = round_qty(create_order.pair.target, size);
+                rest::Size::Target(size)
+            },
+            Size::Source(size) => {
+                let size = round_qty(create_order.pair.target, size);
+                rest::Size::Source(size)
+            },
         };
+        
         let place_order_request = match create_order.order_type {
-            OrderType::Limit(price) => PlaceOrderRequest::limit(
-                Some(create_order.id.clone()),
-                &inst_id,
-                Category::Spot,
-                side,
-                size,
-                price,
-                is_leveraged,
-            ),
+            OrderType::Limit(price) => {
+                let price = round_price(create_order.pair.target, price);
+                PlaceOrderRequest::limit(
+                    Some(create_order.id.clone()),
+                    &inst_id,
+                    Category::Spot,
+                    side,
+                    size,
+                    price,
+                    is_leveraged,
+                )
+            },
             OrderType::Market => PlaceOrderRequest::market(
                 Some(create_order.id.clone()),
                 &inst_id,
@@ -193,6 +204,7 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for BybitExchange<E, S> {
                 is_leveraged,
             )
         };
+        info!("Place order: {}", serde_json::to_string_pretty(&place_order_request).unwrap_or_default());
         let response = self.private_client.request(place_order_request).await;
         debug!("Place order response: {response:?}");
         if let Err(error_message) = response {
