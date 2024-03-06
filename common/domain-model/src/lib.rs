@@ -602,7 +602,7 @@ pub struct OrderInProgressStatus {
 pub enum OrderActionType {
     CreateOrder(CreateOrder),
     PatchOrder,
-    CancelOrder,
+    CancelOrder(CancelOrder),
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -615,6 +615,13 @@ pub struct CreateOrder {
     pub size: Size,
     pub stop_loss: Option<Trigger>,
     pub take_profit: Option<Trigger>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct CancelOrder {
+    pub id: String,
+    pub pair: CurrencyPair,
+    pub market_type: OrderMarketType,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

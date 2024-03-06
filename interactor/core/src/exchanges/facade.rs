@@ -3,7 +3,7 @@ use std::sync::Arc;
 use chrono::{DateTime, Duration, Utc};
 use tracing::{debug, info};
 
-use domain_model::{Candle, CreateOrder, Exchange, InstrumentId, Order, Timeframe};
+use domain_model::{CancelOrder, Candle, CreateOrder, Exchange, InstrumentId, Order, Timeframe};
 use interactor_exchange_api::ExchangeApi;
 use storage_core_api::StorageApi;
 
@@ -105,6 +105,13 @@ impl<S: StorageApi> ServiceFacade<S> {
         let exchange = self.get_exchange(exchange);
         let order = exchange.place_order(&create_order).await;
         self.storage_client.save_order(order).await.unwrap();
+    }
+
+    pub async fn cancel_order(&self, exchange: Exchange, cancel_order: CancelOrder) {
+        info!("Cancel order with id: '{}' for exchange: '{exchange}', market type: '{:?}', pair: '{}-{}'",
+            cancel_order.id, cancel_order.market_type, cancel_order.pair.target, cancel_order.pair.source);
+        let exchange = self.get_exchange(exchange);
+        exchange.cancel_oder(cancel_order).await;
     }
 
     pub async fn candles_history(

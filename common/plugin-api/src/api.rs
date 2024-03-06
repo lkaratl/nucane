@@ -92,6 +92,14 @@ pub trait ActionsInternalApi: Send + Sync {
         sl: Option<Trigger>,
         tp: Option<Trigger>,
     ) -> Action;
+
+    fn cancel_order_action(
+        &self,
+        exchange: Exchange,
+        pair: CurrencyPair,
+        market_type: OrderMarketType,
+        order_id: &str,
+    ) -> Action;
 }
 
 #[async_trait]

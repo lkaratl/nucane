@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use chrono::Utc;
 use uuid::Uuid;
 
-use domain_model::{Action, CreateOrder, CurrencyPair, Exchange, OrderAction, OrderActionType, OrderMarketType, OrderStatus, OrderType, PluginId, Side, Size, Trigger};
+use domain_model::{Action, CancelOrder, CreateOrder, CurrencyPair, Exchange, OrderAction, OrderActionType, OrderMarketType, OrderStatus, OrderType, PluginId, Side, Size, Trigger};
 use plugin_api::{ActionsInternalApi, utils};
 
 pub struct DefaultActionInternals {
@@ -48,6 +48,27 @@ impl ActionsInternalApi for DefaultActionInternals {
                 size,
                 stop_loss,
                 take_profit,
+            }),
+        })
+    }
+
+    fn cancel_order_action(
+        &self,
+        exchange: Exchange,
+        pair: CurrencyPair,
+        market_type: OrderMarketType,
+        order_id: &str) -> Action {
+        Action::OrderAction(OrderAction {
+            id: Uuid::new_v4(),
+            simulation_id: self.simulation_id,
+            plugin_id: self.plugin_id.clone(),
+            timestamp: Utc::now(),
+            status: OrderStatus::Created,
+            exchange,
+            order: OrderActionType::CancelOrder(CancelOrder {
+                id: order_id.into(),
+                pair,
+                market_type,
             }),
         })
     }

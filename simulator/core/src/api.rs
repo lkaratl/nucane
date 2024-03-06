@@ -292,7 +292,7 @@ Simulator<E, S, I, SR>
                     active_orders.push(order);
                 }
                 OrderActionType::PatchOrder => unimplemented!(),
-                OrderActionType::CancelOrder => unimplemented!(),
+                OrderActionType::CancelOrder(_cancel_order) => unimplemented!(),
             },
         }
     }

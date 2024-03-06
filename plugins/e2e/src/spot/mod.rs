@@ -31,10 +31,11 @@ impl E2EPlugin {
         api: Arc<dyn PluginInternalApi>,
     ) -> Vec<Action> {
         vec![
-            self.create_spot_market_order_action(tick, api.clone()).await,
-            self.create_spot_limit_order_action(tick, api.clone()).await,
-            // self.create_spot_limit_order_with_sl_tp_action(tick, api.clone())
-            //     .await,
+            // self.create_spot_market_order_action(tick, api.clone()).await,
+            // self.create_spot_limit_order_action(tick, api.clone()).await,
+            self.create_spot_limit_order_with_sl_tp_action(tick, api.clone())
+                .await,
+            self.cancel_order(tick, api.clone(), &self.state.spot_limit_order_with_sl_tp_id.clone().unwrap())
         ]
     }
 
@@ -101,8 +102,8 @@ impl E2EPlugin {
             Limit(limit),
             Source(100.0),
             Buy,
-            Trigger::new(limit * 0.5, Limit(limit * 0.4)),
-            Trigger::new(limit * 2.0, Limit(limit * 2.1)),
+            Trigger::new(limit * 0.9, Market),
+            Trigger::new(limit * 1.1, Limit(limit * 1.11)),
         );
         let order_id = match &limit_order_with_sl_tp_action {
             Action::OrderAction(order_action) => match &order_action.order {
@@ -112,6 +113,20 @@ impl E2EPlugin {
         };
         self.state.spot_limit_order_with_sl_tp_id = order_id;
         limit_order_with_sl_tp_action
+    }
+
+    fn cancel_order(
+        &mut self,
+        tick: &Tick,
+        api: Arc<dyn PluginInternalApi>,
+        order_id: &str,
+    ) -> Action {
+        api.actions().cancel_order_action(
+            tick.instrument_id.exchange,
+            tick.instrument_id.pair,
+            Spot,
+            order_id,
+        )
     }
 
     async fn check_spot_orders(&mut self, api: Arc<dyn PluginInternalApi>) {

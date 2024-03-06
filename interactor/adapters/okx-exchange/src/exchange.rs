@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use tokio::sync::Mutex;
 use tracing::{debug, error};
 
-use domain_model::{Candle, CandleStatus, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, LP, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Timeframe};
+use domain_model::{CancelOrder, Candle, CandleStatus, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, LP, MarginMode, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Timeframe};
 use eac::okx::{enums, rest};
 use eac::okx::enums::{InstType, OrdState, OrdType, TdMode};
 use eac::okx::rest::{BalanceRequest, CandlesHistoryRequest, OkExRest, OrderDetailsResponse, OrderHistoryRequest, PlaceOrderRequest, RateLimitedRestClient, Trigger};
@@ -344,6 +344,11 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for OkxExchange<E, S> {
             }
         }
     }
+
+    async fn cancel_oder(&self, _cancel_order: CancelOrder) {
+        unimplemented!()
+    }
+
 
     async fn candles_history(
         &self,
