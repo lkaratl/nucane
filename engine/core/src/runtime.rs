@@ -78,7 +78,7 @@ impl<S: StorageApi, I: InteractorApi> Runtime<S, I> {
                 if let Some(state_id) = deployment.state_id {
                     let state = self.state_manager.get(&state_id.to_string());
                     if let Some(state) = state {
-                        plugin.set_state(state).await;
+                        plugin.set_state(&state).await;
                     }
                 }
 

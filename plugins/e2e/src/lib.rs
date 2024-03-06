@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 
 use domain_model::{Action, Currency, CurrencyPair, Exchange, Indicator, InstrumentId, MarketType, PluginId, Tick};
 use plugin_api::{PluginApi, PluginInternalApi};
@@ -54,11 +53,11 @@ impl PluginApi for E2EPlugin {
         ]
     }
 
-    async fn get_state(&self) -> Option<Value> {
+    async fn get_state(&self) -> Option<String> {
         Some(self.get_state())
     }
 
-    async fn set_state(&mut self, state: Value) {
+    async fn set_state(&mut self, state: &str) {
         self.set_state(state);
     }
 

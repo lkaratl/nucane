@@ -88,6 +88,45 @@ impl PlaceOrderRequest {
             sl_order_type: None,
         }
     }
+
+    pub fn limit(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: Size, price: f64, is_leverage: bool) -> Self {
+        let qty = match qty {
+            Size::Target(qty) => qty,
+            Size::Source(qty) => qty / price
+        };
+        let is_leverage = if is_leverage { 1 } else { 0 }.into();
+
+        Self {
+            category,
+            symbol: symbol.to_string(),
+            is_leverage,
+            side,
+            order_type: OrderType::Limit,
+            qty,
+            price: price.into(),
+            trigger_direction: None,
+            order_filter: None,
+            trigger_price: None,
+            trigger_by: None,
+            order_iv: None,
+            time_in_force: None,
+            position_idx: None,
+            order_link_id: order_id,
+            take_profit: None,
+            stop_loss: None,
+            tp_trigger_by: None,
+            sl_trigger_by: None,
+            reduce_only: None,
+            close_on_trigger: None,
+            smp_type: None,
+            mmp: None,
+            tpsl_mode: None,
+            tp_limit_price: None,
+            sl_limit_price: None,
+            tp_order_type: None,
+            sl_order_type: None,
+        }
+    }
 }
 
 pub enum Size {

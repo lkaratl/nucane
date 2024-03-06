@@ -1,11 +1,10 @@
 use std::{env, fs};
 
 use dashmap::DashMap;
-use serde_json::Value;
-use tracing::warn;
+use tracing::{info, warn};
 
 pub struct FsStateManager {
-    state: DashMap<String, Value>,
+    state: DashMap<String, String>,
 }
 
 const STATE_FOLDER_PATH: &str = "nucane/state";
@@ -19,11 +18,14 @@ impl Default for FsStateManager {
     }
 }
 
-fn load_state() -> DashMap<String, Value> {
+fn load_state() -> DashMap<String, String> {
     let mut state_path = env::temp_dir();
-    state_path.push(format!("{STATE_FOLDER_PATH}{STATE_FILE_NAME}"));
+    state_path.push(format!("{STATE_FOLDER_PATH}/{STATE_FILE_NAME}"));
     match fs::read_to_string(state_path) {
-        Ok(state) => serde_json::from_str(&state).unwrap(),
+        Ok(state) => {
+            info!("State loaded: {state}");
+            serde_json::from_str(&state).unwrap()
+        },
         Err(error) => {
             warn!("Failed to load state file: '{error}'. Plugins state will be empty");
             DashMap::new()
@@ -32,7 +34,7 @@ fn load_state() -> DashMap<String, Value> {
 }
 
 impl FsStateManager {
-    pub fn set(&self, key: &str, state: Value) {
+    pub fn set(&self, key: &str, state: String) {
         let previous_state = self.state.insert(key.to_string(), state.clone());
         if let Some(previous_state) = previous_state {
             if state != previous_state {
@@ -41,7 +43,7 @@ impl FsStateManager {
         }
     }
 
-    pub fn get(&self, key: &str) -> Option<Value> {
+    pub fn get(&self, key: &str) -> Option<String> {
         self.state.get(key).map(|value| value.value().clone())
     }
 
