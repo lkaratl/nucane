@@ -56,7 +56,6 @@ impl ActionsInternalApi for DefaultActionInternals {
         &self,
         exchange: Exchange,
         pair: CurrencyPair,
-        market_type: OrderMarketType,
         order_id: &str) -> Action {
         Action::OrderAction(OrderAction {
             id: Uuid::new_v4(),
@@ -68,7 +67,6 @@ impl ActionsInternalApi for DefaultActionInternals {
             order: OrderActionType::CancelOrder(CancelOrder {
                 id: order_id.into(),
                 pair,
-                market_type,
             }),
         })
     }

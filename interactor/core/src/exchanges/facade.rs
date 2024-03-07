@@ -108,8 +108,8 @@ impl<S: StorageApi> ServiceFacade<S> {
     }
 
     pub async fn cancel_order(&self, exchange: Exchange, cancel_order: CancelOrder) {
-        info!("Cancel order with id: '{}' for exchange: '{exchange}', market type: '{:?}', pair: '{}-{}'",
-            cancel_order.id, cancel_order.market_type, cancel_order.pair.target, cancel_order.pair.source);
+        info!("Cancel order with id: '{}' for exchange: '{exchange}', pair: '{}-{}'",
+            cancel_order.id, cancel_order.pair.target, cancel_order.pair.source);
         let exchange = self.get_exchange(exchange);
         exchange.cancel_oder(cancel_order).await;
     }

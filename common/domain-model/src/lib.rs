@@ -621,7 +621,6 @@ pub struct CreateOrder {
 pub struct CancelOrder {
     pub id: String,
     pub pair: CurrencyPair,
-    pub market_type: OrderMarketType,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

@@ -124,7 +124,6 @@ impl E2EPlugin {
         api.actions().cancel_order_action(
             tick.instrument_id.exchange,
             tick.instrument_id.pair,
-            Spot,
             order_id,
         )
     }

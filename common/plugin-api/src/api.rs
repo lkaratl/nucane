@@ -97,7 +97,6 @@ pub trait ActionsInternalApi: Send + Sync {
         &self,
         exchange: Exchange,
         pair: CurrencyPair,
-        market_type: OrderMarketType,
         order_id: &str,
     ) -> Action;
 }
