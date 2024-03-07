@@ -219,8 +219,8 @@ pub struct OrderDetailsResponse {
     pub order_status: OrderStatus,
     pub cancel_type: OrderCancelType,
     pub reject_reason: String,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub avg_price: f64,
+    #[serde(deserialize_with = "crate::bybit::parser::from_str_opt")]
+    pub avg_price: Option<f64>,
     pub leaves_qty: String,
     pub leaves_value: String,
     #[serde(deserialize_with = "crate::bybit::parser::from_str")]
