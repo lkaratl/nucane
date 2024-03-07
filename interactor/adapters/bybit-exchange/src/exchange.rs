@@ -454,7 +454,7 @@ fn convert_order_details_to_order(item: &OrderDetailsResponse) -> Order {
     };
 
     let fee = match side {
-        Side::Buy => item.cum_exec_fee * item.avg_price,
+        Side::Buy => item.cum_exec_fee * item.avg_price.unwrap_or_default(),
         Side::Sell => item.cum_exec_fee
     };
 
@@ -470,7 +470,7 @@ fn convert_order_details_to_order(item: &OrderDetailsResponse) -> Order {
         side,
         size,
         fee,
-        avg_fill_price: item.avg_price,
+        avg_fill_price: item.avg_price.unwrap_or_default(),
         stop_loss: None,
         avg_sl_price: 0.,
         take_profit: None,
