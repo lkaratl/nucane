@@ -40,6 +40,7 @@ pub struct PlaceOrderRequest {
     pub sl_order_type: Option<SlTpOrderType>,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl PlaceOrderRequest {
     pub fn market(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: f64, is_leverage: bool) -> Self {
         let is_leverage = if is_leverage { 1 } else { 0 }.into();
