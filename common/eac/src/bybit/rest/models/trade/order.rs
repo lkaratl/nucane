@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use http::Method;
 use serde::{Deserialize, Serialize};
 
-use crate::bybit::enums::{Category, OrderCancelType, OrderFilter, OrderStatus, OrderTimeInForce, OrderType, Side};
+use crate::bybit::enums::{Category, OrderCancelType, OrderFilter, OrderStatus, OrderTimeInForce, OrderType, Side, SlTpOrderType};
 use crate::bybit::parser::ts_milliseconds;
 
 use super::super::Request;
@@ -25,8 +25,8 @@ pub struct PlaceOrderRequest {
     pub time_in_force: Option<OrderTimeInForce>,
     pub position_idx: Option<u8>,
     pub order_link_id: Option<String>,
-    pub take_profit: Option<String>,
-    pub stop_loss: Option<String>,
+    pub take_profit: Option<f64>,
+    pub stop_loss: Option<f64>,
     pub tp_trigger_by: Option<String>,
     pub sl_trigger_by: Option<String>,
     pub reduce_only: Option<bool>,
@@ -34,28 +34,15 @@ pub struct PlaceOrderRequest {
     pub smp_type: Option<String>,
     pub mmp: Option<bool>,
     pub tpsl_mode: Option<String>,
-    pub tp_limit_price: Option<String>,
-    pub sl_limit_price: Option<String>,
-    pub tp_order_type: Option<String>,
-    pub sl_order_type: Option<String>,
+    pub tp_limit_price: Option<f64>,
+    pub sl_limit_price: Option<f64>,
+    pub tp_order_type: Option<SlTpOrderType>,
+    pub sl_order_type: Option<SlTpOrderType>,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl PlaceOrderRequest {
-    pub fn market(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: Size, is_leverage: bool) -> Self {
-        let qty = match qty {
-            Size::Target(qty) => {
-                if side == Side::Buy {
-                    panic!("Can't create order with Target size and Buy side. Please use Source size");
-                }
-                qty
-            }
-            Size::Source(qty) => {
-                if side == Side::Sell {
-                    panic!("Can't create order with Source size and Sell side. Please use Target size");
-                }
-                qty
-            }
-        };
+    pub fn market(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: f64, is_leverage: bool) -> Self {
         let is_leverage = if is_leverage { 1 } else { 0 }.into();
         Self {
             category,
@@ -89,12 +76,27 @@ impl PlaceOrderRequest {
         }
     }
 
-    pub fn limit(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: Size, price: f64, is_leverage: bool) -> Self {
-        let qty = match qty {
-            Size::Target(qty) => qty,
-            Size::Source(qty) => qty / price
-        };
+    pub fn limit(order_id: Option<String>, symbol: &str, category: Category, side: Side, qty: f64, price: f64, is_leverage: bool,
+                 tp: Option<Trigger>, sl: Option<Trigger>) -> Self {
         let is_leverage = if is_leverage { 1 } else { 0 }.into();
+
+        let (tp_order_type, take_profit, tp_limit_price) = if let Some(tp) = tp {
+            match tp.trigger_type {
+                SlTpOrderType::Market => (SlTpOrderType::Market.into(), tp.trigger_px.into(), tp.order_px),
+                SlTpOrderType::Limit => (SlTpOrderType::Limit.into(), tp.trigger_px.into(), tp.order_px)
+            }
+        } else {
+            (None, None, None)
+        };
+
+        let (sl_order_type, stop_loss, sl_limit_price) = if let Some(sl) = sl {
+            match sl.trigger_type {
+                SlTpOrderType::Market => (SlTpOrderType::Market.into(), sl.trigger_px.into(), sl.order_px),
+                SlTpOrderType::Limit => (SlTpOrderType::Limit.into(), sl.trigger_px.into(), sl.order_px)
+            }
+        } else {
+            (None, None, None)
+        };
 
         Self {
             category,
@@ -112,8 +114,8 @@ impl PlaceOrderRequest {
             time_in_force: None,
             position_idx: None,
             order_link_id: order_id,
-            take_profit: None,
-            stop_loss: None,
+            take_profit,
+            stop_loss,
             tp_trigger_by: None,
             sl_trigger_by: None,
             reduce_only: None,
@@ -121,10 +123,10 @@ impl PlaceOrderRequest {
             smp_type: None,
             mmp: None,
             tpsl_mode: None,
-            tp_limit_price: None,
-            sl_limit_price: None,
-            tp_order_type: None,
-            sl_order_type: None,
+            tp_limit_price,
+            sl_limit_price,
+            tp_order_type,
+            sl_order_type,
         }
     }
 }
@@ -132,6 +134,30 @@ impl PlaceOrderRequest {
 pub enum Size {
     Target(f64),
     Source(f64),
+}
+
+pub struct Trigger {
+    pub trigger_type: SlTpOrderType,
+    pub trigger_px: f64,
+    pub order_px: Option<f64>,
+}
+
+impl Trigger {
+    pub fn market(trigger_px: f64) -> Self {
+        Self {
+            trigger_type: SlTpOrderType::Market,
+            trigger_px,
+            order_px: None,
+        }
+    }
+
+    pub fn limit(trigger_px: f64, order_px: f64) -> Self {
+        Self {
+            trigger_type: SlTpOrderType::Limit,
+            trigger_px,
+            order_px: Some(order_px),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -193,8 +219,8 @@ pub struct OrderDetailsResponse {
     pub order_status: OrderStatus,
     pub cancel_type: OrderCancelType,
     pub reject_reason: String,
-    #[serde(deserialize_with = "crate::bybit::parser::from_str")]
-    pub avg_price: f64,
+    #[serde(deserialize_with = "crate::bybit::parser::from_str_opt")]
+    pub avg_price: Option<f64>,
     pub leaves_qty: String,
     pub leaves_value: String,
     #[serde(deserialize_with = "crate::bybit::parser::from_str")]
@@ -238,4 +264,29 @@ impl Request for OrderDetailsRequest {
     const ENDPOINT: &'static str = "/v5/order/history";
     const HAS_PAYLOAD: bool = true;
     type Response = OrdersDetailsResponse;
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CancelOrderRequest {
+    pub category: Category,
+    pub symbol: String,
+    pub order_id: Option<String>,
+    pub order_link_id: Option<String>,
+    pub order_filter: Option<OrderFilter>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CancelOrderResponse {
+    pub order_id: Option<String>,
+    pub order_link_id: Option<String>,
+}
+
+impl Request for CancelOrderRequest {
+    const METHOD: Method = Method::POST;
+    const SIGNED: bool = true;
+    const ENDPOINT: &'static str = "/v5/order/cancel";
+    const HAS_PAYLOAD: bool = true;
+    type Response = CancelOrderResponse;
 }

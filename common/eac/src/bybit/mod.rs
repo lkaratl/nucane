@@ -33,7 +33,6 @@ mod tests {
 
         use crate::bybit::enums::{Category, Side, Timeframe};
         use crate::bybit::rest::{BybitRest, CandlesRequest, OrderDetailsRequest, PlaceOrderRequest, RateLimitedRestClient};
-        use crate::bybit::rest::Size::{Source, Target};
         use crate::bybit::tests::{init_logger, LOGGING_LEVEL};
 
         pub fn build_private_rest_client() -> BybitRest {
@@ -105,7 +104,7 @@ mod tests {
                 "BTCUSDT",
                 Category::Spot,
                 Side::Buy,
-                Source(100.0),
+                100.,
                 true,
             );
             let response = rest_client.request(request).await;
@@ -126,7 +125,7 @@ mod tests {
                 "BTCUSDT",
                 Category::Spot,
                 Side::Sell,
-                Target(0.0034),
+                0.0034,
                 true,
             );
             let response = rest_client.request(request).await;

@@ -69,6 +69,15 @@ impl<S: StorageApi, R: SubscriptionRepository> InteractorApi for Interactor<S, R
                             .place_order(exchange, create_order)
                             .await
                     }
+                    Action::OrderAction(OrderAction {
+                                            order: OrderActionType::CancelOrder(cancel_order),
+                                            exchange,
+                                            ..
+                                        }) => {
+                        self.service_facade
+                            .cancel_order(exchange, cancel_order)
+                            .await
+                    }
                     action => warn!("Temporary unsupported action: {action:?}"),
                 }
             }

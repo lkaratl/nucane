@@ -8,11 +8,11 @@ use chrono::{DateTime, TimeZone, Utc};
 use tokio::sync::Mutex;
 use tracing::{debug, error, info};
 
-use domain_model::{Candle, CandleStatus, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Timeframe};
+use domain_model::{CancelOrder, Candle, CandleStatus, CreateOrder, Currency, CurrencyPair, Exchange, InstrumentId, MarketType, Order, OrderMarketType, OrderStatus, OrderType, Side, Size, Timeframe};
 use domain_model::MarginMode::Isolated;
-use eac::bybit::{enums, rest};
+use eac::bybit::enums;
 use eac::bybit::enums::Category;
-use eac::bybit::rest::{BybitRest, CandlesRequest, OrderDetailsRequest, OrderDetailsResponse, PlaceOrderRequest, RateLimitedRestClient};
+use eac::bybit::rest::{BybitRest, CancelOrderRequest, CandlesRequest, OrderDetailsRequest, OrderDetailsResponse, PlaceOrderRequest, RateLimitedRestClient, Trigger};
 use eac::bybit::websocket::{BybitWsClient, Channel, Command};
 use engine_core_api::api::EngineApi;
 use interactor_exchange_api::ExchangeApi;
@@ -171,17 +171,49 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for BybitExchange<E, S> {
             Side::Buy => enums::Side::Buy,
             Side::Sell => enums::Side::Sell,
         };
-        let size = match create_order.size {
-            Size::Target(size) => {
-                let size = round_qty(create_order.pair.target, size);
-                rest::Size::Target(size)
-            },
-            Size::Source(size) => {
-                let size = round_qty(create_order.pair.target, size);
-                rest::Size::Source(size)
-            },
+        let size = match create_order.order_type {
+            OrderType::Limit(price) => {
+                match create_order.size {
+                    Size::Target(size) => round_qty(create_order.pair.target, size),
+                    Size::Source(size) => round_qty(create_order.pair.target, size / price),
+                }
+            }
+            OrderType::Market => {
+                match create_order.size {
+                    Size::Target(size) => {
+                        if create_order.side == Side::Buy {
+                            panic!("Can't create order with Target size and Buy side. Please use Source size");
+                        }
+                        round_qty(create_order.pair.target, size)
+                    },
+                    Size::Source(size) => {
+                        if create_order.side == Side::Sell {
+                            panic!("Can't create order with Source size and Sell side. Please use Target size");
+                        }
+                        round_qty(create_order.pair.target, size)
+                    },
+                }
+            }
         };
-        
+
+        let sl = if let Some(stop_loss) = &create_order.stop_loss {
+            match stop_loss.order_px {
+                OrderType::Limit(limit) => Trigger::limit(round_price(create_order.pair.target, stop_loss.trigger_px), round_price(create_order.pair.target, limit)),
+                OrderType::Market => Trigger::market(round_price(create_order.pair.target, stop_loss.trigger_px))
+            }.into()
+        } else {
+            None
+        };
+
+        let tp = if let Some(take_profit) = &create_order.take_profit {
+            match take_profit.order_px {
+                OrderType::Limit(limit) => Trigger::limit(round_price(create_order.pair.target, take_profit.trigger_px), round_price(create_order.pair.target, limit)),
+                OrderType::Market => Trigger::market(round_price(create_order.pair.target, take_profit.trigger_px))
+            }.into()
+        } else {
+            None
+        };
+
         let place_order_request = match create_order.order_type {
             OrderType::Limit(price) => {
                 let price = round_price(create_order.pair.target, price);
@@ -193,8 +225,10 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for BybitExchange<E, S> {
                     size,
                     price,
                     is_leveraged,
+                    tp,
+                    sl,
                 )
-            },
+            }
             OrderType::Market => PlaceOrderRequest::market(
                 Some(create_order.id.clone()),
                 &inst_id,
@@ -246,6 +280,21 @@ impl<E: EngineApi, S: StorageApi> ExchangeApi for BybitExchange<E, S> {
                 take_profit: create_order.take_profit.clone(),
                 avg_tp_price: 0.0,
             }
+        }
+    }
+
+    async fn cancel_oder(&self, cancel_order: CancelOrder) {
+        let inst_id = format!("{}{}", cancel_order.pair.target, cancel_order.pair.source);
+        let request = CancelOrderRequest {
+            category: Category::Spot,
+            symbol: inst_id,
+            order_id: None,
+            order_link_id: Some(cancel_order.id),
+            order_filter: None,
+        };
+        let response = self.private_client.request(request).await;
+        if let Err(err) = response {
+            error!("Cancel order request failed with error: '{err}'")
         }
     }
 
@@ -405,7 +454,7 @@ fn convert_order_details_to_order(item: &OrderDetailsResponse) -> Order {
     };
 
     let fee = match side {
-        Side::Buy => item.cum_exec_fee * item.avg_price,
+        Side::Buy => item.cum_exec_fee * item.avg_price.unwrap_or_default(),
         Side::Sell => item.cum_exec_fee
     };
 
@@ -421,7 +470,7 @@ fn convert_order_details_to_order(item: &OrderDetailsResponse) -> Order {
         side,
         size,
         fee,
-        avg_fill_price: item.avg_price,
+        avg_fill_price: item.avg_price.unwrap_or_default(),
         stop_loss: None,
         avg_sl_price: 0.,
         take_profit: None,
