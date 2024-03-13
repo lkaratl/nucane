@@ -421,7 +421,7 @@ impl Tick {
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Copy, Clone)]
 pub enum Exchange {
     OKX,
-    BYBIT
+    BYBIT,
 }
 
 impl fmt::Display for Exchange {
@@ -480,6 +480,15 @@ pub enum Currency {
     FIL,
     MANA,
     SAND,
+    WLD,
+    APEX,
+    CHZ,
+    EOS,
+    GMT,
+    HFT,
+    LDO,
+    OP,
+    XLM,
 }
 
 impl fmt::Display for Currency {
@@ -529,6 +538,15 @@ impl FromStr for Currency {
             "FIL" => Ok(Currency::FIL),
             "MANA" => Ok(Currency::MANA),
             "SAND" => Ok(Currency::SAND),
+            "WLD" => Ok(Currency::WLD),
+            "APEX" => Ok(Currency::APEX),
+            "CHZ" => Ok(Currency::CHZ),
+            "EOS" => Ok(Currency::EOS),
+            "GMT" => Ok(Currency::GMT),
+            "HFT" => Ok(Currency::HFT),
+            "LDO" => Ok(Currency::LDO),
+            "OP" => Ok(Currency::OP),
+            "XLM" => Ok(Currency::XLM),
             input => bail!("Unknown currency: {input}"),
         }
     }
@@ -602,7 +620,7 @@ pub struct OrderInProgressStatus {
 pub enum OrderActionType {
     CreateOrder(CreateOrder),
     PatchOrder,
-    CancelOrder,
+    CancelOrder(CancelOrder),
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -615,6 +633,12 @@ pub struct CreateOrder {
     pub size: Size,
     pub stop_loss: Option<Trigger>,
     pub take_profit: Option<Trigger>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct CancelOrder {
+    pub id: String,
+    pub pair: CurrencyPair,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

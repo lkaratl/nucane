@@ -60,6 +60,12 @@ pub enum OrderType {
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub enum SlTpOrderType {
+    Market,
+    Limit,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum OrderFilter {
     Order,
     TpslOrder,
