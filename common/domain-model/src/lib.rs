@@ -489,6 +489,8 @@ pub enum Currency {
     LDO,
     OP,
     XLM,
+    SEI,
+    STRK,
 }
 
 impl fmt::Display for Currency {
@@ -547,6 +549,8 @@ impl FromStr for Currency {
             "LDO" => Ok(Currency::LDO),
             "OP" => Ok(Currency::OP),
             "XLM" => Ok(Currency::XLM),
+            "SEI" => Ok(Currency::SEI),
+            "STRK" => Ok(Currency::STRK),
             input => bail!("Unknown currency: {input}"),
         }
     }
